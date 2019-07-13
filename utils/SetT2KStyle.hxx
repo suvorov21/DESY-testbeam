@@ -3,6 +3,9 @@
 #include <TColor.h>
 #include "TStyle.h"
 
+#include "TH1F.h"
+#include "TPad.h"
+
 // plotters options
 namespace plot {
   const int canvas_x_size = 800;
