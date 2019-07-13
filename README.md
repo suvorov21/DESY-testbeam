@@ -37,7 +37,7 @@ The common view is the following
 ## HighLevel tool
 WIP
 
-## Gometry
+## Geometry
 The geometry information is stored in utils/Geom.hxx. The coordinate system and the pad size are the following:
 ```
 Micromegas:
@@ -50,5 +50,5 @@ Micromegas:
      |              |          __
    0 |______________|         |__| 1.1 cm
      0               35        1.0 cm
-         x
+             x
 ```
