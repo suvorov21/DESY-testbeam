@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     exit(1);
   }
   // read and chain files
-  auto chain = new TChain("chain");
+  auto chain = new TChain("tree");
 
   if (file_in_name.Contains(".root")) {
     std::cout << "adding filename" <<" " << file_in_name << std::endl;
