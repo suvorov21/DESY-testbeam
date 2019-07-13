@@ -6,11 +6,13 @@
 #include "TCanvas.h"
 #include "TApplication.h"
 #include "TFile.h"
-#include "TTree.h"
+#include "TChain.h"
+#include "TString.h"
 
 // c++
 #include <iostream> // stream
 #include <unistd.h> // getopt on Mac
+#include <fstream>  // read file lists
 
 // project
 #include "../utils/SetT2KStyle.hxx"
@@ -24,18 +26,19 @@ int main(int argc, char** argv) {
   auto test_mode    = false;
   auto verbose      = 1;
 
-  std::string file_in_name  = "";
-  std::string file_out_name = "";
+  TString file_in_name  = "";
+  TString file_out_name = "";
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bvd");
+    int c = getopt(argc, argv, "i:o:bvdm");
     if (c < 0) break;
     switch (c) {
       case 'i' : file_in_name     = optarg;       break;
       case 'b' : batch            = true;         break;
       case 'v' : verbose          = atoi(optarg); break;
       case 'd' : test_mode        = true;         break;
+      case 'm' : help(argv[0]);                   break;
       case '?' : help(argv[0]);
     }
   }
@@ -73,15 +76,34 @@ int main(int argc, char** argv) {
   // read data
   Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
 
-  auto file_in = new TFile(file_in_name.c_str(), "READ");
+  auto file_in = new TFile(file_in_name.Data(), "READ");
   if (!file_in->IsOpen()) {
     std::cerr << "Input file is not open. " << file_in_name << std::endl;;
     exit(1);
   }
-  auto tree = (TTree*)file_in->Get("tree");
+  // read and chain files
+  auto chain = new TChain("chain");
 
-  tree->SetBranchAddress("PadAmpl", padAmpl);
-  Int_t N_events = tree->GetEntries();
+  if (file_in_name.Contains(".root")) {
+    std::cout << "adding filename" <<" " << file_in_name << std::endl;
+    chain->AddFile(file_in_name);
+  } else {
+    std::ifstream fList(file_in_name.Data());
+    if (!fList.good()) {
+      std::cerr << "Can not read input " << file_in_name << std::endl;
+      exit(1);
+    }
+    while (fList.good()) {
+      std::string filename;
+      getline(fList, filename);
+      if (fList.eof()) break;
+      chain->AddFile(filename.c_str());
+    }
+  }
+
+
+  chain->SetBranchAddress("PadAmpl", padAmpl);
+  Int_t N_events = chain->GetEntries();
   if (test_mode)
     N_events = std::min(N_events, 30);
 
@@ -89,7 +111,7 @@ int main(int argc, char** argv) {
     std::cout << "Processing" << std::endl;
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
-    tree->GetEntry(eventID);
+    chain->GetEntry(eventID);
 
     std::cout << "Event " << eventID << std::endl;
 
