@@ -88,6 +88,12 @@ bool AnalysisBase::Loop() {
 
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
+    if (_verbose > 1)
+      std::cout << "Event " << eventID << std::endl;
+
+    if (_verbose == 1 && (eventID%(N_events/20)) == 0)
+      std::cout << "." << std::flush;
+
     _chain->GetEntry(eventID);
 
     Event event;
@@ -98,10 +104,16 @@ bool AnalysisBase::Loop() {
     ProcessEvent(event);
   }
 
+  if (_verbose == 1)
+    std::cout << "]" << std::endl;
+
   return true;
 }
 
 bool AnalysisBase::ProcessEvent(const Event event) {
+  (void)event;
+  std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
+  exit(1);
   return true;
 }
 
