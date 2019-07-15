@@ -1,5 +1,8 @@
-#ifndef ANALYSISBASE_H
-#define ANALYSISBASE_H
+#ifndef SRC_BASE_ANALYSISBASE_HXX_
+#define SRC_BASE_ANALYSISBASE_HXX_
+
+#include <string>
+#include <vector>
 
 #include "TString.h"
 #include "TFile.h"
@@ -10,7 +13,7 @@
 #include "SelectionBase.hxx"
 
 class AnalysisBase {
-public:
+ public:
   AnalysisBase(int argc, char** argv);
   virtual ~AnalysisBase() {;}
 
@@ -24,11 +27,11 @@ public:
   virtual bool WriteOutput();
 
   // print usage
-  void help(std::string name);
+  void help(const std::string name);
 
-  std::vector<Int_t> GetEventList() {return _EventList;};
+  std::vector<Int_t> GetEventList() {return _EventList;}
 
-protected:
+ protected:
   TString _file_in_name;
   TString _file_out_name;
 
@@ -59,4 +62,4 @@ protected:
 };
 
 
-#endif
+#endif  // SRC_BASE_ANALYSISBASE_HXX_

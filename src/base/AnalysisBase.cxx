@@ -1,11 +1,11 @@
-#include "AnalysisBase.hxx"
-
-#include <iostream> // stream
-#include <unistd.h> // getopt on Mac
-#include <fstream>  // read file lists
+#include <iostream>  // stream
+#include <unistd.h>  // getopt on Mac
+#include <fstream>   // read file lists
+#include <algorithm>
 
 #include "TROOT.h"
 
+#include "AnalysisBase.hxx"
 #include "SetT2KStyle.hxx"
 #include "SelectionBase.hxx"
 
@@ -18,6 +18,13 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
   _file_in_name           = "";
   _file_out_name          = "";
   _event_list_file_name   = "";
+
+  _file_in    = NULL;
+  _file_out   = NULL;
+
+  _chain      = NULL;
+  _selection  = NULL;
+
   // read CLI
   for (;;) {
     int c = getopt(argc, argv, "i:o:bvdm");
@@ -87,12 +94,9 @@ bool AnalysisBase::Initialize() {
     // FIXIT read the event list file
   }
 
-  //_selection = new SelectionBase();
-  //_selection->Initialize();
-
   // Open the output file
   // WARNING temporary commented for debugging
-  //auto _file_out = new TFile(_file_out_name.Data(), "NEW");
+  // auto _file_out = new TFile(_file_out_name.Data(), "NEW");
 
   // Initialise histoes
   // * do it in your analysis *
@@ -106,9 +110,9 @@ bool AnalysisBase::Initialize() {
 }
 
 bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
-  auto N_events = (int)EventList.size();
+  auto N_events = static_cast<Int_t>(EventList.size());
   if (_test_mode)
-    N_events = std::min((int)EventList.size(), 30);
+    N_events = std::min(static_cast<Int_t>(EventList.size()), 30);
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
@@ -153,16 +157,16 @@ bool AnalysisBase::WriteOutput() {
 
   _file_out->cd();
 
-  auto size = (int)_output_vector.size();
+  auto size = static_cast<int>(_output_vector.size());
   for (auto i = 0; i < size; ++i)
     _output_vector[i]->Write();
 
-   _file_out->Close();
+  _file_out->Close();
 
   return true;
 }
 
-void AnalysisBase::help(std::string name) {
+void AnalysisBase::help(const std::string name) {
   std::cout << name << " usage\n" << std::endl;
   std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
   std::cout << "   -o <output_path>     : output files path" << std::endl;

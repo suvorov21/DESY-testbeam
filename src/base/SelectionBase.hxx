@@ -1,5 +1,7 @@
-#ifndef SELECTIONBASE_H
-#define SELECTIONBASE_H
+#ifndef SRC_BASE_SELECTIONBASE_HXX_
+#define SRC_BASE_SELECTIONBASE_HXX_
+
+#include <vector>
 
 #include "TROOT.h"
 
@@ -12,13 +14,13 @@ struct Event {
 };
 
 class SelectionBase {
-public:
+ public:
   SelectionBase() {;}
   virtual ~SelectionBase() {;}
 
   bool Initialize();
-  bool SelectEvent(Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Event& event);
-
+  bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                  Event& event);
 };
 
-#endif
+#endif  // SRC_BASE_SELECTIONBASE_HXX_

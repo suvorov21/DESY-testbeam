@@ -7,7 +7,8 @@ bool SelectionBase::Initialize() {
   return true;
 }
 
-bool SelectionBase::SelectEvent(Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Event& event) {
+bool SelectionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                                Event& event) {
   (void)padAmpl;
   (void)event;
 

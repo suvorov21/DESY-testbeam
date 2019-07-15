@@ -1,11 +1,11 @@
-#ifndef SPATIAL_RESOLUTION_H
-#define SPATIAL_RESOLUTION_H
+#ifndef SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
+#define SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
 
 #include "AnalysisBase.hxx"
 #include "SelectionBase.hxx"
 
 class SpatialResolAna: public AnalysisBase {
-public:
+ public:
   SpatialResolAna(int argc, char** argv);
   virtual ~SpatialResolAna() {;}
 
@@ -17,4 +17,4 @@ public:
   bool WriteOutput();
 };
 
-#endif
+#endif  // SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
