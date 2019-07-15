@@ -6,29 +6,34 @@
 #include "TChain.h"
 #include "TApplication.h"
 
-#include "../../utils/Geom.hxx"
+#include "Geom.hxx"
 #include "SelectionBase.hxx"
 
 class AnalysisBase {
-  AnalysisBase(int argc, char** argv);
-  virtual ~AnalysisBase() {}
-
 public:
+  AnalysisBase(int argc, char** argv);
+  virtual ~AnalysisBase() {;}
+
   // Initialise histoes, input files, selections
-  bool Initialise();
-  // loop over TChain
-  bool Loop();
+  virtual bool Initialize();
+  // loop over TChain entries
+  virtual bool Loop(std::vector<Int_t> EventList);
   // Process the selection output called Event
-  bool ProcessEvent(const Event event);
+  virtual bool ProcessEvent(const Event event);
   // write output files (histos, trees)
-  bool WriteOutput();
+  virtual bool WriteOutput();
 
   // print usage
   void help(std::string name);
 
+  std::vector<Int_t> GetEventList() {return _EventList;};
+
 protected:
   TString _file_in_name;
   TString _file_out_name;
+
+  TString _event_list_file_name;
+  std::vector<Int_t> _EventList;
 
   TFile* _file_in;
   TFile* _file_out;
@@ -37,6 +42,9 @@ protected:
 
   // what we read from input
   Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
+
+  // outout vector to put in the file
+  std::vector<TObject*> _output_vector;
 
   // Selection. You can use plenty in the analysis.
   // At least one should be defines

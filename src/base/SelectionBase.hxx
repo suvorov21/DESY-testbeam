@@ -3,7 +3,7 @@
 
 #include "TROOT.h"
 
-#include "../../utils/Geom.hxx"
+#include "Geom.hxx"
 
 // the selection output structure
 // by default it's a vector of 2D event displays
@@ -16,8 +16,8 @@ public:
   SelectionBase() {;}
   virtual ~SelectionBase() {;}
 
-  bool Initialise() {;}
-  bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Event &event);
+  bool Initialize();
+  bool SelectEvent(Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Event& event);
 
 };
 

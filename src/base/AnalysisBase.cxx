@@ -6,12 +6,18 @@
 
 #include "TROOT.h"
 
-#include "../../utils/SetT2KStyle.hxx"
+#include "SetT2KStyle.hxx"
+#include "SelectionBase.hxx"
 
 AnalysisBase::AnalysisBase(int argc, char** argv) {
   // default values
   _verbose    = 1;
   _batch      = false;
+  _test_mode  = false;
+
+  _file_in_name           = "";
+  _file_out_name          = "";
+  _event_list_file_name   = "";
   // read CLI
   for (;;) {
     int c = getopt(argc, argv, "i:o:bvdm");
@@ -27,17 +33,22 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
     }
   }
 
+  if (_file_in_name == "") {
+    std::cerr << "ERROR. AnalysisBase::AnalysisBase. No input file specified" << std::endl;
+    exit(1);
+  }
+
   if (!_batch)
     _app = new TApplication("app", &argc, argv);
 }
 
-bool AnalysisBase::Initialise() {
+bool AnalysisBase::Initialize() {
+  std::cout << "Initialising base..............";
   // read and chain input files
-  auto chain = new TChain("tree");
+  _chain = new TChain("tree");
 
   if (_file_in_name.Contains(".root")) {
-    std::cout << "adding filename" <<" " << _file_in_name << std::endl;
-    chain->AddFile(_file_in_name);
+    _chain->AddFile(_file_in_name);
   } else {
     std::ifstream fList(_file_in_name.Data());
     if (!fList.good()) {
@@ -48,11 +59,11 @@ bool AnalysisBase::Initialise() {
       std::string filename;
       getline(fList, filename);
       if (fList.eof()) break;
-      chain->AddFile(filename.c_str());
+      _chain->AddFile(filename.c_str());
     }
   }
 
-  chain->SetBranchAddress("PadAmpl", _padAmpl);
+  _chain->SetBranchAddress("PadAmpl", _padAmpl);
 
   // setup the T2K style
   auto T2KstyleIndex = 2;
@@ -67,19 +78,37 @@ bool AnalysisBase::Initialise() {
   gROOT->SetStyle(t2kstyle->GetName());
   gROOT->ForceStyle();
 
-  // Initilise selection
-  _selection = new SelectionBase();
+  if (_event_list_file_name == "") {
+    Int_t N_events = _chain->GetEntries();
+
+    for (auto i = 0; i < N_events; ++i)
+      _EventList.push_back(i);
+  } else {
+    // FIXIT read the event list file
+  }
+
+  //_selection = new SelectionBase();
+  //_selection->Initialize();
+
+  // Open the output file
+  // WARNING temporary commented for debugging
+  //auto _file_out = new TFile(_file_out_name.Data(), "NEW");
 
   // Initialise histoes
   // * do it in your analysis *
 
+  // Initial;ise selection
+  // * do it in your analysis *
+
+  std::cout << "done" << std::endl;
+
   return true;
 }
 
-bool AnalysisBase::Loop() {
-  Int_t N_events = _chain->GetEntries();
+bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
+  auto N_events = (int)EventList.size();
   if (_test_mode)
-    N_events = std::min(N_events, 30);
+    N_events = std::min((int)EventList.size(), 30);
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
@@ -94,7 +123,7 @@ bool AnalysisBase::Loop() {
     if (_verbose == 1 && (eventID%(N_events/20)) == 0)
       std::cout << "." << std::flush;
 
-    _chain->GetEntry(eventID);
+    _chain->GetEntry(EventList[eventID]);
 
     Event event;
 
@@ -114,6 +143,22 @@ bool AnalysisBase::ProcessEvent(const Event event) {
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
+  return true;
+}
+
+bool AnalysisBase::WriteOutput() {
+  // WARNING add error
+  if (!_file_out)
+    return false;
+
+  _file_out->cd();
+
+  auto size = (int)_output_vector.size();
+  for (auto i = 0; i < size; ++i)
+    _output_vector[i]->Write();
+
+   _file_out->Close();
+
   return true;
 }
 
