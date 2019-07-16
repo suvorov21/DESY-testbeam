@@ -1,14 +1,13 @@
 #ifndef SRC_BASE_ANALYSISBASE_HXX_
 #define SRC_BASE_ANALYSISBASE_HXX_
 
-#include <string>
-
 #include "TString.h"
 #include "TFile.h"
 #include "TChain.h"
 #include "TApplication.h"
 
 #include "SelectionBase.hxx"
+#include "SetT2KStyle.hxx"
 
 /// Main analysis template
 class AnalysisBase {
@@ -51,6 +50,9 @@ class AnalysisBase {
   /// Selection. You can use plenty in the analysis.
   /** At least one should be defines */
   SelectionBase* _selection;
+
+  /// T2K plotting style
+  TStyle* _t2kstyle;
 
   /// DEBUG vars
   Int_t _verbose;

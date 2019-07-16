@@ -41,23 +41,8 @@ The main idea is to separate the routine procedures (e.g. opening files, looping
 
 ### Tool structure
 Rough scheme of the package
-```
-                Your Analysis                                        Selection
-      (output definition + how to fill it)     <--------------    (takes 3D input,
-                    ^                                         output any structure you define)
-                    |                                                   ^
-                    |                                                   |
-                AnalysisBase                                       SelectionBase
-    (file chaining, loop, write your output)
-                   /|\
-                 /  |  \
-               /    |    \
-      Geometry     T2K
-                  style
+![](doc/html/_spatial_resol_ana_8cxx__incl.png)
 
-
-```
-### How to start
 [WIP]
 1. Create your analysis inheriting from AnalysisBase
 2. Add it in the Makefile for compilation. Cross-check the compilation.

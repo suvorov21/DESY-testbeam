@@ -1,8 +1,11 @@
 #ifndef SRC_BASE_SELECTIONBASE_HXX_
 #define SRC_BASE_SELECTIONBASE_HXX_
 
+/** @cond */
 #include <vector>
 #include <iostream>
+#include <string>
+/** @endcond */
 
 #include "TROOT.h"
 

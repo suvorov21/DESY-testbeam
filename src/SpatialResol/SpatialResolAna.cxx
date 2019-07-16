@@ -9,13 +9,9 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv): AnalysisBase(argc, argv
 bool SpatialResolAna::Initialize() {
   AnalysisBase::Initialize();
 
-  std::cout << "Initialising analysis..........";
-
   // Initilise selection
-  _selection = new SelectionBase();
+  _selection = new CrossingSelection();
   _selection->Initialize();
-
-  std::cout << "done" << std::endl;
 
   return true;
 }
@@ -25,7 +21,7 @@ bool SpatialResolAna::ProcessEvent(const Event event) {
 }
 
 bool SpatialResolAna::WriteOutput() {
-  std::cout << "Write spatial output...........";
+  std::cout << "Write spatial output.....................";
   AnalysisBase::WriteOutput();
 
   if (!_file_out)

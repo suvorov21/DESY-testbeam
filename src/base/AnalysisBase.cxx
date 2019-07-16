@@ -6,8 +6,6 @@
 #include "TROOT.h"
 
 #include "AnalysisBase.hxx"
-#include "SetT2KStyle.hxx"
-#include "SelectionBase.hxx"
 
 AnalysisBase::AnalysisBase(int argc, char** argv) {
   // default values
@@ -50,7 +48,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
 }
 
 bool AnalysisBase::Initialize() {
-  std::cout << "Initialising base..............";
+  std::cout << "Initializing analysis base...............";
   // read and chain input files
   _chain = new TChain("tree");
 
@@ -73,16 +71,16 @@ bool AnalysisBase::Initialize() {
   _chain->SetBranchAddress("PadAmpl", _padAmpl);
 
   // setup the T2K style
-  auto T2KstyleIndex = 2;
+  Int_t T2KstyleIndex = 2;
   // Official T2K style as described in http://www.t2k.org/comm/pubboard/style/index_html
-  auto localStyleName = "T2K";
+  TString localStyleName = "T2K";
   // -- WhichStyle --
   // 1 = presentation large fonts
   // 2 = presentation small fonts
   // 3 = publication/paper
+  _t2kstyle = T2K().SetT2KStyle(T2KstyleIndex, localStyleName);
 
-  auto t2kstyle = SetT2KStyle(T2KstyleIndex, localStyleName);
-  gROOT->SetStyle(t2kstyle->GetName());
+  gROOT->SetStyle(_t2kstyle->GetName());
   gROOT->ForceStyle();
 
   if (_event_list_file_name == "") {
@@ -116,7 +114,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
-    std::cout << "[                    ]   Nevents = " << N_events << "\r[";
+    std::cout << "[                               ]   Nevents = " << N_events << "\r[";
   }
 
 
@@ -124,7 +122,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_verbose > 1)
       std::cout << "Event " << eventID << std::endl;
 
-    if (_verbose == 1 && (eventID%(N_events/20)) == 0)
+    if (_verbose == 1 && (eventID%(N_events/30)) == 0)
       std::cout << "." << std::flush;
 
     _chain->GetEntry(EventList[eventID]);

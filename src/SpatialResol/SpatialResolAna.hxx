@@ -2,6 +2,7 @@
 #define SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
 
 #include "AnalysisBase.hxx"
+#include "CrossingSelection.hxx"
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {

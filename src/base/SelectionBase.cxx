@@ -1,7 +1,5 @@
 #include "SelectionBase.hxx"
 
-#include <iostream>
-
 bool SelectionBase::Initialize() {
   std::cout << "WARNING. The default selection is initialised. The result is always true" << std::endl;
   return true;
