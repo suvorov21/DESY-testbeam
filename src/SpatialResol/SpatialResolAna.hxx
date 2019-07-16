@@ -2,18 +2,19 @@
 #define SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
 
 #include "AnalysisBase.hxx"
-#include "SelectionBase.hxx"
 
+/// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
  public:
   SpatialResolAna(int argc, char** argv);
   virtual ~SpatialResolAna() {;}
 
-  // Initialise histoes, input files, selections
+  /// Initialise histoes, input files, selections
   bool Initialize();
-  // Process the selection output called Event
+  /// Process the selection output called Event
   bool ProcessEvent(const Event event);
-  // write output files (histos, trees)
+  /// Write output files (histos, trees)
+  /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
 };
 

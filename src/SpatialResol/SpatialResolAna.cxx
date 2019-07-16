@@ -1,7 +1,6 @@
-#include <iostream>
+//#include <iostream>
 
 #include "SpatialResolAna.hxx"
-#include "SelectionBase.hxx"
 
 SpatialResolAna::SpatialResolAna(int argc, char** argv): AnalysisBase(argc, argv) {
   (void)argc;

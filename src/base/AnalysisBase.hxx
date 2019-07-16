@@ -2,31 +2,30 @@
 #define SRC_BASE_ANALYSISBASE_HXX_
 
 #include <string>
-#include <vector>
 
 #include "TString.h"
 #include "TFile.h"
 #include "TChain.h"
 #include "TApplication.h"
 
-#include "Geom.hxx"
 #include "SelectionBase.hxx"
 
+/// Main analysis template
 class AnalysisBase {
  public:
   AnalysisBase(int argc, char** argv);
   virtual ~AnalysisBase() {;}
 
-  // Initialise histoes, input files, selections
+  /// Initialise histoes, input files, selections
   virtual bool Initialize();
-  // loop over TChain entries
+  /// Loop over TChain entries. Can use pre-defined event list
   virtual bool Loop(std::vector<Int_t> EventList);
-  // Process the selection output called Event
+  /// Process the selection output called Event
   virtual bool ProcessEvent(const Event event);
-  // write output files (histos, trees)
+  /// Write output files (histos, trees)
   virtual bool WriteOutput();
 
-  // print usage
+  /// Print usage
   void help(const std::string name);
 
   std::vector<Int_t> GetEventList() {return _EventList;}
@@ -43,17 +42,17 @@ class AnalysisBase {
 
   TChain* _chain;
 
-  // what we read from input
+  /// what we read from input
   Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
 
-  // outout vector to put in the file
+  /// outout vector to put in the file
   std::vector<TObject*> _output_vector;
 
-  // Selection. You can use plenty in the analysis.
-  // At least one should be defines
+  /// Selection. You can use plenty in the analysis.
+  /** At least one should be defines */
   SelectionBase* _selection;
 
-  // DEBUG vars
+  /// DEBUG vars
   Int_t _verbose;
   bool _batch;
   bool _test_mode;

@@ -1,3 +1,6 @@
+#ifndef UTILS_SETT2KSTYLE_HXX_
+#define UTILS_SETT2KSTYLE_HXX_
+
 // --- T2K style ---
 
 #include <TColor.h>
@@ -6,7 +9,8 @@
 #include "TH1F.h"
 #include "TPad.h"
 
-// plotters options
+/// Plotters options
+/** Default canvas size value */
 namespace plot {
   const int canvas_x_size = 800;
   const int canvas_y_size = 630;
@@ -174,5 +178,7 @@ int AddGridLinesToPad(TPad *thisPad) {
   thisPad->SetGridy();
   return(0);
 }
+
+#endif // UTILS_SETT2KSTYLE_HXX_
 
 
