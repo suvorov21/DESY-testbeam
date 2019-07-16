@@ -28,7 +28,6 @@ $(info Compiler : $(CXX) $(CXXFLAGS))
 $(info Linker   : $(CXX) $(LDFLAGS))
 $(info RLXX     : $(RLXX))
 $(info )
-$(info Base directories : $(SOURCEDIR))
 $(info Base Sources     : $(SRC))
 $(info Base Objects     : $(OBJ))
 $(info Binary directory : $(BINDIR))
@@ -42,9 +41,6 @@ SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
 	$(CXX) $^ $(OutPutOpt) $(BINDIR)/$@.$(OutPutSuf) $(RLXX)
 	rm $(OBJDIR)/*.$(ObjSuf)
 	@echo "Compilation done"
-
-$(OBJDIR)/%.o: SpatialResol/%.cxx SpatialResol/%.hxx
-	$(CXX) -c $(OutPutOpt) $@ $< $(CXXFLAGS)
 # end of your analysis declaration
 
 $(OBJDIR)/%.o: */%.cxx
