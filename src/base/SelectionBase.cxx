@@ -10,9 +10,16 @@ bool SelectionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][ge
   (void)padAmpl;
   (void)event;
 
+  // 3D vector
   std::vector<std::vector<int> > twoD_temp = GetEmptyEvent();
-
+  twoD_temp[31][35] = 500;
   event.twoD.push_back(twoD_temp);
+
+  // vector of 3D array
+  TwoDdisplay two_display_struct;
+  two_display_struct.twoD[31][35] = 500;
+  event.twoD_vector.push_back(two_display_struct);
+
   return true;
 }
 
@@ -20,7 +27,7 @@ std::vector<std::vector<Int_t> > SelectionBase::GetEmptyEvent() {
   std::vector<std::vector<Int_t> > vec;
   vec.resize(geom::nPadx);
   for (uint it = 0; it < vec.size(); ++it)
-    vec.resize(geom::nPady);
+    vec[it].resize(geom::nPady, 0);
 
   return vec;
 }
