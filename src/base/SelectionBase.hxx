@@ -14,7 +14,7 @@
 /// The selection output structure
 /** by default it's a vector of 2D event displays */
 struct Event {
-  std::vector<Int_t> twoD[geom::nPadx][geom::nPady];
+  std::vector<std::vector<std::vector<Int_t> > > twoD;
 };
 
 /// Template for the selection class
@@ -26,6 +26,8 @@ class SelectionBase {
   virtual bool Initialize();
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
                   Event& event);
+
+  virtual std::vector<std::vector<Int_t> > GetEmptyEvent();
 };
 
 #endif  // SRC_BASE_SELECTIONBASE_HXX_
