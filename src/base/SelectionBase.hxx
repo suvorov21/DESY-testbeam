@@ -21,6 +21,7 @@ struct TwoD {
 struct Event {
   std::vector<std::vector<std::vector<Int_t> > > twoD;
   std::vector<TwoD> twoD_vector;
+  int trackNum;
 };
 
 /// Template for the selection class

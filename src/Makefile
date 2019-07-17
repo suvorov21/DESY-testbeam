@@ -34,14 +34,17 @@ $(info Binary directory : $(BINDIR))
 $(info -------------------------------------)
 $(info )
 
-all: build SpatialResol
+all: build SpatialResol dEdx cleanObj
 
 # declare your analysis like this
 SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
 	$(CXX) $^ $(OutPutOpt) $(BINDIR)/$@.$(OutPutSuf) $(RLXX)
-	rm $(OBJDIR)/*.$(ObjSuf)
 	@echo "Compilation done"
 # end of your analysis declaration
+
+dEdx: $(OBJ) $(OBJDIR)/dEdxAna.o
+	$(CXX) $^ $(OutPutOpt) $(BINDIR)/$@.$(OutPutSuf) $(RLXX)
+	@echo "Compilation done"
 
 $(OBJDIR)/%.o: */%.cxx
 	$(CXX) -c $(OutPutOpt) $@ $< $(CXXFLAGS)
@@ -57,3 +60,6 @@ clean:
 	rm -f $(OBJDIR)/*.$(ObjSuf)
 	rm -r $(BINDIR)/*.$(OutPutSuf)
 
+.PHONY: cleanObj
+cleanObj:
+	rm -f $(OBJDIR)/*.$(ObjSuf)

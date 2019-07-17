@@ -96,10 +96,10 @@ bool AnalysisBase::Initialize() {
   // WARNING temporary commented for debugging
   // auto _file_out = new TFile(_file_out_name.Data(), "NEW");
 
-  // Initialise histoes
+  // Initialize histoes
   // * do it in your analysis *
 
-  // Initial;ise selection
+  // Initialize selection
   // * do it in your analysis *
 
   std::cout << "done" << std::endl;
@@ -110,13 +110,12 @@ bool AnalysisBase::Initialize() {
 bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   auto N_events = static_cast<Int_t>(EventList.size());
   if (_test_mode)
-    N_events = std::min(static_cast<Int_t>(EventList.size()), 30);
+    N_events = std::min(static_cast<Int_t>(EventList.size()), 1000);
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
     std::cout << "[                               ]   Nevents = " << N_events << "\r[";
   }
-
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
     if (_verbose > 1)
@@ -128,6 +127,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _chain->GetEntry(EventList[eventID]);
 
     Event event;
+    event.trackNum = 0;
 
     if (!_selection->SelectEvent(_padAmpl, event))
       continue;
@@ -150,12 +150,15 @@ bool AnalysisBase::ProcessEvent(const Event event) {
 
 bool AnalysisBase::WriteOutput() {
   // WARNING add error
+  
+  auto _file_out = new TFile(_file_out_name.Data(), "RECREATE");
   if (!_file_out)
     return false;
 
   _file_out->cd();
 
   auto size = static_cast<int>(_output_vector.size());
+  std::cout << "size is: " << size << std::endl;
   for (auto i = 0; i < size; ++i)
     _output_vector[i]->Write();
 
