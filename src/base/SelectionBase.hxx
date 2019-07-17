@@ -11,15 +11,16 @@
 
 #include "Geom.hxx"
 
-struct TwoDdisplay {
-  Int_t twoD[geom::nPadx][geom::nPady];
+struct TwoD {
+  Int_t A[geom::nPadx][geom::nPady] = {0};
+  Int_t T[geom::nPadx][geom::nPady] = {0};
 };
 
 /// The selection output structure
 /** by default it's a vector of 2D event displays */
 struct Event {
   std::vector<std::vector<std::vector<Int_t> > > twoD;
-  std::vector<TwoDdisplay> twoD_vector;
+  std::vector<TwoD> twoD_vector;
 };
 
 /// Template for the selection class

@@ -15,10 +15,10 @@ bool SelectionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][ge
   twoD_temp[31][35] = 500;
   event.twoD.push_back(twoD_temp);
 
-  // vector of 3D array
-  TwoDdisplay two_display_struct;
-  two_display_struct.twoD[31][35] = 500;
-  event.twoD_vector.push_back(two_display_struct);
+  // vector of 2D array
+  TwoD EventDisplay;
+  EventDisplay.A[31][35] = 500;
+  event.twoD_vector.push_back(EventDisplay);
 
   return true;
 }
