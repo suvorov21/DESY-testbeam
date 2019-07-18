@@ -25,7 +25,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bvdm");
+    int c = getopt(argc, argv, "i:o:bv:dmt:");
     if (c < 0) break;
     switch (c) {
       case 'i' : _file_in_name     = optarg;       break;
@@ -34,6 +34,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
       case 'm' : help(argv[0]);                    break;
+      case 't' : _iteration        = atoi(optarg); break;
       case '?' : help(argv[0]);
     }
   }
@@ -93,8 +94,13 @@ bool AnalysisBase::Initialize() {
   }
 
   // Open the output file
-  // WARNING temporary commented for debugging
-  // auto _file_out = new TFile(_file_out_name.Data(), "NEW");
+  _file_out = new TFile(_file_out_name.Data(), "NEW");
+  if (!_file_out->IsOpen()) {
+    std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+    std::cerr << "File already exists or directory is not writable" << std::endl;
+    std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
+    exit(1);
+  }
 
   // Initialize histoes
   // * do it in your analysis *
@@ -150,19 +156,21 @@ bool AnalysisBase::ProcessEvent(const Event event) {
 
 bool AnalysisBase::WriteOutput() {
   // WARNING add error
-  
-  auto _file_out = new TFile(_file_out_name.Data(), "RECREATE");
-  if (!_file_out)
+
+  if (!_file_out->IsOpen())
     return false;
+
+  std::cout << "Writing standard output..................";
 
   _file_out->cd();
 
   auto size = static_cast<int>(_output_vector.size());
-  std::cout << "size is: " << size << std::endl;
   for (auto i = 0; i < size; ++i)
     _output_vector[i]->Write();
 
   _file_out->Close();
+
+  std::cout << "done     " << "Write  " << size << " objects" << std::endl;
 
   return true;
 }

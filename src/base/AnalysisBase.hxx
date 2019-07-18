@@ -30,6 +30,11 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() {return _EventList;}
 
  protected:
+  /// iteration number. Starting from 0
+  // TODO remove it out to particular analysis
+  // Don't know how to parse CLI in different classes
+  Int_t   _iteration;
+
   TString _file_in_name;
   TString _file_out_name;
 
