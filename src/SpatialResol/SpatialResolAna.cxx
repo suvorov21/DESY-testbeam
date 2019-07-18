@@ -10,8 +10,8 @@ bool SpatialResolAna::Initialize() {
   AnalysisBase::Initialize();
 
   // Initilise selection
-  _selection = new CrossingReconstruction();
-  _selection->Initialize();
+  _reconstruction = new CrossingReconstruction();
+  _reconstruction->Initialize();
 
   return true;
 }

@@ -49,4 +49,4 @@ class DBSCANReconstruction: public ReconstructionBase {
 
 };
 
-#endif  // SRC_Reconstruction_DBSCANRECONSTRUCTION_HXX_
+#endif  // SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_

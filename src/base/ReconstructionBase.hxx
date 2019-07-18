@@ -24,6 +24,8 @@ struct Event {
   int trackNum;
 };
 
+#include "Selection.hxx"
+
 /// Template for the Reconstruction class
 class ReconstructionBase {
  public:

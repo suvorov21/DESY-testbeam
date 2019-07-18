@@ -49,7 +49,7 @@ class AnalysisBase {
 
   /// Selection. You can use plenty in the analysis.
   /** At least one should be defines */
-  ReconstructionBase* _selection;
+  ReconstructionBase* _reconstruction;
 
   /// T2K plotting style
   TStyle* _t2kstyle;

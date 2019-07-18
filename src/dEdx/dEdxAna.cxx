@@ -14,8 +14,8 @@ bool dEdxAna::Initialize() {
   _selEvents = 0;
 
   // Initilise selection
-  _selection = new DBSCANReconstruction();
-  _selection->Initialize();
+  _reconstruction = new DBSCANReconstruction();
+  _reconstruction->Initialize();
 
   return true;
 }
@@ -23,6 +23,7 @@ bool dEdxAna::Initialize() {
 bool dEdxAna::ProcessEvent(const Event event) {
   double alpha = 0.625;
   _selEvents++;
+  std::cout << "sel::GetMMHits(event,0): " << sel::GetMMHits(event,0) << std::endl;
   if(_selEvents%100 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
   for(int num=0; num<event.trackNum; num++){
     std::vector <double> QsegmentS;   

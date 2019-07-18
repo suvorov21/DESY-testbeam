@@ -21,7 +21,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
   _file_out   = NULL;
 
   _chain      = NULL;
-  _selection  = NULL;
+  _reconstruction  = NULL;
 
   // read CLI
   for (;;) {
@@ -129,7 +129,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     Event event;
     event.trackNum = 0;
 
-    if (!_selection->SelectEvent(_padAmpl, event))
+    if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
 
     ProcessEvent(event);
