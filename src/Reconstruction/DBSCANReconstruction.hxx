@@ -1,9 +1,9 @@
-#ifndef SRC_SELECTION_DBSCANSELECTION_HXX_
-#define SRC_SELECTION_DBSCANSELECTION_HXX_
+#ifndef SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
+#define SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 
-#include "SelectionBase.hxx"
+#include "ReconstructionBase.hxx"
 
-//! Selection for passing through tracks
+//! Reconstruction for passing through tracks
 
 //! Explain it
 //! 
@@ -29,10 +29,10 @@ struct Cluster{
     int nodes[1000] = {-999}; // node ID of nodes belonging to cluster
 };
 
-class DBSCANSelection: public SelectionBase {
+class DBSCANReconstruction: public ReconstructionBase {
  public:
-  DBSCANSelection();
-  virtual ~DBSCANSelection() {;}
+  DBSCANReconstruction();
+  virtual ~DBSCANReconstruction() {;}
 
   virtual bool Initialize();
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Event &event);
@@ -49,4 +49,4 @@ class DBSCANSelection: public SelectionBase {
 
 };
 
-#endif  // SRC_SELECTION_CROSSINGSELECTION_HXX_
+#endif  // SRC_Reconstruction_DBSCANRECONSTRUCTION_HXX_

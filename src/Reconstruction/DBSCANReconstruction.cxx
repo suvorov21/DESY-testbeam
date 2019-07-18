@@ -1,4 +1,4 @@
-#include "DBSCANSelection.hxx"
+#include "DBSCANReconstruction.hxx"
 #include <TCanvas.h>
 #include <TStyle.h>
 #include <TNtuple.h>
@@ -6,23 +6,23 @@
 #include <TH2F.h>
 #include <TH3F.h>
 
-DBSCANSelection::DBSCANSelection(): SelectionBase() {
+DBSCANReconstruction::DBSCANReconstruction(): ReconstructionBase() {
   ;
 }
 
-bool DBSCANSelection::Initialize() {
-  std::cout << "Initialize crossing selection............";
+bool DBSCANReconstruction::Initialize() {
+  std::cout << "Initialize DBSCAN Reconstruction............";
 
   std::cout << "done" << std::endl;
   return true;
 }
 
-double DBSCANSelection::MeasureDistance(Node a, Node b){
+double DBSCANReconstruction::MeasureDistance(Node a, Node b){
     double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/1 ,2); // distance squared.
     return pow(distance2,0.5);
 }
 
-std::vector<Node> DBSCANSelection::FindClusters(std::vector<Node> nodes){
+std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
   std::vector <Node> nodesToCheck;
   int clusterID = -1;
   int clustered = 0;
@@ -67,7 +67,7 @@ std::vector<Node> DBSCANSelection::FindClusters(std::vector<Node> nodes){
   return nodes;
 }
 
-std::vector<Node> DBSCANSelection::FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]){
+std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]){
   std::vector<Node> nodes;
   // int window = 20;
   // for(int i=0; i<geom::nPadx; i++){
@@ -119,7 +119,7 @@ std::vector<Node> DBSCANSelection::FillNodes(const Int_t padAmpl[geom::nPadx][ge
   return nodes;
 }
 
-std::vector<Cluster> DBSCANSelection::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
+std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
   std::vector<Cluster> clusters;
   int numClusters = 0;
   for (auto n:nodes) if(n.c > numClusters) numClusters = n.c;
@@ -141,7 +141,7 @@ std::vector<Cluster> DBSCANSelection::FindClustersLargerThan(std::vector<Node> n
   return clusters;
 }
 
-std::vector<Node> DBSCANSelection::UpdateNodes(std::vector<Cluster> clusters, std::vector <Node> nodes){
+std::vector<Node> DBSCANReconstruction::UpdateNodes(std::vector<Cluster> clusters, std::vector <Node> nodes){
     std::vector<Node> updated_nodes;
     for(auto n:nodes){
       n.c = -1;
@@ -156,7 +156,7 @@ std::vector<Node> DBSCANSelection::UpdateNodes(std::vector<Cluster> clusters, st
     return updated_nodes;
 }
 
-void DBSCANSelection::DrawNodes(std::vector<Node> nodes){
+void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
@@ -190,7 +190,7 @@ void DBSCANSelection::DrawNodes(std::vector<Node> nodes){
   delete event3D;
 }
 
-bool DBSCANSelection::CheckQuality(std::vector<Node> nodes){
+bool DBSCANReconstruction::CheckQuality(std::vector<Node> nodes){
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
@@ -220,7 +220,7 @@ bool DBSCANSelection::CheckQuality(std::vector<Node> nodes){
   return false;
 }
 
-bool DBSCANSelection::FillOutput(std::vector<Node> nodes, int numTracks, Event& event){
+bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, int numTracks, Event& event){
   
   for(int num=0; num<numTracks; num++){  
     std::vector<std::vector<Int_t>> temp_evt = GetEmptyEvent();
@@ -242,7 +242,7 @@ bool DBSCANSelection::FillOutput(std::vector<Node> nodes, int numTracks, Event& 
   return true;
 }
 
-bool DBSCANSelection::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
                                   Event& event) {
 
   std::vector<Node> nodes = FindClusters(FillNodes(padAmpl));
@@ -251,7 +251,7 @@ bool DBSCANSelection::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][
   // if(nodes.size()) DrawNodes(new_nodes);
   //if(nodes.size()>50) return CheckQuality(new_nodes);
 
-  //if(nodes.size()) if(clusters.size() == 1) if(CheckQuality(new_nodes)) DrawNodes(new_nodes);
+  if(nodes.size()) /*if(clusters.size() == 1) if(CheckQuality(new_nodes))*/ DrawNodes(new_nodes);
   if(nodes.size()) /*if(clusters.size() == 1)*/ if(CheckQuality(new_nodes)) return FillOutput(new_nodes,clusters.size(),event);
   return false;
 }

@@ -1,5 +1,5 @@
-#ifndef SRC_BASE_SELECTIONBASE_HXX_
-#define SRC_BASE_SELECTIONBASE_HXX_
+#ifndef SRC_BASE_RECONSTRUCTIONBASE_HXX_
+#define SRC_BASE_RECONSTRUCTIONBASE_HXX_
 
 /** @cond */
 #include <vector>
@@ -16,7 +16,7 @@ struct TwoD {
   Int_t T[geom::nPadx][geom::nPady] = {0};
 };
 
-/// The selection output structure
+/// The Reconstruction output structure
 /** by default it's a vector of 2D event displays */
 struct Event {
   std::vector<std::vector<std::vector<Int_t> > > twoD;
@@ -24,11 +24,11 @@ struct Event {
   int trackNum;
 };
 
-/// Template for the selection class
-class SelectionBase {
+/// Template for the Reconstruction class
+class ReconstructionBase {
  public:
-  SelectionBase() {;}
-  virtual ~SelectionBase() {;}
+  ReconstructionBase() {;}
+  virtual ~ReconstructionBase() {;}
 
   virtual bool Initialize();
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
@@ -37,4 +37,4 @@ class SelectionBase {
   virtual std::vector<std::vector<Int_t> > GetEmptyEvent();
 };
 
-#endif  // SRC_BASE_SELECTIONBASE_HXX_
+#endif  // SRC_BASE_RECONSTRUCTIONBASE_HXX_

@@ -6,7 +6,7 @@
 #include "TChain.h"
 #include "TApplication.h"
 
-#include "SelectionBase.hxx"
+#include "ReconstructionBase.hxx"
 #include "SetT2KStyle.hxx"
 
 /// Main analysis template
@@ -49,7 +49,7 @@ class AnalysisBase {
 
   /// Selection. You can use plenty in the analysis.
   /** At least one should be defines */
-  SelectionBase* _selection;
+  ReconstructionBase* _selection;
 
   /// T2K plotting style
   TStyle* _t2kstyle;

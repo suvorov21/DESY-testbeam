@@ -1,11 +1,11 @@
-#include "SelectionBase.hxx"
+#include "ReconstructionBase.hxx"
 
-bool SelectionBase::Initialize() {
-  std::cout << "WARNING. The default selection is initialised. The result is always true" << std::endl;
+bool ReconstructionBase::Initialize() {
+  std::cout << "WARNING. The default Reconstruction is initialised. The result is always true" << std::endl;
   return true;
 }
 
-bool SelectionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+bool ReconstructionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
                                 Event& event) {
   (void)padAmpl;
   (void)event;
@@ -23,7 +23,7 @@ bool SelectionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][ge
   return true;
 }
 
-std::vector<std::vector<Int_t> > SelectionBase::GetEmptyEvent() {
+std::vector<std::vector<Int_t> > ReconstructionBase::GetEmptyEvent() {
   std::vector<std::vector<Int_t> > vec;
   vec.resize(geom::nPadx);
   for (uint it = 0; it < vec.size(); ++it)

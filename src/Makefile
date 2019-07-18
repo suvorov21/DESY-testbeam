@@ -15,10 +15,10 @@ OBJDIR 				=	../obj/
 
 RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer -g
 # add include folders
-CXXFLAGS += $(ROOTCFLAGS) -I./base/ -I./Selection/ -I../utils/
+CXXFLAGS += $(ROOTCFLAGS) -I./base/ -I./Reconstruction/ -I../utils/
 
 BASESRC 		= 	base/
-BASESEL 		=		Selection/
+BASESEL 		=		Reconstruction/
 SRC 				= 	$(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf)))
 OBJ 				= 	$(addprefix $(OBJDIR)/, $(SRC:.$(SrcSuf)=.$(ObjSuf)))
 

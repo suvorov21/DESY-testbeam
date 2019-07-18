@@ -14,7 +14,7 @@ bool dEdxAna::Initialize() {
   _selEvents = 0;
 
   // Initilise selection
-  _selection = new DBSCANSelection();
+  _selection = new DBSCANReconstruction();
   _selection->Initialize();
 
   return true;

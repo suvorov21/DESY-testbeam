@@ -2,7 +2,7 @@
 #define SRC_DEDX_DEDXANA_HXX_
 
 #include "AnalysisBase.hxx"
-#include "DBSCANSelection.hxx"
+#include "DBSCANReconstruction.hxx"
 
 /// Spatial resolution analysis
 class dEdxAna: public AnalysisBase {
