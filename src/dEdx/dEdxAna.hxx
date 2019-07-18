@@ -3,6 +3,7 @@
 
 #include "AnalysisBase.hxx"
 #include "DBSCANReconstruction.hxx"
+#include "Selection.hxx"
 
 /// Spatial resolution analysis
 class dEdxAna: public AnalysisBase {
