@@ -11,7 +11,7 @@ DBSCANReconstruction::DBSCANReconstruction(): ReconstructionBase() {
 }
 
 bool DBSCANReconstruction::Initialize() {
-  std::cout << "Initialize DBSCAN Reconstruction............";
+  std::cout << "Initialize DBSCAN Reconstruction.........";
 
   std::cout << "done" << std::endl;
   return true;
@@ -45,11 +45,11 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
         if(MeasureDistance(origin,neighbor) <= MIN_DIST){
           close_nodes++;
           if(neighbor.c < 0){
-            bool found = false;                         
+            bool found = false;
             for (auto nTc:nodesToCheck){
               if(nTc.id == neighbor.id) found = true;
             }
-            if(!found) tmpNodes.push_back(neighbor); 
+            if(!found) tmpNodes.push_back(neighbor);
           }
         }
       }
@@ -136,8 +136,8 @@ std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<No
       clusters.push_back(cluster);
     }
   }
-  // std::cout << "# of clusters: " << numClusters << std::endl; 
-  // std::cout << "# of accepted clusters: " << acceptedClusters << std::endl; 
+  // std::cout << "# of clusters: " << numClusters << std::endl;
+  // std::cout << "# of accepted clusters: " << acceptedClusters << std::endl;
   return clusters;
 }
 
@@ -163,7 +163,7 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
-  for (auto n:nodes){ 
+  for (auto n:nodes){
     event3D->Fill(n.t,n.y,n.x,n.c);
     MM->Fill(n.x,n.y,n.q);
   }
@@ -172,7 +172,7 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   canv->Divide(2,1);
   canv->cd(1);
 
-  MM->Draw("COLZ"); 
+  MM->Draw("COLZ");
 
   canv->cd(2);
   event3D->Draw("x:y:z:c","","box2");
@@ -180,7 +180,7 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
   htemp->GetYaxis()->SetLimits(0,geom::nPady);
   htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");       
+  htemp->SetTitle("");
   canv->Update();
   canv->WaitPrimitive();
   delete htemp;
@@ -194,7 +194,7 @@ bool DBSCANReconstruction::CheckQuality(std::vector<Node> nodes){
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
-  for (auto n:nodes){ 
+  for (auto n:nodes){
     event3D->Fill(n.t,n.y,n.x,n.c);
     MM->Fill(n.x,n.y,n.q);
   }
@@ -221,13 +221,13 @@ bool DBSCANReconstruction::CheckQuality(std::vector<Node> nodes){
 }
 
 bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, int numTracks, Event& event){
-  
-  for(int num=0; num<numTracks; num++){  
+
+  for(int num=0; num<numTracks; num++){
     std::vector<std::vector<Int_t>> temp_evt = GetEmptyEvent();
     for (int itx = 0; itx < geom::nPadx; ++itx)
-      for (uint ity = 0; ity < geom::nPady; ++ity){      
+      for (uint ity = 0; ity < geom::nPady; ++ity){
         temp_evt[itx][ity] = 0;
-        // std::cout << itx << "," << ity << ", " << temp_evt[itx][ity] << std::endl; 
+        // std::cout << itx << "," << ity << ", " << temp_evt[itx][ity] << std::endl;
       }
     for(auto n:nodes){
       temp_evt[n.x][n.y] = n.q;
@@ -237,7 +237,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, int numTracks, Ev
   }
 
   // std::cout << "trackNum:  " << event.trackNum << std::endl;
-  // std::cout << "eventsNum: " << event.twoD.size() << std::endl; 
+  // std::cout << "eventsNum: " << event.twoD.size() << std::endl;
 
   return true;
 }
