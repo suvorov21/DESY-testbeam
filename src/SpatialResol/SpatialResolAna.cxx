@@ -45,7 +45,7 @@ bool SpatialResolAna::Initialize() {
     }
   } else {
     _PRF_function = new TF1("PRF_function",
-      " [0] * exp(-4*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", resol_min, resol_max);
+      " [0] * exp(-4*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "r");
     _PRF_function->SetParName(2, "w");
