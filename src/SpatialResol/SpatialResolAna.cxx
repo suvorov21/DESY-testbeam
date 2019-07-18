@@ -3,20 +3,35 @@
 #include "SpatialResolAna.hxx"
 
 SpatialResolAna::SpatialResolAna(int argc, char** argv): AnalysisBase(argc, argv) {
-  (void)argc;
+  _iteration = -1;
+
+  for (;;) {
+    int c = getopt(argc, argv, "i:o:bvdmt");
+    if (c < 0) break;
+    switch (c) {
+      case 't' : _iteration     = atoi(optarg);    break;
+    }
+  }
+
+  if (_iteration == -1) {
+    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna(). Iteration should be defined as a input param" << std::endl;
+    exit(1);
+  }
+
 }
 
 bool SpatialResolAna::Initialize() {
   AnalysisBase::Initialize();
 
   // Initilise selection
-  _reconstruction = new CrossingReconstruction();
-  _reconstruction->Initialize();
+  _selection = new DBSCANSelection();
+  _selection->Initialize();
 
   return true;
 }
 
 bool SpatialResolAna::ProcessEvent(const Event event) {
+
   return true;
 }
 

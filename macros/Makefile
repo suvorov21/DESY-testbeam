@@ -29,8 +29,8 @@ OBJDIR 				=	../obj/
 # add utils: styles, geometry, etc
 SRC=$(SRC)
 
-OBJS= $(SRC:.$(SrcSuf)=.$(ObjSuf))
-MCR=  $(BINDIR)$(SRC:.$(SrcSuf)=)
+OBJS= $(OBJDIR)/$(notdir $(SRC:.$(SrcSuf)=.$(ObjSuf)))
+MCR=  $(BINDIR)/$(notdir $(SRC:.$(SrcSuf)=.$(OutPutSuf)))
 RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer
 
 ##turning on debuging

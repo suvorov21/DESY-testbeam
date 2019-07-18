@@ -2,7 +2,10 @@
 #define SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
 
 #include "AnalysisBase.hxx"
-#include "CrossingReconstruction.hxx"
+#include "CrossingSelection.hxx"
+#include "DBSCANSelection.hxx"
+
+#include "TF1.h"
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
@@ -17,6 +20,9 @@ class SpatialResolAna: public AnalysisBase {
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
+ private:
+  Int_t   _iteration;
+  TF1*    _PRF_function;
 };
 
 #endif  // SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
