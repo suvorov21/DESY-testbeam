@@ -13,7 +13,8 @@
 //                 x
 //
 
-// Geometry
+/// Geometry definition
+/** Number of pads, dimensions and time. */
 namespace geom
 {
     static const int nPadx = 36;
