@@ -25,6 +25,7 @@ struct Event {
   std::vector<std::vector<std::vector<Int_t> > > twoD;
   //std::vector<TwoD> twoD_vector;
   int trackNum;
+  Int_t ID;
 };
 
 /// Template for the Reconstruction class

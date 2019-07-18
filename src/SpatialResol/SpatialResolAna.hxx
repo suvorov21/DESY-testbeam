@@ -30,7 +30,7 @@ class SpatialResolAna: public AnalysisBase {
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
 
-  /// Chi2 function of the fit
+  /// Chi2 function of the track fit
   TH1F* _Chi2_track;
 
   /// Residuals X_track - X_fit histoes
@@ -57,8 +57,14 @@ class SpatialResolAna: public AnalysisBase {
   TH2F* _PRF_histo_3pad;
   TH2F* _PRF_histo_4pad;
 
+  /// Average uncertainty from the previous iteration
+  Float_t _uncertainty;
+
   // PRF profiling graphs
   TGraphErrors* _PRF_graph;
+
+  /// vector of events IDs that passed the Reco and selection
+  std::vector<Int_t> _passed_events;
 
   /// Chi2 track scan delta
   const float   scan_delta    = 0.1;

@@ -37,6 +37,22 @@ bool SpatialResolAna::Initialize() {
 
       _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
       _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
+      auto uncertainty_hist = (TH1F*)_Prev_iter_file->Get("resol_final");
+      _uncertainty = 0;
+      for (auto i = 2; i < geom::nPadx; ++i)
+        _uncertainty += uncertainty_hist->GetBinContent(i) / (geom::nPadx - 2);
+
+      Int_t read_var;
+      auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
+      event_tree->SetBranchAddress("PassedEvents",    &read_var);
+      std::vector<Int_t> vec;
+      vec.clear();
+      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+        event_tree->GetEntry(i);
+        vec.push_back(read_var);
+      }
+      this->SetEventList(vec);
+
     }
     if (!_PRF_function) {
       std::cerr << "ERROR. SpatialResolAna::Initialize(). PRF function is not specified" << std::endl;
@@ -103,6 +119,8 @@ bool SpatialResolAna::Initialize() {
     _output_vector.push_back(_resol_col_hist[j]);
   }
 
+  _passed_events.clear();
+
   std::cout << "done" << std::endl;
   std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
   for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
@@ -117,6 +135,9 @@ bool SpatialResolAna::Initialize() {
 }
 
 bool SpatialResolAna::ProcessEvent(const Event event) {
+
+  if (event.twoD.size())
+    _passed_events.push_back(event.ID);
 
   for (uint trackId = 0; trackId < event.twoD.size(); ++trackId) {
 
@@ -254,7 +275,7 @@ bool SpatialResolAna::ProcessEvent(const Event event) {
     }
 
         // second loop over columns
-    for (Int_t it_x = 1; it_x < geom::nPadx; ++it_x) {
+    for (Int_t it_x = 1; it_x < geom::nPadx - 1; ++it_x) {
 
       if (true_track[it_x]  == -999.)
         continue;
@@ -371,6 +392,14 @@ bool SpatialResolAna::WriteOutput() {
 
   auto file = new TFile(_file_out_name.Data(), "UPDATE");
   // write
+  auto tree = new TTree("EventTree", "");
+  Int_t var = 0;
+  tree->Branch("PassedEvents",     var);
+  for (uint i = 0; i < _passed_events.size(); ++i) {
+    var = i;
+    tree->Fill();
+  }
+  tree->Write("", TObject::kOverwrite);
   file->Close();
 
   if (_Prev_iter_file)

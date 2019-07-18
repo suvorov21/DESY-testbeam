@@ -27,6 +27,7 @@ class AnalysisBase {
   /// Print usage
   void help(const std::string name);
 
+  void SetEventList(const std::vector<Int_t> vec) {_EventList = vec;}
   std::vector<Int_t> GetEventList() {return _EventList;}
 
  protected:
