@@ -124,7 +124,7 @@ class T2K {
     // do not display any of the standard histogram decorations
     t2kStyle->SetOptTitle(0);
     t2kStyle->SetOptStat(0);
-    t2kStyle->SetOptFit(0);
+    t2kStyle->SetOptFit(1); // switch fitter pad on
 
     // put tick marks on top and RHS of plots
     t2kStyle->SetPadTickX(1);
