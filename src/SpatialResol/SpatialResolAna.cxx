@@ -149,7 +149,7 @@ bool SpatialResolAna::Initialize() {
   return true;
 }
 
-bool SpatialResolAna::ProcessEvent(const Event event) {
+bool SpatialResolAna::ProcessEvent(const Event& event) {
 
   if (event.twoD.size())
     _passed_events.push_back(event.ID);

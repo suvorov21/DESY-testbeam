@@ -20,17 +20,17 @@ bool dEdxAna::Initialize() {
   return true;
 }
 
-bool dEdxAna::ProcessEvent(const Event event) {
+bool dEdxAna::ProcessEvent(const Event& event) {
   double alpha = 0.625;
   _selEvents++;
   std::cout << "sel::GetMMHits(event,0): " << sel::GetMMHits(event,0) << std::endl;
   if(_selEvents%100 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
   for(int num=0; num<event.trackNum; num++){
-    std::vector <double> QsegmentS;   
+    std::vector <double> QsegmentS;
     for (int itx = 0; itx < geom::nPadx; ++itx){
-      double Qsegment = 0;      
+      double Qsegment = 0;
       for (uint ity = 0; ity < geom::nPady; ++ity){
-        if (!event.twoD[num][itx][ity]) continue;  
+        if (!event.twoD[num][itx][ity]) continue;
         Qsegment+=event.twoD[num][itx][ity];
       }
       if(Qsegment) QsegmentS.push_back(Qsegment);

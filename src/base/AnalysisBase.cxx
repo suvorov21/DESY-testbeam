@@ -148,7 +148,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   return true;
 }
 
-bool AnalysisBase::ProcessEvent(const Event event) {
+bool AnalysisBase::ProcessEvent(const Event& event) {
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
@@ -176,7 +176,7 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
-void AnalysisBase::help(const std::string name) {
+void AnalysisBase::help(const std::string& name) {
   std::cout << name << " usage\n" << std::endl;
   std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
   std::cout << "   -o <output_path>     : output files path" << std::endl;

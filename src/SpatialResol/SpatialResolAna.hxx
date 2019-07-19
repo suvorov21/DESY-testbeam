@@ -20,7 +20,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
-  bool ProcessEvent(const Event event);
+  bool ProcessEvent(const Event& event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
