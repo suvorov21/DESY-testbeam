@@ -60,7 +60,7 @@ bool SpatialResolAna::Initialize() {
       exit(1);
     }
   } else {
-    _PRF_function = new TF1("PRF_function",
+    /*_PRF_function = new TF1("PRF_function",
       " [0] * exp(-4*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "r");
@@ -68,8 +68,22 @@ bool SpatialResolAna::Initialize() {
 
     auto c = 0.8;
     auto r = 0.5;
-    auto s = 0.007;
-    _PRF_function->SetParameters(c, r, s);
+    auto s = 0.7;
+    _PRF_function->SetParameters(c, r, s);*/
+
+    _PRF_function  = new TF1("PRF_function", "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)", prf_min, prf_max);
+    _PRF_function->SetParName(0, "Const");
+    _PRF_function->SetParName(1, "a2");
+    _PRF_function->SetParName(2, "a4");
+    _PRF_function->SetParName(3, "b2");
+    _PRF_function->SetParName(4, "b4");
+
+    double co = 0.83;
+    double a2 = -0.84;
+    double a4 = 0.83;
+    double b2 = 25.2;
+    double b4 = 0.83;
+    _PRF_function->SetParameters(co, a2, a4, b2, b4);
   }
 
   // Initialise histoes and graphs
@@ -79,6 +93,7 @@ bool SpatialResolAna::Initialize() {
   _PRF_histo_4pad = new TH2F("PRF_histo_4pad","", prf_bin, prf_min, prf_max, 102,0.,1.02);
 
   _PRF_graph = new TGraphErrors();
+  _PRF_graph->SetName("PRF_graph");
 
   for (auto j = 0; j < geom::nPadx; ++j) {
     _resol_col_hist[j]  = new TH1F(Form("resol_histo_%i", j), "", resol_bin, resol_min, resol_max);
@@ -167,7 +182,7 @@ bool SpatialResolAna::ProcessEvent(const Event event) {
       true_track[it_x]  = -999.;
       cluster_mean[it_x] = 0.;
 
-      TH1F* cluster_h = new TH1F("cluster", "", 50,-17.5,17.5);
+      TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
 
       for (Int_t it_y = 0; it_y < geom::nPady; ++it_y) {
         if (!event.twoD[trackId][it_x][it_y])
@@ -188,7 +203,7 @@ bool SpatialResolAna::ProcessEvent(const Event event) {
       if (!cluster[it_x] || !charge_max[it_x])
         continue;
 
-          // minimise chi2 to extimate true_track
+      // minimise chi2 to extimate true_track
       double chi2_min     = 1e9;
       double scan_y       = cluster_mean[it_x] - scan_delta;
 
@@ -380,6 +395,12 @@ bool SpatialResolAna::WriteOutput() {
   // Output histoes postprocession done
 
   std::cout << "done" << std::endl;
+  std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
+  for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
+    std::cout << "  " << _PRF_function->GetParameter(i) << ",";
+  std::cout << "  Chi2/NDF " << _PRF_graph->GetFunction("PRF_function")->GetChisquare()
+            << "/" << _PRF_graph->GetFunction("PRF_function")->GetNDF() << std::endl;
+  std::cout << std::endl;
 
   // Write objects
   AnalysisBase::WriteOutput();

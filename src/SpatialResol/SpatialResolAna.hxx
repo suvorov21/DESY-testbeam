@@ -74,16 +74,16 @@ class SpatialResolAna: public AnalysisBase {
   const double  scan_step     = 2. * scan_delta / scan_Nsteps;
 
   // [units are meters]
-  const float prf_min     = -0.015;
-  const float prf_max     = 0.015;
+  const float prf_min     = -0.018;
+  const float prf_max     = 0.018;
   const int   prf_bin     = 120;
 
   const float resol_min   = -0.008;
   const float resol_max   = 0.008;
   const int   resol_bin   = 75.;
 
-  const float fit_bound_left  = -0.012;
-  const float fit_bound_right =  0.012;
+  const float fit_bound_left  = -0.015;
+  const float fit_bound_right =  0.015;
 
   const float default_error   = 0.001;
   const float one_pad_error   = 0.002;
