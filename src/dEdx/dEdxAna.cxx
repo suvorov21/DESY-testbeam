@@ -29,7 +29,7 @@ bool dEdxAna::ProcessEvent(const Event event) {
     if(sel::GetFitQuality(event,trkID)>1.0e6) return false;
     //If survives the selection, use track info:
     _selEvents++;
-    DrawSelection(event,trkID);
+    //DrawSelection(event,trkID);
     if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
     std::vector <double> QsegmentS =  sel::GetNonZeroCols(event,trkID);   
     sort(QsegmentS.begin(), QsegmentS.end());

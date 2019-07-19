@@ -1,11 +1,7 @@
 #include "Selection.hxx"
 
 int sel::GetMMHits(Event event, int trackID){
-  int hits = 0;
-  // for(int i=0; i<geom::nPadx;i++)
-  //   for(int j=0; j<geom::nPady;j++)
-  //     if(event.twoD[trackID][i][j]) hits++;
-  return hits;
+  return event.tracks[trackID].hits.size();
 }
 
 std::vector <double> sel::GetNonZeroRows(Event event, int trackID){
@@ -32,13 +28,7 @@ std::vector <double> sel::GetNonZeroCols(Event event, int trackID){
 
 double sel::GetFitQuality(Event event, int trackID){
   
-  TCanvas c;
-  c.cd();
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  
-  // for(int i=0; i<geom::nPadx;i++)
-  //   for(int j=0; j<geom::nPady;j++)
-  //     if(event.twoD[trackID][i][j]) MM->Fill(i,j,event.twoD[trackID][i][j]);
   for(auto h:event.tracks[trackID].hits) if(h.q) MM->Fill(h.c,h.r,h.q);
 
   MM->Fit("pol1", "Q");
