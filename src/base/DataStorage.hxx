@@ -17,10 +17,10 @@ class THit{
   void SetTime(int time)  {ft = time;}
   void SetQ(int Q)        {fq = Q;}
 
-  int GetRow() {return fr;}
-  int GetCol() {return fc;}
-  int GetTime(){return ft;}
-  int GetQ()   {return fq;}
+  int GetRow()    const   {return fr;}
+  int GetCol()    const   {return fc;}
+  int GetTime()   const   {return ft;}
+  int GetQ()      const   {return fq;}
 
   THit(){
     fr  = -999;
@@ -43,12 +43,12 @@ class TTrack{
   void ResizeRows();
   void AddColHit(THit* hit);
   void AddRowHit(THit* hit);
-  void SetHits(std::vector<THit*> inhits)      {fhits = inhits;}
-  std::vector<THit*> GetHits()                 {return fhits;}
-  std::vector<THit*> GetColHits(int col)       {return fc[col];}
-  std::vector<THit*> GetRowHits(int row)       {return fr[row];}
-  std::vector<std::vector<THit*>> GetCols ()   {return fc;}
-  std::vector<std::vector<THit*>> GetRows ()   {return fr;}
+  void SetHits(std::vector<THit*> inhits)               {fhits = inhits;}
+  std::vector<THit*> GetHits()                const     {return fhits;}
+  std::vector<THit*> GetColHits(int col)      const     {return fc[col];}
+  std::vector<THit*> GetRowHits(int row)      const     {return fr[row];}
+  std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}
+  std::vector<std::vector<THit*>> GetRows ()  const     {return fr;}
 
   TTrack(){
     ResizeRows();
@@ -57,9 +57,9 @@ class TTrack{
   virtual ~TTrack() {;}
 
  private:
-  std::vector<THit*> fhits; // all hits.
-  std::vector<std::vector<THit*>> fc;    // id of hits in each column
-  std::vector<std::vector<THit*>> fr;    // id of hits in each row
+  std::vector<THit*> fhits;               // all hits.
+  std::vector<std::vector<THit*>> fc;     // id of hits in each column
+  std::vector<std::vector<THit*>> fr;     // id of hits in each row
 
 };
 
@@ -67,15 +67,20 @@ class TEvent{
  public:
   void SetHits(std::vector <THit*> inhits )       {fhits = inhits;}
   void SetTracks(std::vector <TTrack*> intracks)  {ftracks = intracks;}
-  std::vector <THit*> GetHits()                   {return fhits;}
-  std::vector <TTrack*> GetTracks()               {return ftracks;}
+  void SetID(Int_t var) {ID = var;}
+  std::vector <THit*>   GetHits()   const         {return fhits;}
+  std::vector <TTrack*> GetTracks() const         {return ftracks;}
+  Int_t GetID() const  {return ID;}
 
   TEvent(){;}
+  TEvent(Int_t var): ID(var) {;}
   virtual ~TEvent() {/*implement removal of objects...*/;}
 
  private:
   std::vector <THit*>   fhits;
   std::vector <TTrack*> ftracks;
+
+  Int_t ID;
 };
 
 #endif // SRC_CLASS_DATASTORAGE_HXX_

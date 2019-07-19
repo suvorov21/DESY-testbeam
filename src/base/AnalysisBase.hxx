@@ -25,15 +25,16 @@ class AnalysisBase {
   /// Loop over TChain entries. Can use pre-defined event list
   virtual bool Loop(std::vector<Int_t> EventList);
   /// Process the selection output called Event
-  virtual bool ProcessEvent(TEvent* event);
+  virtual bool ProcessEvent(const TEvent* event);
   /// Write output files (histos, trees)
   virtual bool WriteOutput();
-  virtual void DrawSelection(TEvent *event, int trackID);
+  virtual void DrawSelection(const TEvent *event, int trackID);
 
   /// Print usage
   void help(const std::string name);
 
-  std::vector<Int_t> GetEventList() {return _EventList;}
+  void SetEventList(std::vector<Int_t> var) {_EventList = var;}
+  std::vector<Int_t> GetEventList() const {return _EventList;}
 
  protected:
   /// iteration number. Starting from 0

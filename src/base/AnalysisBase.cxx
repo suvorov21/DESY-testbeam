@@ -125,7 +125,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _chain->GetEntry(EventList[eventID]);
 
-    TEvent* event = new TEvent();
+    TEvent* event = new TEvent(eventID);
 
     if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
@@ -139,7 +139,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   return true;
 }
 
-bool AnalysisBase::ProcessEvent(TEvent* event) {
+bool AnalysisBase::ProcessEvent(const TEvent* event) {
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
@@ -167,7 +167,7 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
-void AnalysisBase::DrawSelection(TEvent *event, int trkID){
+void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);

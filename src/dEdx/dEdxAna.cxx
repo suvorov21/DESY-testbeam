@@ -21,7 +21,7 @@ bool dEdxAna::Initialize() {
   return true;
 }
 
-bool dEdxAna::ProcessEvent(TEvent *event) {
+bool dEdxAna::ProcessEvent(const TEvent *event) {
   double alpha = 0.625;
   for(int trkID=0; trkID<event->GetTracks().size(); trkID++){
     std::cout << "tracks: " << event->GetTracks().size() << std::endl;
