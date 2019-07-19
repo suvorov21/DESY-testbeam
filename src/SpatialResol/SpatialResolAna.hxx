@@ -20,7 +20,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
-  bool ProcessEvent(const Event& event);
+  bool ProcessEvent(const TEvent* event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
@@ -45,8 +45,8 @@ class SpatialResolAna: public AnalysisBase {
 
   TH1F* _residual_mean;
   TH1F* _residual_sigma;
-  TH1F* _residual_sigma_2pad;
-  TH1F* _residual_sigma_3pad;
+  // TH1F* _residual_sigma_2pad;
+  // TH1F* _residual_sigma_3pad;
 
   TH1F* _residual_sigma_unbiased;
   TH1F* _residual_sigma_biased;

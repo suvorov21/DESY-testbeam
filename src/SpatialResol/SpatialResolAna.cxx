@@ -149,17 +149,17 @@ bool SpatialResolAna::Initialize() {
   return true;
 }
 
-bool SpatialResolAna::ProcessEvent(const Event* event) {
+bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
   bool passed = false;
 
   for (uint trackId = 0; trackId < event->GetTracks().size(); ++trackId) {
 
-    if(sel::GetNonZeroCols(event,trkID).size() != geom::nPadx) return false;
-    if(sel::GetNonZeroRows(event,trkID).size()>5) return false;
-    if(sel::GetFitQuality(event,trkID)>1.0e6) return false;
+    if(sel::GetNonZeroCols(event  , trackId).size() != geom::nPadx) return false;
+    if(sel::GetNonZeroRows(event  , trackId).size()>5) return false;
+    if(sel::GetFitQuality(event   , trackId)>1.0e6) return false;
 
-    TTrack* track = event->GetTracks[trackId];
+    TTrack* track = event->GetTracks()[trackId];
     if (!track)
       continue;
 
@@ -168,7 +168,7 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
     if (_verbose == 2)
       std::cout << "Track id = " << trackId << std::endl;
 
-    TGraphErrors* track = new TGraphErrors();
+    TGraphErrors* track_gr = new TGraphErrors();
     TGraphErrors* track_m = new TGraphErrors();
 
     TGraphErrors* track_1[36];
@@ -184,7 +184,9 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
 
     // At the moment ommit first and last column
     // first loop over column
-    for (uint it_x = 0; it_x < track->GetColHits().size(); ++it_x) {
+    for (uint colID = 0; colID < track->GetCols().size(); ++colID) {
+      // FIXIT check this call
+      auto it_x = track->GetColHits(colID)[0]->GetCol();
       cluster[it_x]     = 0;
       cluster_N[it_x]   = 0;
       charge_max[it_x]  = 0;
@@ -193,17 +195,19 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
 
       TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
 
-      for (Int_t it_y = 0; it_y < geom::nPady; ++it_y) {
-        if (!event.twoD[trackId][it_x][it_y])
+      for (uint rowID = 0; rowID < track->GetColHits(it_x).size(); ++rowID) {
+        if (!track->GetColHits(it_x)[rowID])
           continue;
 
-        cluster[it_x] += event.twoD[trackId][it_x][it_y];
+        auto it_y = track->GetColHits(it_x)[rowID]->GetRow();
+        auto q = track->GetColHits(colID)[rowID]->GetQ();
+
+        cluster[it_x] += q;
         ++cluster_N[it_x];
-        cluster_h->Fill(geom::y_pos[it_y], event.twoD[trackId][it_x][it_y]);
-        if (charge_max[it_x] < event.twoD[trackId][it_x][it_y]) {
-          charge_max[it_x] = event.twoD[trackId][it_x][it_y];
-        }
-      }
+        cluster_h->Fill(geom::y_pos[it_y], q);
+        if (charge_max[it_x] < q)
+          charge_max[it_x] = q;
+      } // end of loop over rows
 
       cluster_mean[it_x] = cluster_h->GetMean();
 
@@ -219,15 +223,17 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
       if (_iteration > 0 && cluster_N[it_x] != 1) {
         for (Int_t scanId = 0; scanId < scan_Nsteps; ++scanId) {
           double chi2 = 0;
-          for (Int_t it_y = 0; it_y < geom::nPady; ++it_y) {
-            if (!event.twoD[trackId][it_x][it_y])
+          for (uint rowID = 0; rowID < track->GetColHits(it_x).size(); ++rowID) {
+            auto q      = track->GetColHits(colID)[rowID]->GetQ();
+            auto it_y   = track->GetColHits(colID)[rowID]->GetRow();
+            if (!q)
               continue;
 
-            double a = 1. * event.twoD[trackId][it_x][it_y] / cluster[it_x];
+            double a = 1. * q / cluster[it_x];
             double center_pad_y = geom::y_pos[it_y];
             double part = (a - _PRF_function->Eval(scan_y - center_pad_y));
             double c = 1.*cluster[it_x];
-            double b = 1.*event.twoD[trackId][it_x][it_y];
+            double b = 1.*q;
             part *= c*c;
             part /= c*sqrt(b) + b*sqrt(c);
             part *= part;
@@ -247,7 +253,7 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
 
       double x = geom::x_pos[it_x];
 
-      track->SetPoint(track->GetN(), x, true_track[it_x]);
+      track_gr->SetPoint(track_gr->GetN(), x, true_track[it_x]);
       for (int i = 1; i < geom::nPadx - 1; ++i) {
         if (i != it_x)
           track_1[i]->SetPoint(track_1[i]->GetN(), x, true_track[it_x]);
@@ -263,15 +269,15 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
         else
           error = _uncertainty;
       }
-      track->SetPointError(track->GetN()-1, 0., error);
+      track_gr->SetPointError(track_gr->GetN()-1, 0., error);
       for (int i = 1; i < geom::nPadx; ++i) {
         if (i != it_x)
           track_1[i]->SetPointError(track_1[i]->GetN() - 1, 0., error);
       }
     } // loop over i
 
-    track->Fit("pol1", "Q");
-    TF1* fit = track->GetFunction("pol1");
+    track_gr->Fit("pol1", "Q");
+    TF1* fit = track_gr->GetFunction("pol1");
 
         //track_m->Fit("pol1", "Q");
         //TF1* fit1 = track_m->GetFunction("pol1");
@@ -297,8 +303,10 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
       b1[i] = fit1->GetParameter(0);
     }
 
-        // second loop over columns
-    for (Int_t it_x = 1; it_x < geom::nPadx; ++it_x) {
+    // second loop over columns
+    for (uint colID = 0; colID < track->GetCols().size(); ++colID) {
+      // FIXIT check this call
+      auto it_x = track->GetColHits(colID)[0]->GetCol();
 
       if (true_track[it_x]  == -999.)
         continue;
@@ -321,12 +329,18 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
 
       if (cluster_N[it_x] == 1)
         continue;
-          // Fill PRF
-      for (Int_t it_y = 0; it_y < geom::nPady; ++it_y) {
-        if (!cluster[it_x] || !event.twoD[trackId][it_x][it_y])
+      // Fill PRF
+      for (uint rowID = 0; rowID < track->GetColHits(it_x).size(); ++rowID) {
+        if (!track->GetColHits(it_x)[rowID])
           continue;
 
-        double charge = 1. * event.twoD[trackId][it_x][it_y] / cluster[it_x];
+        auto it_y = track->GetColHits(it_x)[rowID]->GetRow();
+        auto q = track->GetColHits(colID)[rowID]->GetQ();
+
+        if (!cluster[it_x] || !q)
+          continue;
+
+        double charge = 1. * q / cluster[it_x];
         double center_pad_y = geom::y_pos[it_y];
 
             // fill PRF
@@ -340,7 +354,7 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
           _PRF_histo_4pad->Fill(center_pad_y - track_fit_y, charge);
       }
     } // loop over colums
-    delete track;
+    delete track_gr;
     delete track_m;
     for (int i = 0; i < 36; ++i) {
       delete track_1[i];
@@ -348,7 +362,7 @@ bool SpatialResolAna::ProcessEvent(const Event* event) {
   } // loop over tracks
 
   if (passed)
-    _passed_events.push_back(event.ID);
+    _passed_events.push_back(event->GetID());
 
   return true;
 }
