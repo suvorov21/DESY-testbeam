@@ -10,6 +10,7 @@
 #include "TROOT.h"
 
 #include "Geom.hxx"
+#include "DataStorage.hxx"
 
 
 struct Hit{
@@ -78,7 +79,7 @@ class ReconstructionBase {
 
   virtual bool Initialize();
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                  Event& event);
+                  TEvent* event);
 
   virtual std::vector<std::vector<Int_t>> GetEmptyEvent();
 };

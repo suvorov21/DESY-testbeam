@@ -2,8 +2,8 @@
 #define SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
 
 #include "AnalysisBase.hxx"
-#include "CrossingSelection.hxx"
-#include "DBSCANSelection.hxx"
+#include "CrossingReconstruction.hxx"
+#include "DBSCANReconstruction.hxx"
 
 #include "TF1.h"
 

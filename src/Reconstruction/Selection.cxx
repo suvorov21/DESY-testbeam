@@ -1,35 +1,33 @@
 #include "Selection.hxx"
 
-int sel::GetMMHits(Event event, int trackID){
-  return event.tracks[trackID].hits.size();
+int sel::GetMMHits(TEvent* event, int trackID){
+  return event->GetHits().size();
 }
 
-std::vector <double> sel::GetNonZeroRows(Event event, int trackID){
+std::vector <double> sel::GetNonZeroRows(TEvent* event, int trackID){
   std::vector <double> rows;
-  int rowQ = 0;
-  for(auto row:event.tracks[trackID].r) if(row.size()){
+  for(auto row:event->GetTracks()[trackID]->GetRows()) if(row.size()){
     int rowQ = 0;
-    for(auto q:row) rowQ+=event.tracks[trackID].hits[q].q;
+    for(auto h:row) rowQ+=h->GetQ();
     if(rowQ) rows.push_back(rowQ);
   }
   return rows;
 }
 
-std::vector <double> sel::GetNonZeroCols(Event event, int trackID){
+std::vector <double> sel::GetNonZeroCols(TEvent* event, int trackID){
   std::vector <double> cols;
-  int colQ = 0;
-  for(auto col:event.tracks[trackID].c) if(col.size()){
+  for(auto col:event->GetTracks()[trackID]->GetCols()) if(col.size()){
     int colQ = 0;
-    for(auto q:col) colQ+=event.tracks[trackID].hits[q].q;
+    for(auto h:col) colQ+=h->GetQ();
     if(colQ) cols.push_back(colQ);
   }
   return cols;
 }
 
-double sel::GetFitQuality(Event event, int trackID){
+double sel::GetFitQuality(TEvent* event, int trackID){
   
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  for(auto h:event.tracks[trackID].hits) if(h.q) MM->Fill(h.c,h.r,h.q);
+  for(auto h:event->GetTracks()[trackID]->GetHits()) if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
 
   MM->Fit("pol1", "Q");
   TF1* fit = MM->GetFunction("pol1");

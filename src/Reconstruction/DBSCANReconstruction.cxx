@@ -197,41 +197,66 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   delete event3D;
 }
 
-bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, Event& event){
+bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, TEvent* event){
   int numTracks = clusters.size();
-  int trkCNT = 0;
-  event.ResizeHits(nodes.size());
-  for(int trkID=0; trkID<numTracks; trkID++){ 
-    event.ResizeTracks(numTracks);
-    event.tracks[trkCNT].ResizeCols();
-    event.tracks[trkCNT].ResizeRows();
-    event.tracks[trkCNT].ResizeHits(clusters[trkID].size);
-    int sel_id = 0;
-    int tot_id = 0;
+  // int trkCNT = 0;
+  // event.ResizeHits(nodes.size());
+  // for(int trkID=0; trkID<numTracks; trkID++){ 
+  //   event.ResizeTracks(numTracks);
+  //   event.tracks[trkCNT].ResizeCols();
+  //   event.tracks[trkCNT].ResizeRows();
+  //   event.tracks[trkCNT].ResizeHits(clusters[trkID].size);
+  //   int sel_id = 0;
+  //   int tot_id = 0;
+  //   for(auto n:nodes){
+  //     Hit hit;
+  //     hit.c = n.x;
+  //     hit.r = n.y;
+  //     hit.t = n.t;
+  //     hit.q = n.q;
+  //     hit.id = tot_id;
+  //     tot_id++;
+  //     event.SetHit(hit.id,hit);
+  //     if(n.c == trkCNT){
+  //       hit.id = sel_id;
+  //       sel_id++;
+  //       event.tracks[trkCNT].SetHit(hit.id,hit);
+  //       event.tracks[trkCNT].PushBackCol(hit.c,hit.id);
+  //       event.tracks[trkCNT].PushBackRow(hit.r,hit.id);
+  //     }
+  //   }
+  //   trkCNT++;
+  // }
+
+  std::vector <TTrack*> tracks; 
+  std::vector<THit*> allhits;
+  for(int trkID=0; trkID<numTracks; trkID++){
+    TTrack* track = new TTrack();
+    tracks.push_back(track);
+    std::vector<THit*> hits;
     for(auto n:nodes){
-      Hit hit;
-      hit.c = n.x;
-      hit.r = n.y;
-      hit.t = n.t;
-      hit.q = n.q;
-      hit.id = tot_id;
-      tot_id++;
-      event.SetHit(hit.id,hit);
-      if(n.c == trkCNT){
-        hit.id = sel_id;
-        sel_id++;
-        event.tracks[trkCNT].SetHit(hit.id,hit);
-        event.tracks[trkCNT].PushBackCol(hit.c,hit.id);
-        event.tracks[trkCNT].PushBackRow(hit.r,hit.id);
+      THit *hit = new THit();
+      hit->SetCol(n.x);
+      hit->SetRow(n.y);
+      hit->SetTime(n.t);
+      hit->SetQ(n.q);
+      allhits.push_back(hit);
+      if(n.c == trkID){
+        hits.push_back(hit);
+        track->AddColHit(hit);
+        track->AddRowHit(hit);
       }
     }
-    trkCNT++;
-  } 
+    track->SetHits(hits);
+  }
+  event->SetTracks(tracks);
+  event->SetHits(allhits); 
+
   return true;
 }
 
 bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                  Event& event) {
+                                  TEvent* event) {
 
   std::vector<Node> nodes = FindClusters(FillNodes(padAmpl));
   std::vector<Cluster> clusters = FindClustersLargerThan(nodes,15);

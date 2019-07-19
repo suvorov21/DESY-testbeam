@@ -126,7 +126,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _chain->GetEntry(EventList[eventID]);
 
-    Event event;
+    TEvent* event = new TEvent();
 
     if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
@@ -140,7 +140,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   return true;
 }
 
-bool AnalysisBase::ProcessEvent(const Event event) {
+bool AnalysisBase::ProcessEvent(TEvent* event) {
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
@@ -166,7 +166,7 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
-void AnalysisBase::DrawSelection(Event event, int trkID){
+void AnalysisBase::DrawSelection(TEvent *event, int trkID){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
@@ -175,15 +175,15 @@ void AnalysisBase::DrawSelection(Event event, int trkID){
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   // all hits
-  for(auto h:event.hits){
-    MM->Fill(h.c,h.r,h.q);
+  for(auto h:event->GetHits()){
+    MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
   // sel hits
-  for (auto h:event.tracks[trkID].hits){
-    if(!h.q) continue;
-    event3D->Fill(h.t,h.r,h.c,h.q);
-    MMsel->Fill(h.c,h.r,h.q);
+  for (auto h:event->GetTracks()[trkID]->GetHits()){
+    if(!h->GetQ()) continue;
+    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
+    MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
