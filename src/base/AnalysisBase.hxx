@@ -6,6 +6,11 @@
 #include "TChain.h"
 #include "TApplication.h"
 
+#include <TNtuple.h>
+#include <TF1.h>
+#include <TH2F.h>
+#include <TH3F.h>
+
 #include "ReconstructionBase.hxx"
 #include "SetT2KStyle.hxx"
 
@@ -23,6 +28,7 @@ class AnalysisBase {
   virtual bool ProcessEvent(const Event event);
   /// Write output files (histos, trees)
   virtual bool WriteOutput();
+  virtual void DrawSelection(Event event, int trackID);
 
   /// Print usage
   void help(const std::string name);

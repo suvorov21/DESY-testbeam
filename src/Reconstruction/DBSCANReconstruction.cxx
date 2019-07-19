@@ -18,7 +18,7 @@ bool DBSCANReconstruction::Initialize() {
 }
 
 double DBSCANReconstruction::MeasureDistance(Node a, Node b){
-    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/1 ,2); // distance squared.
+    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/30 ,2); // distance squared.
     return pow(distance2,0.5);
 }
 
@@ -69,6 +69,9 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
 
 std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]){
   std::vector<Node> nodes;
+
+  // use in the future: instead of tmax, take all local maximums in the WF!!
+
   // int window = 20;
   // for(int i=0; i<geom::nPadx; i++){
   //   for(int j=0; j<geom::nPady; j++){
@@ -97,6 +100,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
   //     }
   //   }
   // }
+
   for(int i=0; i<geom::nPadx; i++){
     for(int j=0; j<geom::nPady; j++){
       int Q = 0;
@@ -122,22 +126,21 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
 std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
   std::vector<Cluster> clusters;
   int numClusters = 0;
+  int maxNodes = 150;
   for (auto n:nodes) if(n.c > numClusters) numClusters = n.c;
   int acceptedClusters = 0;
-  for(int i=0; i<numClusters; i++){
+  for(int i=0; i<=numClusters; i++){
     Cluster cluster;
     cluster.id = acceptedClusters;
     for (auto n:nodes) if (n.c == i){
       cluster.nodes[cluster.size] = n.id;
       cluster.size++;
     }
-    if(cluster.size >= minNodes){
+    if(cluster.size >= minNodes && cluster.size <= maxNodes){
       acceptedClusters++;
       clusters.push_back(cluster);
     }
   }
-  // std::cout << "# of clusters: " << numClusters << std::endl; 
-  // std::cout << "# of accepted clusters: " << acceptedClusters << std::endl; 
   return clusters;
 }
 
@@ -160,21 +163,24 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
-  TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   for (auto n:nodes){ 
     event3D->Fill(n.t,n.y,n.x,n.c);
     MM->Fill(n.x,n.y,n.q);
+    if(n.c==0) MMsel->Fill(n.x,n.y,n.q);
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
-  canv->Divide(2,1);
+  canv->Divide(3,1);
   canv->cd(1);
-
   MM->Draw("COLZ"); 
-
   canv->cd(2);
+  MMsel->Draw("COLZ"); 
+
+  canv->cd(3);
   event3D->Draw("x:y:z:c","","box2");
   TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
@@ -187,58 +193,40 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   delete canv;
 
   delete MM;
+  delete MMsel;
   delete event3D;
 }
 
-bool DBSCANReconstruction::CheckQuality(std::vector<Node> nodes){
-  TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
-
-  for (auto n:nodes){ 
-    event3D->Fill(n.t,n.y,n.x,n.c);
-    MM->Fill(n.x,n.y,n.q);
-  }
-
-  MM->Fit("pol1", "Q");
-  TF1* fit = MM->GetFunction("pol1");
-
-  double quality = 1.0e10;
-  if (fit){
-    quality = fit->GetChisquare() / fit->GetNDF();
-    double k = fit->GetParameter(1);
-    double b = fit->GetParameter(0);
-    if(quality<1.0e6){
-      delete MM;
-      delete event3D;
-      return true;
-    }
-  }
-
-  delete MM;
-  delete event3D;
-
-  return false;
-}
-
-bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, int numTracks, Event& event){
-  
-  for(int num=0; num<numTracks; num++){  
-    std::vector<std::vector<Int_t>> temp_evt = GetEmptyEvent();
-    for (int itx = 0; itx < geom::nPadx; ++itx)
-      for (uint ity = 0; ity < geom::nPady; ++ity){      
-        temp_evt[itx][ity] = 0;
-        // std::cout << itx << "," << ity << ", " << temp_evt[itx][ity] << std::endl; 
-      }
+bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, Event& event){
+  int numTracks = clusters.size();
+  int trkCNT = 0;
+  event.ResizeHits(nodes.size());
+  for(int trkID=0; trkID<numTracks; trkID++){ 
+    event.ResizeTracks(numTracks);
+    event.tracks[trkCNT].ResizeCols();
+    event.tracks[trkCNT].ResizeRows();
+    event.tracks[trkCNT].ResizeHits(clusters[trkID].size);
+    int sel_id = 0;
+    int tot_id = 0;
     for(auto n:nodes){
-      temp_evt[n.x][n.y] = n.q;
+      Hit hit;
+      hit.c = n.x;
+      hit.r = n.y;
+      hit.t = n.t;
+      hit.q = n.q;
+      hit.id = tot_id;
+      tot_id++;
+      event.SetHit(hit.id,hit);
+      if(n.c == trkCNT){
+        hit.id = sel_id;
+        sel_id++;
+        event.tracks[trkCNT].SetHit(hit.id,hit);
+        event.tracks[trkCNT].PushBackCol(hit.c,hit.id);
+        event.tracks[trkCNT].PushBackRow(hit.r,hit.id);
+      }
     }
-    event.trackNum = numTracks;
-    event.twoD.push_back(temp_evt);
-  }
-
-  // std::cout << "trackNum:  " << event.trackNum << std::endl;
-  // std::cout << "eventsNum: " << event.twoD.size() << std::endl; 
-
+    trkCNT++;
+  } 
   return true;
 }
 
@@ -248,10 +236,8 @@ bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nP
   std::vector<Node> nodes = FindClusters(FillNodes(padAmpl));
   std::vector<Cluster> clusters = FindClustersLargerThan(nodes,15);
   std::vector<Node> new_nodes = UpdateNodes(clusters,nodes);
-  // if(nodes.size()) DrawNodes(new_nodes);
-  //if(nodes.size()>50) return CheckQuality(new_nodes);
 
-  if(nodes.size()) /*if(clusters.size() == 1) if(CheckQuality(new_nodes))*/ DrawNodes(new_nodes);
-  if(nodes.size()) /*if(clusters.size() == 1)*/ if(CheckQuality(new_nodes)) return FillOutput(new_nodes,clusters.size(),event);
+  //if(nodes.size()) DrawNodes(new_nodes);
+  if(nodes.size()) if(clusters.size() == 1) return FillOutput(new_nodes,clusters,event);
   return false;
 }

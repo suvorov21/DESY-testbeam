@@ -110,7 +110,7 @@ bool AnalysisBase::Initialize() {
 bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   auto N_events = static_cast<Int_t>(EventList.size());
   if (_test_mode)
-    N_events = std::min(static_cast<Int_t>(EventList.size()), 1000);
+    N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
@@ -127,7 +127,6 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _chain->GetEntry(EventList[eventID]);
 
     Event event;
-    event.trackNum = 0;
 
     if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
@@ -165,6 +164,50 @@ bool AnalysisBase::WriteOutput() {
   _file_out->Close();
 
   return true;
+}
+
+void AnalysisBase::DrawSelection(Event event, int trkID){
+  gStyle->SetCanvasColor(0);
+  gStyle->SetMarkerStyle(21);
+  gStyle->SetMarkerSize(1.05);
+  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+
+  // all hits
+  for(auto h:event.hits){
+    MM->Fill(h.c,h.r,h.q);
+  }
+
+  // sel hits
+  for (auto h:event.tracks[trkID].hits){
+    if(!h.q) continue;
+    event3D->Fill(h.t,h.r,h.c,h.q);
+    MMsel->Fill(h.c,h.r,h.q);
+  }
+
+  TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
+  canv->Divide(3,1);
+  canv->cd(1);
+  MM->Draw("COLZ"); 
+  canv->cd(2);
+  MMsel->Draw("COLZ"); 
+
+  canv->cd(3);
+  event3D->Draw("x:y:z:c","","box2");
+  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
+  htemp->GetYaxis()->SetLimits(0,geom::nPady);
+  htemp->GetZaxis()->SetLimits(0,500);
+  htemp->SetTitle("");       
+  canv->Update();
+  canv->WaitPrimitive();
+  delete htemp;
+  delete canv;
+
+  delete MM;
+  delete MMsel;
+  delete event3D;
 }
 
 void AnalysisBase::help(const std::string name) {
