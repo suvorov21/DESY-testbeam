@@ -68,7 +68,7 @@ bool SpatialResolAna::Initialize() {
 
     auto c = 0.8;
     auto r = 0.5;
-    auto s = 0.7;
+    auto s = 0.007;
     _PRF_function->SetParameters(c, r, s);
   }
 
@@ -234,11 +234,10 @@ bool SpatialResolAna::ProcessEvent(const Event event) {
       if (cluster_N[it_x] == 1)
         error = one_pad_error;
       else {
-        // TODO implement the uncertainty
-        //if (_iteration == 0)
+        if (_iteration == 0)
           error = default_error;
-        //else
-        //  error = uncertainty;
+        else
+          error = _uncertainty;
       }
       track->SetPointError(track->GetN()-1, 0., error);
       for (int i = 1; i < geom::nPadx; ++i) {
@@ -275,7 +274,7 @@ bool SpatialResolAna::ProcessEvent(const Event event) {
     }
 
         // second loop over columns
-    for (Int_t it_x = 1; it_x < geom::nPadx - 1; ++it_x) {
+    for (Int_t it_x = 1; it_x < geom::nPadx; ++it_x) {
 
       if (true_track[it_x]  == -999.)
         continue;
@@ -394,9 +393,9 @@ bool SpatialResolAna::WriteOutput() {
   // write
   auto tree = new TTree("EventTree", "");
   Int_t var = 0;
-  tree->Branch("PassedEvents",     var);
+  tree->Branch("PassedEvents",     &var);
   for (uint i = 0; i < _passed_events.size(); ++i) {
-    var = i;
+    var = _passed_events[i];
     tree->Fill();
   }
   tree->Write("", TObject::kOverwrite);

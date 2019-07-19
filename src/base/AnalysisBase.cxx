@@ -134,7 +134,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     Event event;
     event.trackNum = 0;
-    event.ID = eventID;
+    event.ID = EventList[eventID];
 
     if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
