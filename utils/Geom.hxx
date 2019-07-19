@@ -33,6 +33,9 @@ namespace geom
         -0.015, -0.005, 0.005, 0.015, 0.025, 0.035, 0.045, 0.055, 0.065, 0.075,
         0.085, 0.095, 0.105, 0.115, 0.125, 0.135, 0.145, 0.155};
 
+    static const float MM_dx = 0.1925;
+    static const float MM_dy = 0.155;
+
     static const int Nsamples = 511;
 
     // To represent geometry on canvas
