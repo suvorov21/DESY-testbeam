@@ -7,21 +7,19 @@
 
 #include "AnalysisBase.hxx"
 
-AnalysisBase::AnalysisBase(int argc, char** argv) {
-  // default values
-  _verbose    = 1;
-  _batch      = false;
-  _test_mode  = false;
-
-  _file_in_name           = "";
-  _file_out_name          = "";
-  _event_list_file_name   = "";
-
-  _file_in    = NULL;
-  _file_out   = NULL;
-
-  _chain      = NULL;
-  _reconstruction  = NULL;
+AnalysisBase::AnalysisBase(int argc, char** argv) :
+  _file_in_name(""),
+  _file_out_name(""),
+  _event_list_file_name(""),
+  _file_in(NULL),
+  _file_out(NULL),
+  _chain(NULL),
+  _reconstruction(NULL),
+  _verbose(1),
+  _batch(false),
+  _test_mode(false),
+  _app(NULL)
+  {
 
   // read CLI
   for (;;) {
