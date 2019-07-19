@@ -6,22 +6,9 @@ bool ReconstructionBase::Initialize() {
 }
 
 bool ReconstructionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                Event& event) {
+                                TEvent* event) {
   (void)padAmpl;
   (void)event;
-
-  // 3D vector
-  std::vector<std::vector<int> > twoD_temp = GetEmptyEvent();
-  twoD_temp[31][31] = 500;
-  event.twoD.push_back(twoD_temp);
-
-  // vector of 2D array
-  // obsolete!
-  /*
-  TwoD EventDisplay;
-  EventDisplay.A[31][31] = 500;
-  event.twoD_vector.push_back(EventDisplay);
-  */
 
   return true;
 }

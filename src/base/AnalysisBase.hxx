@@ -6,6 +6,11 @@
 #include "TChain.h"
 #include "TApplication.h"
 
+#include <TNtuple.h>
+#include <TF1.h>
+#include <TH2F.h>
+#include <TH3F.h>
+
 #include "ReconstructionBase.hxx"
 #include "SetT2KStyle.hxx"
 
@@ -20,14 +25,14 @@ class AnalysisBase {
   /// Loop over TChain entries. Can use pre-defined event list
   virtual bool Loop(std::vector<Int_t> EventList);
   /// Process the selection output called Event
-  virtual bool ProcessEvent(const Event& event);
+  virtual bool ProcessEvent(TEvent* event);
   /// Write output files (histos, trees)
   virtual bool WriteOutput();
+  virtual void DrawSelection(TEvent *event, int trackID);
 
   /// Print usage
-  void help(const std::string& name);
+  void help(const std::string name);
 
-  void SetEventList(const std::vector<Int_t>& vec) {_EventList = vec;}
   std::vector<Int_t> GetEventList() {return _EventList;}
 
  protected:

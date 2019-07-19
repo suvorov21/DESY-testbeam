@@ -5,6 +5,7 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
+
 /// Spatial resolution analysis
 class dEdxAna: public AnalysisBase {
  public:
@@ -17,7 +18,7 @@ class dEdxAna: public AnalysisBase {
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
-  bool ProcessEvent(const Event& event);
+  bool ProcessEvent(TEvent *event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
