@@ -149,12 +149,21 @@ bool SpatialResolAna::Initialize() {
   return true;
 }
 
-bool SpatialResolAna::ProcessEvent(const Event& event) {
+bool SpatialResolAna::ProcessEvent(const Event* event) {
 
-  if (event.twoD.size())
-    _passed_events.push_back(event.ID);
+  bool passed = false;
 
-  for (uint trackId = 0; trackId < event.twoD.size(); ++trackId) {
+  for (uint trackId = 0; trackId < event->GetTracks().size(); ++trackId) {
+
+    if(sel::GetNonZeroCols(event,trkID).size() != geom::nPadx) return false;
+    if(sel::GetNonZeroRows(event,trkID).size()>5) return false;
+    if(sel::GetFitQuality(event,trkID)>1.0e6) return false;
+
+    TTrack* track = event->GetTracks[trackId];
+    if (!track)
+      continue;
+
+    passed = true;
 
     if (_verbose == 2)
       std::cout << "Track id = " << trackId << std::endl;
@@ -175,7 +184,7 @@ bool SpatialResolAna::ProcessEvent(const Event& event) {
 
     // At the moment ommit first and last column
     // first loop over column
-    for (Int_t it_x = 1; it_x < geom::nPadx - 1; ++it_x) {
+    for (uint it_x = 0; it_x < track->GetColHits().size(); ++it_x) {
       cluster[it_x]     = 0;
       cluster_N[it_x]   = 0;
       charge_max[it_x]  = 0;
@@ -337,6 +346,9 @@ bool SpatialResolAna::ProcessEvent(const Event& event) {
       delete track_1[i];
     }
   } // loop over tracks
+
+  if (passed)
+    _passed_events.push_back(event.ID);
 
   return true;
 }
