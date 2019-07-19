@@ -82,14 +82,9 @@ bool AnalysisBase::Initialize() {
   gROOT->SetStyle(_t2kstyle->GetName());
   gROOT->ForceStyle();
 
-  if (_event_list_file_name == "") {
-    Int_t N_events = _chain->GetEntries();
-
-    for (auto i = 0; i < N_events; ++i)
-      _EventList.push_back(i);
-  } else {
-    // FIXIT read the event list file
-  }
+  Int_t N_events = _chain->GetEntries();
+  for (auto i = 0; i < N_events; ++i)
+    _EventList.push_back(i);
 
   // Open the output file
   _file_out = new TFile(_file_out_name.Data(), "NEW");
