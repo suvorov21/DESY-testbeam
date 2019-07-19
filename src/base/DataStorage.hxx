@@ -54,7 +54,7 @@ class TTrack{
     ResizeRows();
     ResizeCols();
   }
-  virtual ~TTrack() {;}
+  virtual ~TTrack();
 
  private:
   std::vector<THit*> fhits;               // all hits.
@@ -74,7 +74,7 @@ class TEvent{
 
   TEvent(){;}
   TEvent(Int_t var): ID(var) {;}
-  virtual ~TEvent() {/*implement removal of objects...*/;}
+  virtual ~TEvent();
 
  private:
   std::vector <THit*>   fhits;
