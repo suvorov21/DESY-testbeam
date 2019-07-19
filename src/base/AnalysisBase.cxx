@@ -113,15 +113,25 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
-    std::cout << "[                               ]   Nevents = " << N_events << "\r[";
+    std::cout << "[                              ]   Nevents = " << N_events << "\r";
   }
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
     if (_verbose > 1)
       std::cout << "Event " << eventID << std::endl;
 
-    if (_verbose == 1 && (eventID%(N_events/30)) == 0)
-      std::cout << "." << std::flush;
+    /*if (_verbose == 1 && (eventID%(N_events/30)) == 0)
+      std::cout << "." << std::flush;*/
+    if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
+      double real, virt;
+      process_mem_usage(virt, real);
+      std::cout << "[";
+      for (auto i = 0; i < 30; ++i)
+        if (i < 30.*eventID/N_events) std::cout << ".";
+        else std::cout << " ";
+      std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
+      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r" << std::flush;
+    }
 
     _chain->GetEntry(EventList[eventID]);
 
@@ -131,6 +141,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       continue;
 
     ProcessEvent(event);
+
+    delete event;
   }
 
   if (_verbose == 1)
@@ -221,5 +233,26 @@ void AnalysisBase::help(const std::string name) {
   std::cout << "   -h                   : print ROOT help" << std::endl;
   std::cout << "   -m                   : print " << name << " help" << std::endl;
   exit(1);
+}
+
+void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
+{
+    vm_usage     = 0.0;
+    resident_set = 0.0;
+
+    // the two fields we want
+    unsigned long vsize;
+    long rss;
+    {
+        std::string ignore;
+        std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+        ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> vsize >> rss;
+    }
+
+    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+    vm_usage = vsize / 1024.0;
+    resident_set = rss * page_size_kb;
 }
 

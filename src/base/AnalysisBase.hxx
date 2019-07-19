@@ -33,6 +33,8 @@ class AnalysisBase {
   /// Print usage
   void help(const std::string name);
 
+  void process_mem_usage(double& vm_usage, double& resident_set);
+
   void SetEventList(std::vector<Int_t> var) {_EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
