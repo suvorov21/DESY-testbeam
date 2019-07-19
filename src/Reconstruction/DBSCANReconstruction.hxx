@@ -5,10 +5,10 @@
 //! Reconstruction for passing through tracks
 
 //! Explain it
-//! 
-//! 
-//! 
-//! 
+//!
+//!
+//!
+//!
 
 const int MIN_DIST  = 2;
 const int MIN_NODES = 1;
@@ -16,7 +16,7 @@ const int MIN_NODES = 1;
 struct Node{
     int  x = -999;  // row
     int  y = -999;  // column
-    int  t = -999;  // time 
+    int  t = -999;  // time
     int  q = -999;  // charge
     int  c = -999;  // cluster ID
     int id = -999;  // node ID
@@ -24,7 +24,7 @@ struct Node{
 
 struct Cluster{
     int size = 0;
-    int id   = -999;      // cluster ID 
+    int id   = -999;      // cluster ID
     int nodes[1000] = {-999}; // node ID of nodes belonging to cluster
 };
 

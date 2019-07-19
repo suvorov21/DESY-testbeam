@@ -25,7 +25,7 @@ std::vector <double> sel::GetNonZeroCols(TEvent* event, int trackID){
 }
 
 double sel::GetFitQuality(TEvent* event, int trackID){
-  
+
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   for(auto h:event->GetTracks()[trackID]->GetHits()) if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
 
@@ -41,4 +41,4 @@ double sel::GetFitQuality(TEvent* event, int trackID){
 
   delete MM;
   return quality;
-}  
+}

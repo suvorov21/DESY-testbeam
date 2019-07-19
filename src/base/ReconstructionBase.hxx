@@ -22,7 +22,7 @@ struct Hit{
 };
 
 struct Track{
-  std::vector<Hit> hits;             // all hits. 
+  std::vector<Hit> hits;             // all hits.
   std::vector<std::vector<int>>  c; // id of hits in each column
   std::vector<std::vector<int>>  r; // id of hits in each row
 

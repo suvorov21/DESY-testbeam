@@ -190,9 +190,9 @@ void AnalysisBase::DrawSelection(TEvent *event, int trkID){
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
   canv->Divide(3,1);
   canv->cd(1);
-  MM->Draw("COLZ"); 
+  MM->Draw("COLZ");
   canv->cd(2);
-  MMsel->Draw("COLZ"); 
+  MMsel->Draw("COLZ");
 
   canv->cd(3);
   event3D->Draw("x:y:z:c","","box2");
@@ -200,7 +200,7 @@ void AnalysisBase::DrawSelection(TEvent *event, int trkID){
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
   htemp->GetYaxis()->SetLimits(0,geom::nPady);
   htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");       
+  htemp->SetTitle("");
   canv->Update();
   canv->WaitPrimitive();
   delete htemp;

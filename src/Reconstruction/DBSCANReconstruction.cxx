@@ -176,9 +176,9 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
   canv->Divide(3,1);
   canv->cd(1);
-  MM->Draw("COLZ"); 
+  MM->Draw("COLZ");
   canv->cd(2);
-  MMsel->Draw("COLZ"); 
+  MMsel->Draw("COLZ");
 
   canv->cd(3);
   event3D->Draw("x:y:z:c","","box2");
@@ -201,7 +201,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   int numTracks = clusters.size();
   // int trkCNT = 0;
   // event.ResizeHits(nodes.size());
-  // for(int trkID=0; trkID<numTracks; trkID++){ 
+  // for(int trkID=0; trkID<numTracks; trkID++){
   //   event.ResizeTracks(numTracks);
   //   event.tracks[trkCNT].ResizeCols();
   //   event.tracks[trkCNT].ResizeRows();
@@ -228,7 +228,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   //   trkCNT++;
   // }
 
-  std::vector <TTrack*> tracks; 
+  std::vector <TTrack*> tracks;
   std::vector<THit*> allhits;
   for(int trkID=0; trkID<numTracks; trkID++){
     TTrack* track = new TTrack();
@@ -250,7 +250,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
     track->SetHits(hits);
   }
   event->SetTracks(tracks);
-  event->SetHits(allhits); 
+  event->SetHits(allhits);
 
   return true;
 }

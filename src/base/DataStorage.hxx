@@ -38,7 +38,7 @@ class THit{
 
 class TTrack{
   public:
-  std::vector<THit*> fhits; // all hits. 
+  std::vector<THit*> fhits; // all hits.
   std::vector<std::vector<THit*>> fc;    // id of hits in each column
   std::vector<std::vector<THit*>> fr;    // id of hits in each row
   void ResizeCols();
