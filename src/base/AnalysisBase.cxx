@@ -125,7 +125,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _chain->GetEntry(EventList[eventID]);
 
-    TEvent* event = new TEvent(eventID);
+    TEvent* event = new TEvent(EventList[eventID]);
 
     if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
