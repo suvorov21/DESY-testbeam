@@ -12,7 +12,7 @@ bool CrossingReconstruction::Initialize() {
 }
 
 bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                Event& event) {
+                                TEvent* event) {
   // TODO a lot of work
   (void)padAmpl;
   (void)event;
