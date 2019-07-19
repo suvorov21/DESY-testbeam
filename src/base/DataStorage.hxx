@@ -11,12 +11,7 @@
 #include "Geom.hxx"
 
 class THit{
-  public:
-  int  fr;
-  int  fc;
-  int  ft;
-  int  fq;
-
+ public:
   void SetRow(int row)    {fr = row;}
   void SetCol(int col)    {fc = col;}
   void SetTime(int time)  {ft = time;}
@@ -34,13 +29,16 @@ class THit{
     fq  = 0;
   }
   virtual ~THit() {;}
+
+ private:
+  int  fr;
+  int  fc;
+  int  ft;
+  int  fq;
 };
 
 class TTrack{
-  public:
-  std::vector<THit*> fhits; // all hits.
-  std::vector<std::vector<THit*>> fc;    // id of hits in each column
-  std::vector<std::vector<THit*>> fr;    // id of hits in each row
+ public:
   void ResizeCols();
   void ResizeRows();
   void AddColHit(THit* hit);
@@ -57,13 +55,16 @@ class TTrack{
     ResizeCols();
   }
   virtual ~TTrack() {;}
+
+ private:
+  std::vector<THit*> fhits; // all hits.
+  std::vector<std::vector<THit*>> fc;    // id of hits in each column
+  std::vector<std::vector<THit*>> fr;    // id of hits in each row
+
 };
 
 class TEvent{
-  public:
-  std::vector <THit*>   fhits;
-  std::vector <TTrack*> ftracks;
-
+ public:
   void SetHits(std::vector <THit*> inhits )       {fhits = inhits;}
   void SetTracks(std::vector <TTrack*> intracks)  {ftracks = intracks;}
   std::vector <THit*> GetHits()                   {return fhits;}
@@ -71,6 +72,10 @@ class TEvent{
 
   TEvent(){;}
   virtual ~TEvent() {/*implement removal of objects...*/;}
+
+ private:
+  std::vector <THit*>   fhits;
+  std::vector <TTrack*> ftracks;
 };
 
 #endif // SRC_CLASS_DATASTORAGE_HXX_
