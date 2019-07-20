@@ -7,25 +7,23 @@
 
 #include "AnalysisBase.hxx"
 
-AnalysisBase::AnalysisBase(int argc, char** argv) {
-  // default values
-  _verbose    = 1;
-  _batch      = false;
-  _test_mode  = false;
-
-  _file_in_name           = "";
-  _file_out_name          = "";
-  _event_list_file_name   = "";
-
-  _file_in    = NULL;
-  _file_out   = NULL;
-
-  _chain      = NULL;
-  _reconstruction  = NULL;
+AnalysisBase::AnalysisBase(int argc, char** argv) :
+  _file_in_name(""),
+  _file_out_name(""),
+  _event_list_file_name(""),
+  _file_in(NULL),
+  _file_out(NULL),
+  _chain(NULL),
+  _reconstruction(NULL),
+  _verbose(1),
+  _batch(false),
+  _test_mode(false),
+  _app(NULL)
+  {
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bvdm");
+    int c = getopt(argc, argv, "i:o:bv:dmt:");
     if (c < 0) break;
     switch (c) {
       case 'i' : _file_in_name     = optarg;       break;
@@ -34,6 +32,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) {
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
       case 'm' : help(argv[0]);                    break;
+      case 't' : _iteration        = atoi(optarg); break;
       case '?' : help(argv[0]);
     }
   }
@@ -83,18 +82,18 @@ bool AnalysisBase::Initialize() {
   gROOT->SetStyle(_t2kstyle->GetName());
   gROOT->ForceStyle();
 
-  if (_event_list_file_name == "") {
-    Int_t N_events = _chain->GetEntries();
-
-    for (auto i = 0; i < N_events; ++i)
-      _EventList.push_back(i);
-  } else {
-    // FIXIT read the event list file
-  }
+  Int_t N_events = _chain->GetEntries();
+  for (auto i = 0; i < N_events; ++i)
+    _EventList.push_back(i);
 
   // Open the output file
-  // WARNING temporary commented for debugging
-  // auto _file_out = new TFile(_file_out_name.Data(), "NEW");
+  _file_out = new TFile(_file_out_name.Data(), "NEW");
+  if (!_file_out->IsOpen()) {
+    std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+    std::cerr << "File already exists or directory is not writable" << std::endl;
+    std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
+    exit(1);
+  }
 
   // Initialize histoes
   // * do it in your analysis *
@@ -114,24 +113,36 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
-    std::cout << "[                               ]   Nevents = " << N_events << "\r[";
+    std::cout << "[                              ]   Nevents = " << N_events << "\r";
   }
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
     if (_verbose > 1)
       std::cout << "Event " << eventID << std::endl;
 
-    if (_verbose == 1 && (eventID%(N_events/30)) == 0)
-      std::cout << "." << std::flush;
+    /*if (_verbose == 1 && (eventID%(N_events/30)) == 0)
+      std::cout << "." << std::flush;*/
+    if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
+      double real, virt;
+      process_mem_usage(virt, real);
+      std::cout << "[";
+      for (auto i = 0; i < 30; ++i)
+        if (i < 30.*eventID/N_events) std::cout << ".";
+        else std::cout << " ";
+      std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
+      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r" << std::flush;
+    }
 
     _chain->GetEntry(EventList[eventID]);
 
-    TEvent* event = new TEvent();
+    TEvent* event = new TEvent(EventList[eventID]);
 
     if (!_reconstruction->SelectEvent(_padAmpl, event))
       continue;
 
     ProcessEvent(event);
+
+    delete event;
   }
 
   if (_verbose == 1)
@@ -140,7 +151,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   return true;
 }
 
-bool AnalysisBase::ProcessEvent(TEvent* event) {
+bool AnalysisBase::ProcessEvent(const TEvent* event) {
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
@@ -149,24 +160,26 @@ bool AnalysisBase::ProcessEvent(TEvent* event) {
 
 bool AnalysisBase::WriteOutput() {
   // WARNING add error
-  
-  auto _file_out = new TFile(_file_out_name.Data(), "RECREATE");
-  if (!_file_out)
+
+  if (!_file_out->IsOpen())
     return false;
+
+  std::cout << "Writing standard output..................";
 
   _file_out->cd();
 
   auto size = static_cast<int>(_output_vector.size());
-  std::cout << "size is: " << size << std::endl;
   for (auto i = 0; i < size; ++i)
     _output_vector[i]->Write();
 
   _file_out->Close();
 
+  std::cout << "done     " << "Write  " << size << " objects" << std::endl;
+
   return true;
 }
 
-void AnalysisBase::DrawSelection(TEvent *event, int trkID){
+void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
@@ -189,9 +202,9 @@ void AnalysisBase::DrawSelection(TEvent *event, int trkID){
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
   canv->Divide(3,1);
   canv->cd(1);
-  MM->Draw("COLZ"); 
+  MM->Draw("COLZ");
   canv->cd(2);
-  MMsel->Draw("COLZ"); 
+  MMsel->Draw("COLZ");
 
   canv->cd(3);
   event3D->Draw("x:y:z:c","","box2");
@@ -199,7 +212,7 @@ void AnalysisBase::DrawSelection(TEvent *event, int trkID){
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
   htemp->GetYaxis()->SetLimits(0,geom::nPady);
   htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");       
+  htemp->SetTitle("");
   canv->Update();
   canv->WaitPrimitive();
   delete htemp;
@@ -220,5 +233,26 @@ void AnalysisBase::help(const std::string name) {
   std::cout << "   -h                   : print ROOT help" << std::endl;
   std::cout << "   -m                   : print " << name << " help" << std::endl;
   exit(1);
+}
+
+void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
+{
+    vm_usage     = 0.0;
+    resident_set = 0.0;
+
+    // the two fields we want
+    unsigned long vsize;
+    long rss;
+    {
+        std::string ignore;
+        std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+        ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+                >> ignore >> ignore >> vsize >> rss;
+    }
+
+    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
+    vm_usage = vsize / 1024.0;
+    resident_set = rss * page_size_kb;
 }
 

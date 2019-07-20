@@ -11,7 +11,7 @@ DBSCANReconstruction::DBSCANReconstruction(): ReconstructionBase() {
 }
 
 bool DBSCANReconstruction::Initialize() {
-  std::cout << "Initialize DBSCAN Reconstruction............";
+  std::cout << "Initialize DBSCAN Reconstruction.........";
 
   std::cout << "done" << std::endl;
   return true;
@@ -45,11 +45,11 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
         if(MeasureDistance(origin,neighbor) <= MIN_DIST){
           close_nodes++;
           if(neighbor.c < 0){
-            bool found = false;                         
+            bool found = false;
             for (auto nTc:nodesToCheck){
               if(nTc.id == neighbor.id) found = true;
             }
-            if(!found) tmpNodes.push_back(neighbor); 
+            if(!found) tmpNodes.push_back(neighbor);
           }
         }
       }
@@ -167,7 +167,7 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
-  for (auto n:nodes){ 
+  for (auto n:nodes){
     event3D->Fill(n.t,n.y,n.x,n.c);
     MM->Fill(n.x,n.y,n.q);
     if(n.c==0) MMsel->Fill(n.x,n.y,n.q);
@@ -176,9 +176,9 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
   canv->Divide(3,1);
   canv->cd(1);
-  MM->Draw("COLZ"); 
+  MM->Draw("COLZ");
   canv->cd(2);
-  MMsel->Draw("COLZ"); 
+  MMsel->Draw("COLZ");
 
   canv->cd(3);
   event3D->Draw("x:y:z:c","","box2");
@@ -186,7 +186,7 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
   htemp->GetYaxis()->SetLimits(0,geom::nPady);
   htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");       
+  htemp->SetTitle("");
   canv->Update();
   canv->WaitPrimitive();
   delete htemp;
@@ -201,7 +201,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   int numTracks = clusters.size();
   // int trkCNT = 0;
   // event.ResizeHits(nodes.size());
-  // for(int trkID=0; trkID<numTracks; trkID++){ 
+  // for(int trkID=0; trkID<numTracks; trkID++){
   //   event.ResizeTracks(numTracks);
   //   event.tracks[trkCNT].ResizeCols();
   //   event.tracks[trkCNT].ResizeRows();
@@ -228,7 +228,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   //   trkCNT++;
   // }
 
-  std::vector <TTrack*> tracks; 
+  std::vector <TTrack*> tracks;
   std::vector<THit*> allhits;
   for(int trkID=0; trkID<numTracks; trkID++){
     TTrack* track = new TTrack();
@@ -250,7 +250,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
     track->SetHits(hits);
   }
   event->SetTracks(tracks);
-  event->SetHits(allhits); 
+  event->SetHits(allhits);
 
   return true;
 }

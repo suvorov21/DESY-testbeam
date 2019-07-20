@@ -21,7 +21,7 @@ bool dEdxAna::Initialize() {
   return true;
 }
 
-bool dEdxAna::ProcessEvent(TEvent *event) {
+bool dEdxAna::ProcessEvent(const TEvent *event) {
   double alpha = 0.625;
   for(int trkID=0; trkID<event->GetTracks().size(); trkID++){
     std::cout << "tracks: " << event->GetTracks().size() << std::endl;
@@ -36,7 +36,7 @@ bool dEdxAna::ProcessEvent(TEvent *event) {
     _selEvents++;
     if(_batch == 0) DrawSelection(event,trkID);
     if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
-    std::vector <double> QsegmentS =  sel::GetNonZeroCols(event,trkID);   
+    std::vector <double> QsegmentS =  sel::GetNonZeroCols(event,trkID);
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
     Int_t i_max = round(alpha * QsegmentS.size());

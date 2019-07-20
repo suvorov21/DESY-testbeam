@@ -22,7 +22,7 @@ struct Hit{
 };
 
 struct Track{
-  std::vector<Hit> hits;             // all hits. 
+  std::vector<Hit> hits;             // all hits.
   std::vector<std::vector<int>>  c; // id of hits in each column
   std::vector<std::vector<int>>  r; // id of hits in each row
 
@@ -47,10 +47,13 @@ struct Track{
 
 };
 
+// Obsolete
+/*
 struct TwoD {
   Int_t A[geom::nPadx][geom::nPady] = {0};
   Int_t T[geom::nPadx][geom::nPady] = {0};
 };
+*/
 
 /// The Reconstruction output structure
 /** by default it's a vector of 2D event displays */

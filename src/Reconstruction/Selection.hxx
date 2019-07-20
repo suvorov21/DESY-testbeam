@@ -8,10 +8,10 @@
 
 namespace sel
 {
-  int GetMMHits(TEvent* event, int trackID);
-  std::vector <double> GetNonZeroRows(TEvent* event, int trackID);
-  std::vector <double> GetNonZeroCols(TEvent* event, int trackID);
-  double GetFitQuality(TEvent* event, int trackID);
+  int GetMMHits(const TEvent* event, int trackID);
+  std::vector <double> GetNonZeroRows(const TEvent* event, int trackID);
+  std::vector <double> GetNonZeroCols(const TEvent* event, int trackID);
+  double GetFitQuality(const TEvent* event, int trackID);
 }
 
 #endif  // SRC_SELECTION_SELECTION_HXX_

@@ -14,8 +14,12 @@ BINDIR        = ../bin/
 OBJDIR 				=	../obj/
 
 RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer -g
+# add ROOT
+CXXFLAGS += $(ROOTCFLAGS)
+# add degub and warnings
+CXXFLAGS += -g -Wall
 # add include folders
-CXXFLAGS += $(ROOTCFLAGS) -I./base/ -I./Reconstruction/ -I../utils/
+CXXFLAGS += -I./base/ -I./Reconstruction/ -I../utils/
 
 BASESRC 		= 	base/
 BASESEL 		=		Reconstruction/

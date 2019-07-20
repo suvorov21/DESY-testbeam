@@ -16,7 +16,7 @@ class CrossingReconstruction: public ReconstructionBase {
   virtual ~CrossingReconstruction() {;}
 
   virtual bool Initialize();
-  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Event &event);
+  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
 
  private:
 
