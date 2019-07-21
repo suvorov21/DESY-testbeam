@@ -113,7 +113,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
-    std::cout << "[                              ]   Nevents = " << N_events << "\r";
+    std::cout << "[                              ]   Nevents = " << N_events << "\r[";
   }
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
@@ -125,12 +125,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
       double real, virt;
       process_mem_usage(virt, real);
-      std::cout << "[";
       for (auto i = 0; i < 30; ++i)
         if (i < 30.*eventID/N_events) std::cout << ".";
         else std::cout << " ";
       std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r" << std::flush;
+      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r[" << std::flush;
     }
 
     _chain->GetEntry(EventList[eventID]);
