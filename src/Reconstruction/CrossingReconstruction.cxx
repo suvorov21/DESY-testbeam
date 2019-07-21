@@ -150,7 +150,7 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
       for (int it_x = 0; it_x < geom::nPadx; ++it_x) {
         bool column = false;
         int track_max   = -1;
-        int track_max_j = -1;
+        int track_max_y = -1;
         int track_max_t = -1;
         bool columan_max_adc = false;
         (void)columan_max_adc;
@@ -194,14 +194,14 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
           if (found_max == -1)
             continue;
 
-          if (abs(track_pos.X() - it_y) > box_width_j) {
+          if (abs(track_pos.Y() - it_y) > box_width_j) {
             ++pad_OOT;
             continue;
           }
 
           if (found_max > track_max) {
             track_max   = found_max;
-            track_max_j = it_y;
+            track_max_y = it_y;
             track_max_t = found_max_time;
             column = true;
           }
@@ -212,8 +212,8 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
 
         if (column) {
           ++columns;
-          TrackDraft[track_max_j][it_x]       = track_max;
-          TrackDraft_time[track_max_j][it_x]  = track_max_t;
+          TrackDraft[it_x][track_max_y]       = track_max;
+          TrackDraft_time[it_x][track_max_y]  = track_max_t;
           if (gap) {
             ++breaking;
             gap = false;
@@ -242,22 +242,22 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
   for (uint trackId = 0; trackId < track_container.size(); ++trackId) {
     for (int it_x = 0; it_x < geom::nPadx; ++it_x) {
       int it_y = 0;
-      while (!track_container[trackId][it_x][it_y] && it_y < 47)
+      while (!track_container[trackId][it_x][it_y] && it_y < geom::nPady-1)
         ++it_y;
 
-      if (it_y == 47)
+      if (it_y == geom::nPady-1)
         continue;
 
       int it_y_track = it_y;
 
-      int first_time    = std::max(PadTime[it_y_track][it_x] - scan_time_down, 0);
-      int last_time     = std::min(PadTime[it_y_track][it_x] + scan_time_up, geom::Nsamples);
+      int first_time    = std::max(PadTime[it_x][it_y_track] - scan_time_down, 0);
+      int last_time     = std::min(PadTime[it_x][it_y_track] + scan_time_up, geom::Nsamples);
 
-      while (PadDisplay[it_x][it_y] && it_y < 47
+      while (PadDisplay[it_x][it_y] && it_y < geom::nPady-1
         && abs(it_y - it_y_track) < track_collection_dist) {
 
         // if the maximum is inside the time box --> take it
-        if(PadTime[it_x][it_y] - PadTime[it_y_track][it_x] < box_width_t2 && PadTime[it_y_track][it_x] - PadTime[it_x][it_y] < box_width_t1) {
+        if(PadTime[it_x][it_y] - PadTime[it_x][it_y_track] < box_width_t2 && PadTime[it_x][it_y_track] - PadTime[it_x][it_y] < box_width_t1) {
           track_container[trackId][it_x][it_y]      = PadDisplay[it_x][it_y];
           track_container_time[trackId][it_x][it_y] = PadTime[it_x][it_y];
         // if not --> scan ADC vs. time for this pad
@@ -303,7 +303,7 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
       while (PadDisplay[it_x][it_y] && it_y > 0
         && abs(it_y - it_y_track) < track_collection_dist) {
         // if the maximum is inside the time box --> take it
-        if(PadTime[it_x][it_y] - PadTime[it_y_track][it_x] < box_width_t2 && PadTime[it_y_track][it_x] - PadTime[it_x][it_y] < box_width_t1) {
+        if(PadTime[it_x][it_y] - PadTime[it_x][it_y_track] < box_width_t2 && PadTime[it_x][it_y_track] - PadTime[it_x][it_y] < box_width_t1) {
           track_container[trackId][it_x][it_y] = PadDisplay[it_x][it_y];
           track_container_time[trackId][it_x][it_y] = PadTime[it_x][it_y];
         // if not --> scan ADC vs. time for this pad
@@ -354,8 +354,9 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
       continue;
 
     TTrack* track = new TTrack();
+    std::vector<THit*> hits_v;
     for (auto x = 0; x < geom::nPadx; ++x) {
-      for (auto y = 0; y < geom::Nsamples; ++y) {
+      for (auto y = 0; y < geom::nPady; ++y) {
         if (track_container[trackId][x][y]) {
           THit* hit = new THit();
           hit->SetQ(track_container[trackId][x][y]);
@@ -365,10 +366,13 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
 
           track->AddColHit(hit);
           track->AddRowHit(hit);
+          hits_v.push_back(hit);
         } // not empty
       } // y
     }// x
+    track->SetHits(hits_v);
     track_v.push_back(track);
+
   } // loop over tracks
 
   event->SetTracks(track_v);
