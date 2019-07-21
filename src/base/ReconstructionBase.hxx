@@ -7,9 +7,6 @@
 #include <string>
 /** @endcond */
 
-#include "TROOT.h"
-
-#include "Geom.hxx"
 #include "DataStorage.hxx"
 
 
@@ -72,7 +69,7 @@ struct Event {
 };
 
 // It is important to include Selection.hxx after the stucts have been defined.
-#include "Selection.hxx"
+// #include "Selection.hxx"
 
 /// Template for the Reconstruction class
 class ReconstructionBase {

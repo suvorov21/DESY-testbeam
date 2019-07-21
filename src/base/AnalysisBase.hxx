@@ -1,15 +1,17 @@
 #ifndef SRC_BASE_ANALYSISBASE_HXX_
 #define SRC_BASE_ANALYSISBASE_HXX_
 
+/** @cond */
 #include "TString.h"
 #include "TFile.h"
 #include "TChain.h"
 #include "TApplication.h"
-
+#include "TCanvas.h"
 #include <TNtuple.h>
 #include <TF1.h>
 #include <TH2F.h>
 #include <TH3F.h>
+/** @endcond */
 
 #include "ReconstructionBase.hxx"
 #include "SetT2KStyle.hxx"

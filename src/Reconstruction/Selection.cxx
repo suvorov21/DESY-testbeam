@@ -1,3 +1,6 @@
+#include "TF1.h"
+#include "TH2F.h"
+
 #include "Selection.hxx"
 
 int sel::GetMMHits(const TEvent* event, int trackID){
