@@ -126,17 +126,12 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
       // create a draft for tarck
       std::vector<std::vector<short> > TrackDraft;
       std::vector<std::vector<short> > TrackDraft_time;
-      TrackDraft.resize(geom::nPady);
+      TrackDraft.resize(geom::nPadx);
       TrackDraft_time.resize(geom::nPadx);
       for (int z=0; z < geom::nPadx; ++z) {
         TrackDraft[z].resize(geom::nPady, 0);
         TrackDraft_time[z].resize(geom::nPady, 0);
       }
-
-      std::cout << front_cluster_x.size() << "  " << front_cluster_y.size() << "  " << front_cluster_t.size() << "  " << trackStart << std::endl;
-      std::cout << front_cluster_x[trackStart] << std::endl;
-      std::cout << front_cluster_y[trackStart] << std::endl;
-      std::cout << front_cluster_t[trackStart] << std::endl;
 
       TVector3 vec1 = TVector3(front_cluster_x[trackStart], front_cluster_y[trackStart], front_cluster_t[trackStart]);
       TVector3 vec2 = TVector3(back_cluster_x[trackEnd], back_cluster_y[trackEnd], back_cluster_t[trackEnd]);
