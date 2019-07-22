@@ -163,6 +163,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (!track)
       continue;
 
+    if(_batch == 0) DrawSelection(event,trackId);
+
     passed = true;
 
     if (_verbose == 2)

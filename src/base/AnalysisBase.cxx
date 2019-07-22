@@ -89,14 +89,15 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  if(!_test_mode){
+  if (_test_mode)
+    _file_out = new TFile(_file_out_name.Data(), "REWRITE");
+  else
     _file_out = new TFile(_file_out_name.Data(), "NEW");
-    if (!_file_out->IsOpen() && !_overwrite) {
-      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
-      std::cerr << "File already exists or directory is not writable" << std::endl;
-      std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
-      exit(1);
-    }
+  if (!_file_out->IsOpen()) {
+    std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+    std::cerr << "File already exists or directory is not writable" << std::endl;
+    std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
+    exit(1);
   }
 
   // Initialize histoes
@@ -117,7 +118,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   if (_verbose == 1) {
     std::cout << "Processing" << std::endl;
-    std::cout << "[                              ]   Nevents = " << N_events << "\r";
+    std::cout << "[                              ]   Nevents = " << N_events << "\r[";
   }
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
@@ -129,12 +130,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
       double real, virt;
       process_mem_usage(virt, real);
-      std::cout << "[";
       for (auto i = 0; i < 30; ++i)
         if (i < 30.*eventID/N_events) std::cout << ".";
         else std::cout << " ";
       std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r" << std::flush;
+      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r[" << std::flush;
     }
 
     _chain->GetEntry(EventList[eventID]);
@@ -205,7 +205,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
     MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
-  TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
+  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
   MM->Draw("COLZ");

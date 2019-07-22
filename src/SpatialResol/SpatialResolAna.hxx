@@ -6,9 +6,6 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
-#include "TF1.h"
-#include "TH1F.h"
-#include "TH2F.h"
 #include "TGraphErrors.h"
 
 /// Spatial resolution analysis
