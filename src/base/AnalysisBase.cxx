@@ -87,7 +87,10 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  _file_out = new TFile(_file_out_name.Data(), "NEW");
+  if (_test_mode)
+    _file_out = new TFile(_file_out_name.Data(), "REWRITE");
+  else
+    _file_out = new TFile(_file_out_name.Data(), "NEW");
   if (!_file_out->IsOpen()) {
     std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
     std::cerr << "File already exists or directory is not writable" << std::endl;
