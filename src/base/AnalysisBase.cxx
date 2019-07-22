@@ -165,7 +165,7 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 bool AnalysisBase::WriteOutput() {
   // WARNING add error
 
-  if(_test_mode) return true; 
+  if(_test_mode) return true;
   if (!_file_out->IsOpen())
     return false;
 
