@@ -24,14 +24,13 @@ bool dEdxAna::Initialize() {
 bool dEdxAna::ProcessEvent(const TEvent *event) {
   double alpha = 0.625;
   for(int trkID=0; trkID<event->GetTracks().size(); trkID++){
-    std::cout << "tracks: " << event->GetTracks().size() << std::endl;
-    std::cout << "cols: " << sel::GetNonZeroCols(event,trkID).size() << std::endl;
-    std::cout << "rows: " << sel::GetNonZeroRows(event,trkID).size() << std::endl;
-    std::cout << "qual: " << sel::GetFitQuality(event,trkID)         << std::endl;
+    if(_verbose == 1){      
+      std::cout << "sel::GetNonZeroCols(event,trkID).size(): " << sel::GetNonZeroCols(event,trkID).size() << std::endl;
+      std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(event,trkID).size() << std::endl;
+    }
     if(sel::GetNonZeroCols(event,trkID).size() != 36) return false;
     if(sel::GetNonZeroRows(event,trkID).size()>5) return false;
     if(sel::GetFitQuality(event,trkID)>1.0e6) return false;
-    std::cout << sel::GetFitQuality(event,trkID) << std::endl;
     //If survives the selection, use track info:
     _selEvents++;
     if(_batch == 0) DrawSelection(event,trkID);

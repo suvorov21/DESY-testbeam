@@ -43,7 +43,6 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual void DrawNodes(std::vector<Node> nodes);
   virtual bool FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, TEvent* event);
 
-
  private:
 
 };

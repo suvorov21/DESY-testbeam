@@ -22,6 +22,13 @@ class THit{
   int GetTime()   const   {return ft;}
   int GetQ()      const   {return fq;}
 
+  THit(int col, int row, int time, int q){
+    fr = row;
+    fc = col;
+    ft = time;
+    fq = q;
+  }
+
   THit(){
     fr  = -999;
     fc  = -999;
@@ -39,20 +46,21 @@ class THit{
 
 class TTrack{
  public:
-  void ResizeCols();
-  void ResizeRows();
+  // void ResizeCols();
+  // void ResizeRows();
   void AddColHit(THit* hit);
   void AddRowHit(THit* hit);
-  void SetHits(std::vector<THit*> inhits)               {fhits = inhits;}
+  void SetHits(std::vector<THit*> inhits)    {fhits = inhits;}
+  void AddCol(std::vector<THit*> inCol)      {fc.push_back(inCol);}
+  void AddRow(std::vector<THit*> inRow)      {fr.push_back(inRow);}
+
   std::vector<THit*> GetHits()                const     {return fhits;}
-  std::vector<THit*> GetColHits(int col)      const     {return fc[col];}
-  std::vector<THit*> GetRowHits(int row)      const     {return fr[row];}
   std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}
   std::vector<std::vector<THit*>> GetRows ()  const     {return fr;}
 
   TTrack(){
-    ResizeRows();
-    ResizeCols();
+    // ResizeRows();
+    // ResizeCols();
   }
   virtual ~TTrack();
 
@@ -65,10 +73,10 @@ class TTrack{
 
 class TEvent{
  public:
-  void SetHits(std::vector <THit*> inhits )       {fhits = inhits;}
+  void SetHits(std::vector <THit*> inhits )       {funusedhits = inhits;}
   void SetTracks(std::vector <TTrack*> intracks)  {ftracks = intracks;}
   void SetID(Int_t var) {ID = var;}
-  std::vector <THit*>   GetHits()   const         {return fhits;}
+  std::vector <THit*>   GetHits()   const         {return funusedhits;}
   std::vector <TTrack*> GetTracks() const         {return ftracks;}
   Int_t GetID() const  {return ID;}
 
@@ -77,8 +85,8 @@ class TEvent{
   virtual ~TEvent();
 
  private:
-  std::vector <THit*>   fhits;
-  std::vector <TTrack*> ftracks;
+  std::vector <THit*>   funusedhits; // unused hits.
+  std::vector <TTrack*> ftracks;     // tracks coming out of reconstruction
 
   Int_t ID;
 };

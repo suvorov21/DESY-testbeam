@@ -18,7 +18,7 @@ bool DBSCANReconstruction::Initialize() {
 }
 
 double DBSCANReconstruction::MeasureDistance(Node a, Node b){
-    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/30 ,2); // distance squared.
+    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/5 ,2); // distance squared.
     return pow(distance2,0.5);
 }
 
@@ -198,60 +198,45 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
 }
 
 bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, TEvent* event){
-  int numTracks = clusters.size();
-  // int trkCNT = 0;
-  // event.ResizeHits(nodes.size());
-  // for(int trkID=0; trkID<numTracks; trkID++){
-  //   event.ResizeTracks(numTracks);
-  //   event.tracks[trkCNT].ResizeCols();
-  //   event.tracks[trkCNT].ResizeRows();
-  //   event.tracks[trkCNT].ResizeHits(clusters[trkID].size);
-  //   int sel_id = 0;
-  //   int tot_id = 0;
-  //   for(auto n:nodes){
-  //     Hit hit;
-  //     hit.c = n.x;
-  //     hit.r = n.y;
-  //     hit.t = n.t;
-  //     hit.q = n.q;
-  //     hit.id = tot_id;
-  //     tot_id++;
-  //     event.SetHit(hit.id,hit);
-  //     if(n.c == trkCNT){
-  //       hit.id = sel_id;
-  //       sel_id++;
-  //       event.tracks[trkCNT].SetHit(hit.id,hit);
-  //       event.tracks[trkCNT].PushBackCol(hit.c,hit.id);
-  //       event.tracks[trkCNT].PushBackRow(hit.r,hit.id);
-  //     }
-  //   }
-  //   trkCNT++;
-  // }
-
+  if(!nodes.size()) return false;
   std::vector <TTrack*> tracks;
-  std::vector<THit*> allhits;
-  for(int trkID=0; trkID<numTracks; trkID++){
+  std::vector<THit*> unusedHits;
+  std::vector<int> usedHits;
+  usedHits.resize(nodes.size(),0);
+  // store selected hits
+  for(int trkID=0; trkID<clusters.size(); trkID++){
     TTrack* track = new TTrack();
     tracks.push_back(track);
+    std::vector<std::vector<THit*>> colHits; 
+    std::vector<std::vector<THit*>> rowHits; 
+    colHits.resize(geom::nPadx);
+    rowHits.resize(geom::nPady);
     std::vector<THit*> hits;
-    for(auto n:nodes){
-      THit *hit = new THit();
-      hit->SetCol(n.x);
-      hit->SetRow(n.y);
-      hit->SetTime(n.t);
-      hit->SetQ(n.q);
-      allhits.push_back(hit);
+    for (int i = 0; i<nodes.size(); i++){
+      Node n = nodes[i];
+      THit *hit = new THit(n.x,n.y,n.t,n.q);
+      usedHits[i] = 1;
       if(n.c == trkID){
         hits.push_back(hit);
-        track->AddColHit(hit);
-        track->AddRowHit(hit);
+        colHits[hit->GetCol()].push_back(hit);
+        rowHits[hit->GetRow()].push_back(hit);
       }
     }
     track->SetHits(hits);
+    //add row and col information
+    for (auto c:colHits) if(c.size()) track->AddCol(c);
+    for (auto r:rowHits) if(r.size()) track->AddRow(r);
   }
-  event->SetTracks(tracks);
-  event->SetHits(allhits);
 
+  // stored unselected hits
+  for (int i = 0; i<nodes.size(); i++){
+    Node n = nodes[i];
+    unusedHits.push_back(new THit(n.x,n.y,n.t,n.q));
+  }
+
+
+  event->SetTracks(tracks);
+  event->SetHits(unusedHits);
   return true;
 }
 

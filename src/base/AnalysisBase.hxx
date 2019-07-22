@@ -72,6 +72,7 @@ class AnalysisBase {
   Int_t _verbose;
   bool _batch;
   bool _test_mode;
+  bool _overwrite;
 
   TApplication* _app;
 };
