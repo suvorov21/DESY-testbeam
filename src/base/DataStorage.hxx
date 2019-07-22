@@ -48,11 +48,12 @@ class TTrack{
  public:
   // void ResizeCols();
   // void ResizeRows();
-  void AddColHit(THit* hit);
-  void AddRowHit(THit* hit);
-  void SetHits(std::vector<THit*> inhits)    {fhits = inhits;}
-  void AddCol(std::vector<THit*> inCol)      {fc.push_back(inCol);}
-  void AddRow(std::vector<THit*> inRow)      {fr.push_back(inRow);}
+  void AddHit(THit* hit);
+  //void AddColHit(THit* hit);
+  //void AddRowHit(THit* hit);
+  //void SetHits(std::vector<THit*> inhits)    {fhits = inhits;}
+  //void AddCol(std::vector<THit*> inCol)      {fc.push_back(inCol);}
+  //void AddRow(std::vector<THit*> inRow)      {fr.push_back(inRow);}
 
   std::vector<THit*> GetHits()                const     {return fhits;}
   std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}

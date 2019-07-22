@@ -364,13 +364,13 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
           hit->SetRow(y);
           hit->SetTime(track_container_time[trackId][x][y]);
 
-          track->AddColHit(hit);
-          track->AddRowHit(hit);
-          hits_v.push_back(hit);
+          track->AddHit(hit);
+          //track->AddRowHit(hit);
+          //hits_v.push_back(hit);
         } // not empty
       } // y
     }// x
-    track->SetHits(hits_v);
+    //track->SetHits(hits_v);
     track_v.push_back(track);
 
   } // loop over tracks
