@@ -38,8 +38,8 @@ double sel::GetFitQuality(const TEvent* event, int trackID){
   double quality = 1.0e10;
   if (fit){
     quality = fit->GetChisquare() / fit->GetNDF();
-    double k = fit->GetParameter(1);
-    double b = fit->GetParameter(0);
+    // double k = fit->GetParameter(1);
+    // double b = fit->GetParameter(0);
   }
 
   delete MM;

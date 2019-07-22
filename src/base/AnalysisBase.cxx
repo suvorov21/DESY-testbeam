@@ -18,12 +18,13 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _verbose(1),
   _batch(false),
   _test_mode(false),
+  _overwrite(false),
   _app(NULL)
   {
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bv:dmt:");
+    int c = getopt(argc, argv, "i:o:bv:drmt:");
     if (c < 0) break;
     switch (c) {
       case 'i' : _file_in_name     = optarg;       break;
@@ -31,6 +32,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
       case 'b' : _batch            = true;         break;
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
+      case 'r' : _overwrite        = true;         break;
       case 'm' : help(argv[0]);                    break;
       case 't' : _iteration        = atoi(optarg); break;
       case '?' : help(argv[0]);
@@ -163,6 +165,7 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 bool AnalysisBase::WriteOutput() {
   // WARNING add error
 
+  if(_test_mode) return true; 
   if (!_file_out->IsOpen())
     return false;
 
@@ -199,6 +202,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
@@ -257,4 +261,3 @@ void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
     vm_usage = vsize / 1024.0;
     resident_set = rss * page_size_kb;
 }
-

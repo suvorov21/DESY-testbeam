@@ -23,23 +23,14 @@ TTrack::~TTrack() {
 
 }
 
-void TTrack::ResizeCols(){
-  fc.resize(geom::nPadx);
-}
-void TTrack::ResizeRows(){
-  fr.resize(geom::nPady);
-}
-
-void TTrack::AddColHit(THit* hit){
-  fc[hit->GetCol()].push_back(hit);
-}
-void TTrack::AddRowHit(THit* hit){
-  fr[hit->GetRow()].push_back(hit);
-}
-
 
 //// TEVENT
 TEvent::~TEvent() {
+  for (auto hit:funusedhits) {
+    if (hit)
+      delete hit;
+    hit = NULL;
+  }
   for (auto track:ftracks) {
     if (track)
       delete track;
