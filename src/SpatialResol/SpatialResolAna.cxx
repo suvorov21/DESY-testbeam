@@ -188,7 +188,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // first loop over column
     for (uint colID = 0; colID < track->GetCols().size(); ++colID) {
       // FIXIT check this call
-      auto it_x = track->GetColHits(colID)[0]->GetCol();
+      auto it_x = track->GetCols()[colID][0]->GetCol();
       cluster[it_x]     = 0;
       cluster_N[it_x]   = 0;
       charge_max[it_x]  = 0;
@@ -197,12 +197,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
 
-      for (uint rowID = 0; rowID < track->GetColHits(it_x).size(); ++rowID) {
-        if (!track->GetColHits(it_x)[rowID])
+      for (uint rowID = 0; rowID < track->GetCols()[it_x].size(); ++rowID) {
+        if (!track->GetCols()[it_x][rowID])
           continue;
 
-        auto it_y = track->GetColHits(it_x)[rowID]->GetRow();
-        auto q = track->GetColHits(colID)[rowID]->GetQ();
+        auto it_y = track->GetCols()[it_x][rowID]->GetRow();
+        auto q = track->GetCols()[colID][rowID]->GetQ();
 
         cluster[it_x] += q;
         ++cluster_N[it_x];
@@ -225,9 +225,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (_iteration > 0 && cluster_N[it_x] != 1) {
         for (Int_t scanId = 0; scanId < scan_Nsteps; ++scanId) {
           double chi2 = 0;
-          for (uint rowID = 0; rowID < track->GetColHits(it_x).size(); ++rowID) {
-            auto q      = track->GetColHits(colID)[rowID]->GetQ();
-            auto it_y   = track->GetColHits(colID)[rowID]->GetRow();
+          for (uint rowID = 0; rowID < track->GetCols()[it_x].size(); ++rowID) {
+            auto q      = track->GetCols()[colID][rowID]->GetQ();
+            auto it_y   = track->GetCols()[colID][rowID]->GetRow();
             if (!q)
               continue;
 
@@ -308,7 +308,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // second loop over columns
     for (uint colID = 0; colID < track->GetCols().size(); ++colID) {
       // FIXIT check this call
-      auto it_x = track->GetColHits(colID)[0]->GetCol();
+      auto it_x = track->GetCols()[colID][0]->GetCol();
 
       if (true_track[it_x]  == -999.)
         continue;
@@ -332,12 +332,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (cluster_N[it_x] == 1)
         continue;
       // Fill PRF
-      for (uint rowID = 0; rowID < track->GetColHits(it_x).size(); ++rowID) {
-        if (!track->GetColHits(it_x)[rowID])
+      for (uint rowID = 0; rowID < track->GetCols()[it_x].size(); ++rowID) {
+        if (!track->GetCols()[it_x][rowID])
           continue;
 
-        auto it_y = track->GetColHits(it_x)[rowID]->GetRow();
-        auto q = track->GetColHits(colID)[rowID]->GetQ();
+        auto it_y = track->GetCols()[it_x][rowID]->GetRow();
+        auto q = track->GetCols()[colID][rowID]->GetQ();
 
         if (!cluster[it_x] || !q)
           continue;
