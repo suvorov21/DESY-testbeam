@@ -201,7 +201,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
-  TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
+  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
   MM->Draw("COLZ");
