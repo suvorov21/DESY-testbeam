@@ -43,9 +43,9 @@ void TTrack::AddHit(THit* hit) {
   }
   // fill row vector
   auto row_found = false;
-  for (uint rowID = 0; rowID < fc.size(); ++rowID) {
-    if (fc[rowID][0]->GetRow() == hit->GetRow()) {
-      fc[rowID].push_back(hit);
+  for (uint rowID = 0; rowID < fr.size(); ++rowID) {
+    if (fr[rowID][0]->GetRow() == hit->GetRow()) {
+      fr[rowID].push_back(hit);
       row_found = true;
       break;
     }
@@ -53,7 +53,7 @@ void TTrack::AddHit(THit* hit) {
   if (!row_found) {
     std::vector<THit*> temp_v;
     temp_v.push_back(hit);
-    fc.push_back(temp_v);
+    fr.push_back(temp_v);
   }
 }
 
