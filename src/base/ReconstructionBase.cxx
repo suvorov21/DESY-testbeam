@@ -12,12 +12,3 @@ bool ReconstructionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPad
 
   return true;
 }
-
-std::vector<std::vector<Int_t> > ReconstructionBase::GetEmptyEvent() {
-  std::vector<std::vector<Int_t> > vec;
-  vec.resize(geom::nPadx);
-  for (uint it = 0; it < vec.size(); ++it)
-    vec[it].resize(geom::nPady, 0);
-
-  return vec;
-}
