@@ -157,7 +157,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     if(sel::GetNonZeroCols(event  , trackId).size() != geom::nPadx) return false;
     if(sel::GetNonZeroRows(event  , trackId).size()>5) return false;
-    if(sel::GetFitQuality(event   , trackId)>1.0e6) return false;
 
     TTrack* track = event->GetTracks()[trackId];
     if (!track)
