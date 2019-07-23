@@ -46,14 +46,7 @@ class THit{
 
 class TTrack{
  public:
-  // void ResizeCols();
-  // void ResizeRows();
   void AddHit(THit* hit);
-  //void AddColHit(THit* hit);
-  //void AddRowHit(THit* hit);
-  //void SetHits(std::vector<THit*> inhits)    {fhits = inhits;}
-  //void AddCol(std::vector<THit*> inCol)      {fc.push_back(inCol);}
-  //void AddRow(std::vector<THit*> inRow)      {fr.push_back(inRow);}
 
   std::vector<THit*> GetHits()                const     {return fhits;}
   std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}
@@ -71,15 +64,15 @@ class TTrack{
 
 class TEvent{
  public:
-  void SetHits(std::vector <THit*> inhits )       {funusedhits = inhits;}
-  void SetTracks(std::vector <TTrack*> intracks)  {ftracks = intracks;}
+  void SetHits(const std::vector <THit*>& inhits )       {funusedhits = inhits;}
+  void SetTracks(const std::vector <TTrack*>& intracks)  {ftracks = intracks;}
   void SetID(Int_t var) {ID = var;}
   std::vector <THit*>   GetHits()   const         {return funusedhits;}
   std::vector <TTrack*> GetTracks() const         {return ftracks;}
   Int_t GetID() const  {return ID;}
 
-  TEvent(){;}
-  TEvent(Int_t var): ID(var) {;}
+  explicit TEvent(){;}
+  explicit TEvent(Int_t var): ID(var) {;}
   virtual ~TEvent();
 
  private:

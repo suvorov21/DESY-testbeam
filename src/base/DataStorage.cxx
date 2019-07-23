@@ -13,13 +13,8 @@ TTrack::~TTrack() {
     hit = NULL;
   }
 
-  for (uint i = 0; i < fc.size(); ++i)
-    for (auto hit:fc[i])
-      hit = NULL;
-
-  for (uint i = 0; i < fr.size(); ++i)
-    for (auto hit:fr[i])
-      hit = NULL;
+  fc.clear();
+  fr.clear();
 }
 
 void TTrack::AddHit(THit* hit) {
