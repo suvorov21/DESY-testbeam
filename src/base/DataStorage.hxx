@@ -59,10 +59,7 @@ class TTrack{
   std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}
   std::vector<std::vector<THit*>> GetRows ()  const     {return fr;}
 
-  TTrack(){
-    // ResizeRows();
-    // ResizeCols();
-  }
+  TTrack(){;}
   virtual ~TTrack();
 
  private:

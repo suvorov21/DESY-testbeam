@@ -89,15 +89,14 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  if (_test_mode)
-    _file_out = new TFile(_file_out_name.Data(), "REWRITE");
-  else
+  if (!_test_mode){
     _file_out = new TFile(_file_out_name.Data(), "NEW");
-  if (!_file_out->IsOpen()) {
-    std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
-    std::cerr << "File already exists or directory is not writable" << std::endl;
-    std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
-    exit(1);
+    if (!_file_out->IsOpen()) {
+      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+      std::cerr << "File already exists or directory is not writable" << std::endl;
+      std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
+      exit(1);
+    }
   }
 
   // Initialize histoes

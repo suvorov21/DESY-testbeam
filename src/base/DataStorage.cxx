@@ -20,7 +20,6 @@ TTrack::~TTrack() {
   for (uint i = 0; i < fr.size(); ++i)
     for (auto hit:fr[i])
       hit = NULL;
-
 }
 
 void TTrack::AddHit(THit* hit) {

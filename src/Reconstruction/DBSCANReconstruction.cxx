@@ -207,25 +207,15 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   for(int trkID=0; trkID<clusters.size(); trkID++){
     TTrack* track = new TTrack();
     tracks.push_back(track);
-    std::vector<std::vector<THit*>> colHits; 
-    std::vector<std::vector<THit*>> rowHits; 
-    colHits.resize(geom::nPadx);
-    rowHits.resize(geom::nPady);
     std::vector<THit*> hits;
     for (int i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
       THit *hit = new THit(n.x,n.y,n.t,n.q);
       usedHits[i] = 1;
       if(n.c == trkID){
-        hits.push_back(hit);
-        colHits[hit->GetCol()].push_back(hit);
-        rowHits[hit->GetRow()].push_back(hit);
+        track->AddHit(hit);
       }
     }
-    track->SetHits(hits);
-    //add row and col information
-    for (auto c:colHits) if(c.size()) track->AddCol(c);
-    for (auto r:rowHits) if(r.size()) track->AddRow(r);
   }
 
   // stored unselected hits
