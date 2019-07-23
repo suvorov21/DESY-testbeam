@@ -29,11 +29,11 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
   while (clustered < (int) nodes.size()){
     if (!nodesToCheck.size()){
       clusterID++;
-      for(auto frst:nodes) if(frst.c < 0) {
-        nodesToCheck.push_back(frst);
-        nodes[frst.id].c = clusterID;
+      auto it = std::find_if(nodes.begin(), nodes.end(), [](const Node& n) {return n.c < 0;});
+      if (it != nodes.end()) {
+        nodesToCheck.push_back(*(it));
+        nodes[(*it).id].c = clusterID;
         clustered++;
-        break;
       }
     }
     std::vector <Node> tmpNodes;
@@ -45,16 +45,14 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
         if(MeasureDistance(origin,neighbor) <= MIN_DIST){
           close_nodes++;
           if(neighbor.c < 0){
-            bool found = false;
-            for (auto nTc:nodesToCheck){
-              if(nTc.id == neighbor.id) found = true;
-            }
+            bool found = std::any_of(nodesToCheck.begin(), nodesToCheck.end(),
+                                [&](const Node& n) { return n.id == neighbor.id;}) ? true : false;
             if(!found) tmpNodes.push_back(neighbor);
           }
         }
       }
       if(close_nodes >= MIN_NODES){
-        for(auto tmp:tmpNodes) nodesToCheck.push_back(tmp);
+        nodesToCheck.insert(nodesToCheck.end(), tmpNodes.begin(), tmpNodes.end());
         if(nodes[origin.id].c<0){
           clustered++;
           nodes[origin.id].c = clusterID;
@@ -125,9 +123,9 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
 
 std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
   std::vector<Cluster> clusters;
-  int numClusters = 0;
+   int numClusters = (*std::max_element(nodes.begin(), nodes.end(),
+                        [](const Node& n1, const Node& n2) { return n1.c < n2.c; })).c;
   int maxNodes = 150;
-  for (auto n:nodes) if(n.c > numClusters) numClusters = n.c;
   int acceptedClusters = 0;
   for(int i=0; i<=numClusters; i++){
     Cluster cluster;
@@ -204,22 +202,21 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   std::vector<int> usedHits;
   usedHits.resize(nodes.size(),0);
   // store selected hits
-  for(int trkID=0; trkID<clusters.size(); trkID++){
+  for(uint trkID=0; trkID<clusters.size(); trkID++){
     TTrack* track = new TTrack();
     tracks.push_back(track);
-    std::vector<THit*> hits;
-    for (int i = 0; i<nodes.size(); i++){
+    for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
       THit *hit = new THit(n.x,n.y,n.t,n.q);
       usedHits[i] = 1;
-      if(n.c == trkID){
+      if(n.c == (int)trkID){
         track->AddHit(hit);
       }
     }
   }
 
   // stored unselected hits
-  for (int i = 0; i<nodes.size(); i++){
+  for (uint i = 0; i<nodes.size(); i++){
     Node n = nodes[i];
     unusedHits.push_back(new THit(n.x,n.y,n.t,n.q));
   }
