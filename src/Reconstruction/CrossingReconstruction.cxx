@@ -354,7 +354,6 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
       continue;
 
     TTrack* track = new TTrack();
-    std::vector<THit*> hits_v;
     for (auto x = 0; x < geom::nPadx; ++x) {
       for (auto y = 0; y < geom::nPady; ++y) {
         if (track_container[trackId][x][y]) {
@@ -365,12 +364,9 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
           hit->SetTime(track_container_time[trackId][x][y]);
 
           track->AddHit(hit);
-          //track->AddRowHit(hit);
-          //hits_v.push_back(hit);
         } // not empty
       } // y
     }// x
-    //track->SetHits(hits_v);
     track_v.push_back(track);
 
   } // loop over tracks

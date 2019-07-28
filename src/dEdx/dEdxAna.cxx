@@ -23,9 +23,9 @@ bool dEdxAna::Initialize() {
 
 bool dEdxAna::ProcessEvent(const TEvent *event) {
   double alpha = 0.625;
-  for(int trkID=0; trkID<event->GetTracks().size(); trkID++){
+  for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
     TTrack* itrack = event->GetTracks()[trkID];
-    if(_verbose == 1){      
+    if(_verbose == 1){
       std::cout << "sel::GetNonZeroCols(event,trkID).size(): " << sel::GetNonZeroCols(event,trkID).size() << std::endl;
       std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(event,trkID).size() << std::endl;
     }
