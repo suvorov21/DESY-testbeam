@@ -12,6 +12,7 @@ bool dEdxAna::Initialize() {
   _hdEdx = new TH1F("dEdx","",300,0,5000);
   _output_vector.push_back(_hdEdx);
   _selEvents = 0;
+  _verbose = 0;
 
   // Initilise selection
   _reconstruction = new DBSCANReconstruction();
@@ -20,21 +21,23 @@ bool dEdxAna::Initialize() {
   return true;
 }
 
-bool dEdxAna::ProcessEvent(const Event event) {
+bool dEdxAna::ProcessEvent(const TEvent *event) {
   double alpha = 0.625;
-  _selEvents++;
-  std::cout << "sel::GetMMHits(event,0): " << sel::GetMMHits(event,0) << std::endl;
-  if(_selEvents%100 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
-  for(int num=0; num<event.trackNum; num++){
-    std::vector <double> QsegmentS;   
-    for (int itx = 0; itx < geom::nPadx; ++itx){
-      double Qsegment = 0;      
-      for (uint ity = 0; ity < geom::nPady; ++ity){
-        if (!event.twoD[num][itx][ity]) continue;  
-        Qsegment+=event.twoD[num][itx][ity];
-      }
-      if(Qsegment) QsegmentS.push_back(Qsegment);
+  for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
+    TTrack* itrack = event->GetTracks()[trkID];
+    if(_verbose == 1){
+      std::cout << "sel::GetNonZeroCols(event,trkID).size(): " << sel::GetNonZeroCols(event,trkID).size() << std::endl;
+      std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(event,trkID).size() << std::endl;
     }
+    if(sel::GetNonZeroCols(event,trkID).size() != 36) return false;
+    if(sel::GetNonZeroRows(event,trkID).size()>5) return false;
+    if(sel::GetFitParams(event,trkID)[0]>1.0e6) return false;
+    //If survives the selection, use track info:
+    _selEvents++;
+    if(_batch == 0) DrawSelection(event,trkID);
+    sel::Get3DFitParams(itrack);
+    if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
+    std::vector <double> QsegmentS =  sel::GetNonZeroCols(event,trkID);
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
     Int_t i_max = round(alpha * QsegmentS.size());
