@@ -10,6 +10,7 @@
 #include "TROOT.h"
 #include "Geom.hxx"
 
+/// Class for storing information about each reconstructed hit. Store row, column, charge and time
 class THit{
  public:
   void SetRow(int row)    {fr = row;}
@@ -44,6 +45,9 @@ class THit{
   int  fq;
 };
 
+//! Class for storing reconstructed tracks.
+
+//! It contains vector of hits associated with this track. Also there are vectors of pointers to THit in the hit columns and rows
 class TTrack{
  public:
   void AddHit(THit* hit);

@@ -18,7 +18,7 @@ bool DBSCANReconstruction::Initialize() {
 }
 
 double DBSCANReconstruction::MeasureDistance(Node a, Node b){
-    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/5 ,2); // distance squared.
+    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/30 ,2); // distance squared.
     return pow(distance2,0.5);
 }
 

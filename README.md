@@ -1,9 +1,11 @@
 # DESY beam test analysis package
 
-The package for the DESY beam test data analysis.
+The package for the DESY beam test data analysis. There are two general method to perform your analysis:
+1. macros
+2. so-called HighLLevel tool (recommended and supported)
 
 # Working with macros
-You could run the analysis with a simple macros (like at CERN analysis). You could fine the macros template under macros/TutorialMacro.cxx
+You could run the analysis with a simple macros (like at CERN analysis). You could find the macros template under macros/TutorialMacro.cxx
 
 ## Compilation
 The compilation is possible from the macros folder. You need to specify the macro you need as a source. You are free to create subdirectories in the macro folder with your analysis. Just call the compilation from the macro folder and specify the proper path.
@@ -40,8 +42,9 @@ For the DESY beam test analysis the HighLevel tool was created. The macros that 
 The main idea is to separate the routine procedures (e.g. opening files, looping, writing the output etc.) from the analysis itself. So now the analyzer should only define the histos/canvases he want to store and the logic how to fill it.
 
 ## Tool structure
-The scheme of the package for the particular case of the spatial resolution analysis and in case of using crossing selection (former selection3D).
-![](doc/html/_spatial_resol_ana_8cxx__incl.png)
+The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
+
+![Tool structure](doc/html/_spatial_resol_ana_8cxx__incl.png)
 
 ## Compilation
 From the src/ folder you need to call
@@ -50,7 +53,7 @@ make all
 ```
 You can specify the particular analysis you want to build (e.g. `make SpatialResol`).
 
-## The roadmap to start your analysis:
+## The road map to start your analysis:
 1. Create your analysis class inheriting from AnalysisBase. Optionally you can put it in your separate folder.
 2. Add it in the Makefile for compilation. e.g.
 ```make
@@ -59,12 +62,14 @@ SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
   rm $(OBJDIR)/*.$(ObjSuf)
   @echo "Compilation done"
 ```
-3. Define histograms you are interested in (inside YourAnalysis::Initialise()). Add them into _output_vector. They will be written into the output file automaticaly.
-4. Choose the selection you need with calling the approproate constructor for _selection.
-5. Define the YourAnalysis::ProcessEvent() function. This function will be called for each event passed the selection. Fill your histograms for each event with all the information you need.
+3. Define histograms you are interested in (inside YourAnalysis::Initialize()). Add them into _output_vector. They will be written into the output file automatically.
+4. Choose the reconstruction you need with calling the appropriate constructor for _reconstruction (e.g. DBSCANReconstruction()).
+5. Define the YourAnalysis::ProcessEvent() function. This function will be called for each event passed the reconstruction. Apply any cuts you need, fill your histograms for each event with all the information you are interested in.
 6. Enjoy the output!
 
-By default the selection is takind 3D array (x, y, t) as an input and gives you a vector of 2D event displays ready for the analysis. Each event display should correspond to one track. If you would like the selection to return you some additional info, you could define the additional variables in the Event structure and tell selection how to fill it.
+## Data structure
+The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
+
 
 # Geometry
 The geometry information is stored in utils/Geom.hxx. The coordinate system and the pad size are the following:

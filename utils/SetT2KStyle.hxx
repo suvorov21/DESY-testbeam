@@ -3,11 +3,12 @@
 
 // --- T2K style ---
 
+/** @cond */
 #include <TColor.h>
 #include "TStyle.h"
-
 #include "TH1F.h"
 #include "TPad.h"
+/** @endcond */
 
 /// Plotters options
 /** Default canvas size value */

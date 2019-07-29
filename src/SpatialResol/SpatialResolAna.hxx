@@ -2,11 +2,13 @@
 #define SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
 
 #include "AnalysisBase.hxx"
-#include "CrossingReconstruction.hxx"
+//#include "CrossingReconstruction.hxx"
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
+/** @cond */
 #include "TGraphErrors.h"
+/** @endcond */
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {

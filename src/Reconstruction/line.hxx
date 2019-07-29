@@ -3,6 +3,7 @@
 
 #include "TVector3.h"
 
+/// Class describing the line gometry. Used in crossing reconstruction
 class TLine_att {
 public:
   /// a constructor given two dots

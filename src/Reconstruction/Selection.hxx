@@ -1,7 +1,9 @@
 #ifndef SRC_SELECTION_SELECTION_HXX_
 #define SRC_SELECTION_SELECTION_HXX_
 
+/** @cond */
 #include <TCanvas.h>
+/** @endcond */
 
 #include "DataStorage.hxx"
 
