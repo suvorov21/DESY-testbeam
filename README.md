@@ -70,6 +70,12 @@ SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
 ## Data structure
 The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
 
+## Script submission
+To submit script at the LXPLUS please use the script/submitter.py. It creates list of tasks and submit them to condor system. At the beginning of the file you can specify the input and output paths, versions, number of iterations (if any), job flavor and log folder. As an input you need list of input/output files: two columns separated with at list one space. Run the submitter as following:
+```bash
+python3 submitter.py -f ../FileLists/gain.list
+```
+
 
 # Geometry
 The geometry information is stored in utils/Geom.hxx. The coordinate system and the pad size are the following:
