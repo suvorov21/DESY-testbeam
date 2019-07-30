@@ -83,5 +83,5 @@ if __name__ == "__main__":
   submit_file.close()
 
   os.chdir(project_path + "/script/")
-  #subprocess.run(["condor_submit",  "temp/Submit.sub"])
-  #shutil.rmtree(project_path + "/script/temp")
+  subprocess.run(["condor_submit",  "temp/Submit.sub"])
+  shutil.rmtree(project_path + "/script/temp")
