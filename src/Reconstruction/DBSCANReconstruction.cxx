@@ -123,14 +123,16 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
 
 std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
   std::vector<Cluster> clusters;
-   int numClusters = (*std::max_element(nodes.begin(), nodes.end(),
-                        [](const Node& n1, const Node& n2) { return n1.c < n2.c; })).c;
+  auto it_max = std::max_element(nodes.begin(), nodes.end(),
+                       [](const Node& n1, const Node& n2) { return n1.c < n2.c; });
+  int numClusters = (it_max == nodes.end()) ? 0 : (*it_max).c;
   int maxNodes = 150;
   int acceptedClusters = 0;
   for(int i=0; i<=numClusters; i++){
     Cluster cluster;
     cluster.id = acceptedClusters;
     for (auto n:nodes) if (n.c == i){
+      // TODO make it a vector
       cluster.nodes[cluster.size] = n.id;
       cluster.size++;
     }
