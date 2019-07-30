@@ -439,6 +439,7 @@ bool SpatialResolAna::WriteOutput() {
     _PRF_graph->SetPointError(_PRF_graph->GetN()-1, 0, e/2.);
   } // end of PRF histo profiling
 
+  TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
   for (auto i = 1; i < geom::nPadx - 1; ++i) {
     _resol_col_hist[i]->Fit("gaus", "Q");
     _resol_col_hist_2pad[i]->Fit("gaus", "Q");
@@ -456,6 +457,8 @@ bool SpatialResolAna::WriteOutput() {
     _residual_sigma_unbiased->SetBinContent(i+1, sigma_ex);
     _residual_sigma->SetBinContent(i+1, sqrt(sigma * sigma_ex));
 
+    resol->Fill(sqrt(sigma * sigma_ex));
+
     _residual_mean->SetBinContent(i+1, mean);
   }
 
@@ -470,6 +473,8 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "  Chi2/NDF " << _PRF_graph->GetFunction("PRF_function")->GetChisquare()
             << "/" << _PRF_graph->GetFunction("PRF_function")->GetNDF() << std::endl;
   std::cout << std::endl;
+
+  std::cout << "Resol\t" << 1.e6*resol->GetMean() << " um" << "\tRMS\t" << 1.e6*resol->GetRMS() << " um" << std::endl;
 
   // Write objects
   AnalysisBase::WriteOutput();
