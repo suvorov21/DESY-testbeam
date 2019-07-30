@@ -13,6 +13,7 @@ class dEdxAna: public AnalysisBase {
   virtual ~dEdxAna() {;}
 
   TH1F* _hdEdx;
+  TH1F* _mult;
   int   _selEvents;
 
   /// Initialise histoes, input files, selections
