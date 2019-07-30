@@ -192,16 +192,29 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   // all hits
-  for(auto h:event->GetHits()){
-    MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-  }
+  //for(auto h:event->GetHits()){
+  //  MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  //}
 
   // sel hits
   for (auto h:event->GetTracks()[trkID]->GetHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-    MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    //MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  }
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      auto max = 0;
+      for (auto t = 0; t < geom::Nsamples; ++t) {
+        if (_padAmpl[x][y][t] > max) {
+          max = _padAmpl[x][y][t];
+        }
+      } // over t
+      if (max)
+        MM->Fill(x, y, max);
+    }
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
