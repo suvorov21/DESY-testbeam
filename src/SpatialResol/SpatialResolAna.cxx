@@ -86,6 +86,12 @@ bool SpatialResolAna::Initialize() {
     _PRF_function->SetParameters(co, a2, a4, b2, b4);
   }
 
+  _do_arc_fit = true;
+  _circle_function = new TF1("circle", "-sqrt([0]*[0] - (x-[1]) * (x-[1])) + [2]", -0.5, 0.5);
+  _circle_function->SetParName(0, "radius");
+  _circle_function->SetParName(1, "x0");
+  _circle_function->SetParName(2, "y0");
+
   // Initialise histoes and graphs
   _PRF_histo = new TH2F("PRF_histo","", prf_bin, prf_min, prf_max, 102,0.,1.02);
   _PRF_histo_2pad = new TH2F("PRF_histo_2pad","", prf_bin, prf_min, prf_max, 102,0.,1.02);
@@ -188,6 +194,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     for (uint colID = 0; colID < track->GetCols().size(); ++colID) {
       // FIXIT check this call
       auto it_x = track->GetCols()[colID][0]->GetCol();
+      // exlude 1st/last column
+      if (it_x == 0 || it_x == geom::nPadx-1)
+        continue;
+
       cluster[it_x]     = 0;
       cluster_N[it_x]   = 0;
       charge_max[it_x]  = 0;
@@ -196,11 +206,11 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
 
-      for (uint rowID = 0; rowID < track->GetCols()[it_x].size(); ++rowID) {
-        if (!track->GetCols()[it_x][rowID])
+      for (uint rowID = 0; rowID < track->GetCols()[colID].size(); ++rowID) {
+        if (!track->GetCols()[colID][rowID])
           continue;
 
-        auto it_y = track->GetCols()[it_x][rowID]->GetRow();
+        auto it_y = track->GetCols()[colID][rowID]->GetRow();
         auto q = track->GetCols()[colID][rowID]->GetQ();
 
         cluster[it_x] += q;
@@ -224,7 +234,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (_iteration > 0 && cluster_N[it_x] != 1) {
         for (Int_t scanId = 0; scanId < scan_Nsteps; ++scanId) {
           double chi2 = 0;
-          for (uint rowID = 0; rowID < track->GetCols()[it_x].size(); ++rowID) {
+          for (uint rowID = 0; rowID < track->GetCols()[colID].size(); ++rowID) {
             auto q      = track->GetCols()[colID][rowID]->GetQ();
             auto it_y   = track->GetCols()[colID][rowID]->GetRow();
             if (!q)
@@ -250,7 +260,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           scan_y += scan_step;
         }
       } else
-      true_track[it_x] = cluster_mean[it_x];
+        true_track[it_x] = cluster_mean[it_x];
 
       double x = geom::x_pos[it_x];
 
@@ -271,50 +281,82 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           error = _uncertainty;
       }
       track_gr->SetPointError(track_gr->GetN()-1, 0., error);
-      for (int i = 1; i < geom::nPadx; ++i) {
+      for (int i = 1; i < geom::nPadx-1; ++i) {
         if (i != it_x)
           track_1[i]->SetPointError(track_1[i]->GetN() - 1, 0., error);
       }
     } // loop over i
 
-    track_gr->Fit("pol1", "Q");
-    TF1* fit = track_gr->GetFunction("pol1");
-
-        //track_m->Fit("pol1", "Q");
-        //TF1* fit1 = track_m->GetFunction("pol1");
+    TF1* fit;
+    if (!_do_arc_fit) {
+      track_gr->Fit("pol1", "Q");
+      fit = track_gr->GetFunction("pol1");
+    } else {
+      _circle_function->SetParameters(80., 0, 80.);
+      track_gr->Fit("circle", "Q");
+      fit = track_gr->GetFunction("circle");
+    }
 
     if (!fit)
       continue;
 
     double quality = fit->GetChisquare() / fit->GetNDF();
-    double k = fit->GetParameter(1);
-    double b = fit->GetParameter(0);
+
+    if (_verbose > 2) {
+      track_gr->Fit("pol1", "Q");
+      fit = track_gr->GetFunction("pol1");
+      std::cout << "Linear fit" << std::endl;
+      std::cout << "k\t" << fit->GetParameter(1) << std::endl;
+      std::cout << "b\t" << fit->GetParameter(0) << std::endl;
+      std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
+
+      _circle_function->SetParameters(80., 0, 80.);
+      track_gr->Fit("circle", "Q");
+      fit = track_gr->GetFunction("circle");
+
+      std::cout << "Arc fit" << std::endl;
+      std::cout << "r\t" <<  fit->GetParameter(0) << std::endl;
+      std::cout << "x0\t" << fit->GetParameter(1) << std::endl;
+      std::cout << "y0\t" << fit->GetParameter(2) << std::endl;
+      std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
+    }
 
     _Chi2_track->Fill(quality);
 
-    double k1[36];
-    double b1[36];
+    double k1[geom::nPadx];
+    double b1[geom::nPadx];
+    TF1* fit1[geom::nPadx];
 
-    for (int i = 1; i < geom::nPadx; ++i) {
-      track_1[i]->Fit("pol1", "Q");
-      TF1* fit1 = track_1[i]->GetFunction("pol1");
-      if (!fit1)
-        continue;
-      k1[i] = fit1->GetParameter(1);
-      b1[i] = fit1->GetParameter(0);
+    for (int i = 1; i < geom::nPadx-1; ++i) {
+      if (!_do_arc_fit) {
+        track_1[i]->Fit("pol1", "Q");
+        fit1[i] = track_1[i]->GetFunction("pol1");
+      } else {
+        track_1[i]->Fit("circle", "Q");
+        fit1[i] = track_1[i]->GetFunction("circle");
+      }
+      if (!fit1[i]) {
+        std::cout << "Arc fit" << std::endl;
+        std::cout << "r\t" <<  fit->GetParameter(0) << std::endl;
+        std::cout << "x0\t" << fit->GetParameter(1) << std::endl;
+        std::cout << "y0\t" << fit->GetParameter(2) << std::endl;
+        std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
+      }
     }
 
     // second loop over columns
     for (uint colID = 0; colID < track->GetCols().size(); ++colID) {
       // FIXIT check this call
       auto it_x = track->GetCols()[colID][0]->GetCol();
+      if (it_x == 0 || it_x == geom::nPadx-1)
+        continue;
 
       if (true_track[it_x]  == -999.)
         continue;
 
       double x    = geom::x_pos[it_x];
-      double track_fit_y  = k * x + b;
-      double track_fit_y1 = k1[it_x] * x + b1[it_x];
+      double track_fit_y    = fit->Eval(x);
+      double track_fit_y1   = fit1[it_x]->Eval(x);
 
       // fill SR
       _resol_col_hist[it_x]->Fill(true_track[it_x] - track_fit_y);
@@ -331,11 +373,11 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (cluster_N[it_x] == 1)
         continue;
       // Fill PRF
-      for (uint rowID = 0; rowID < track->GetCols()[it_x].size(); ++rowID) {
-        if (!track->GetCols()[it_x][rowID])
+      for (uint rowID = 0; rowID < track->GetCols()[colID].size(); ++rowID) {
+        if (!track->GetCols()[colID][rowID])
           continue;
 
-        auto it_y = track->GetCols()[it_x][rowID]->GetRow();
+        auto it_y = track->GetCols()[colID][rowID]->GetRow();
         auto q = track->GetCols()[colID][rowID]->GetQ();
 
         if (!cluster[it_x] || !q)

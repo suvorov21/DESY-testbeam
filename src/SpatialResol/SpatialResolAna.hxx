@@ -29,6 +29,9 @@ class SpatialResolAna: public AnalysisBase {
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
 
+  bool    _do_arc_fit;
+  TF1*    _circle_function;
+
   /// Chi2 function of the track fit
   TH1F* _Chi2_track;
 
@@ -66,9 +69,9 @@ class SpatialResolAna: public AnalysisBase {
   std::vector<Int_t> _passed_events;
 
   /// Chi2 track scan delta
-  const float   scan_delta    = 0.1;
+  const float   scan_delta    = 0.001;
   /// Chi2 track scan steps
-  const int     scan_Nsteps   = 1000;
+  const int     scan_Nsteps   = 100;
   /// Chi2 track scan step
   const double  scan_step     = 2. * scan_delta / scan_Nsteps;
 
