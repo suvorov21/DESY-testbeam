@@ -116,6 +116,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
 
   if (_verbose == 1) {
+    std::cout << "Input file..............................." << _file_in_name << std::endl;
+    std::cout << "output file.............................." << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << N_events << "\r[";
   }
