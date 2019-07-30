@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import shutil
 import os
+import random
 
 if __name__ == "__main__":
 
@@ -12,14 +13,14 @@ if __name__ == "__main__":
   doiter    = True
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
-  bin_name  = "SpatialResol.exe"
+  bin_name  = "SpatialResol_circ.exe"
   bin_flag  = "-b"
 
   input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
   input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "v1"
+  outpt_version = "v3"
 
   JobFlavour    = "longlunch"
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/script/"
@@ -47,6 +48,19 @@ if __name__ == "__main__":
       if (in_file == "" or ot_file == ""):
         Print("Error")
 
+      # create a file list in case of existing subruns
+      temp_filename = project_path + "/FileLists/temp" + str(round(random.random()*1000)) + ".list"
+      temp_file = open(temp_filename, "w")
+      path = input_prefix+"/"+input_version+"/"
+
+      for r, d, f in os.walk(path):
+        if "soft" in r:
+          continue
+        for file in f:
+          if in_file[:21] in file and ".root" in file:
+            temp_file.write(os.path.join(r, file) + "\n")
+      temp_file.close()
+
       file_out = open(project_path + "/script/temp/" + str(i) + ".sh", "w")
       i+=1
       command = ""
@@ -54,11 +68,13 @@ if __name__ == "__main__":
       # fo each iteration
       for it in range(0, Niter):
         command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(it)
-        command += " -i " + input_prefix+"/"+input_version+"/"+in_file+".root"
+        command += " -i " + temp_filename
         command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
+      # rm temp file list
+      command += "rm " + temp_filename
 
       file_out.write("#!/bin/bash\n")
       file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
@@ -78,10 +94,11 @@ if __name__ == "__main__":
   submit_file.write("output                  = " + log_folder + "/output/$(ClusterId).$(ProcId).out\n")
   submit_file.write("error                   = " + log_folder + "/error/$(ClusterId).$(ProcId).err\n")
   submit_file.write("log                     = " + log_folder + "/log/$(ClusterId).log\n")
-  submit_file.write("queue filename matching files temp/*.sh")
+  submit_file.write("queue filename matching files *.sh")
 
   submit_file.close()
 
+  os.chdir(project_path + "/script/temp")
+  subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
-  subprocess.run(["condor_submit",  "temp/Submit.sub"])
   shutil.rmtree(project_path + "/script/temp")
