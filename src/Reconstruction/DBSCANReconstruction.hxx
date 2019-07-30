@@ -25,7 +25,8 @@ struct Node{
 struct Cluster{
     int size = 0;
     int id   = -999;      // cluster ID
-    int nodes[1000] = {-999}; // node ID of nodes belonging to cluster
+    // TODO make it a vector to prevent overflow
+    int nodes[2000] = {-999}; // node ID of nodes belonging to cluster
 };
 
 class DBSCANReconstruction: public ReconstructionBase {

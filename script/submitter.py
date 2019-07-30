@@ -12,7 +12,7 @@ if __name__ == "__main__":
   doiter    = True
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
-  bin_name  = "SpatialResolAna.exe"
+  bin_name  = "SpatialResol.exe"
   bin_flag  = "-b"
 
   input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
@@ -21,7 +21,7 @@ if __name__ == "__main__":
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
   outpt_version = "v1"
 
-  JobFlavour    = "testmatch"
+  JobFlavour    = "longlunch"
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/script/"
   # end of input definition
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
       # fo each iteration
       for it in range(0, Niter):
         command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(it)
-        command += " -i " + input_prefix+"/"+input_version+"/"+in_file
+        command += " -i " + input_prefix+"/"+input_version+"/"+in_file+".root"
         command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file
         if (doiter):
            command += "_iter" + str(it)
@@ -63,7 +63,7 @@ if __name__ == "__main__":
       file_out.write("#!/bin/bash\n")
       file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
       file_out.write("source /afs/cern.ch/work/s/ssuvorov/public/ROOT/root-6.18.00-build_gcc73/bin/thisroot.sh\n")
-      file_out.write("cd /afs/cern.ch/work/s/ssuvorov/dev/TPC_testbeam//DESY_TestBeam/bin/\n")
+      file_out.write("cd /afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam//DESY_TestBeam/bin/\n")
       file_out.write(command + "\n")
 
       file_out.close()
@@ -83,5 +83,5 @@ if __name__ == "__main__":
   submit_file.close()
 
   os.chdir(project_path + "/script/")
-  subprocess.run(["condor_submit",  "temp/Submit.sub"])
-  shutil.rmtree(project_path + "/script/temp")
+  #subprocess.run(["condor_submit",  "temp/Submit.sub"])
+  #shutil.rmtree(project_path + "/script/temp")
