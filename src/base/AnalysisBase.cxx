@@ -91,6 +91,7 @@ bool AnalysisBase::Initialize() {
   // Open the output file
   if (!_test_mode){
     _file_out = new TFile(_file_out_name.Data(), "NEW");
+    if(_overwrite) _file_out = new TFile(_file_out_name.Data(), "RECREATE");
     if (!_file_out->IsOpen()) {
       std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
       std::cerr << "File already exists or directory is not writable" << std::endl;
@@ -167,8 +168,10 @@ bool AnalysisBase::WriteOutput() {
   // WARNING add error
 
   if(_test_mode) return true;
-  if (!_file_out->IsOpen())
+  if (!_file_out->IsOpen()){
+    std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
+  }
 
   std::cout << "Writing standard output..................";
 

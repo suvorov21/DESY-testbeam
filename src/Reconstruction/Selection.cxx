@@ -61,8 +61,7 @@ std::vector <double> sel::GetFitParams(const TTrack* track){
   return params;
 }
 
-
-//// 3D FITTING:
+//// 3D FITTING:    ---- WARNING ---- UNDER DEVELOPMENT, DO NOT USE IT!
 
 #include <TMath.h>
 #include <TGraph2D.h>
@@ -171,7 +170,7 @@ std::vector<double> sel::Get3DFitParams(const TTrack* track)
   // std::cout << "Ave Dist: " << result.MinFcnValue() / (gr->GetN()) << std::endl;
   // result.Print(std::cout);
 
-  if(result.MinFcnValue() / (track->GetHits().size()) > 1.5) return p_result;
+  //if(result.MinFcnValue() / (track->GetHits().size()) > 1.5) return p_result;
 
   // get fit parameters
   const double * parFit = result.GetParams();
@@ -179,7 +178,7 @@ std::vector<double> sel::Get3DFitParams(const TTrack* track)
   // draw the fitted line
   int n = 1000;
   double t0 = 0;
-  double dt = 100;
+  double dt = 1000;
   TPolyLine3D *l = new TPolyLine3D(n);
   for (int i = 0; i <n;++i) {
      double t = t0+ dt*i/n;
@@ -201,7 +200,10 @@ std::vector<double> sel::Get3DFitParams(const TTrack* track)
 
   bool DrawThis = true;
 
+
+  std::cout << "here..." << std::endl;
   if(DrawThis){
+    std::cout << "drawing..." << std::endl;
     TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
     for (auto h:track->GetHits()){
       if(!h->GetQ()) continue;

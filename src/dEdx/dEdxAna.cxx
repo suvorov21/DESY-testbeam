@@ -10,8 +10,10 @@ bool dEdxAna::Initialize() {
   AnalysisBase::Initialize();
 
   _hdEdx  = new TH1F("dEdx","",300,0,5000);
+  _hTime  = new TH1F("tDist","",511,0,511);
   _mult   = new TH1F("Mult", "multiplicity", 10, 0., 10.);
   _output_vector.push_back(_hdEdx);
+  _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
   _selEvents = 0;
 
@@ -34,17 +36,20 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     if(sel::GetColsMaxSep(itrack)>5) return false;
     if(sel::GetFitParams(itrack)[0]>1.0e6) return false;
 
+    //sel::Get3DFitParams(itrack);
+
     //If survives the selection, use track info:
     _selEvents++;
     if(_batch == 0) DrawSelection(event,trkID);
-    //sel::Get3DFitParams(itrack);
     if (_test_mode)
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
-    //std::vector <double> QsegmentS =  sel::GetNonZeroCols(event,trkID);
     std::vector <double> QsegmentS;
-    for(auto col:event->GetTracks()[trkID]->GetCols()) if(col.size()){
+    for(auto col:itrack->GetCols()) if(col.size()){
       int colQ = 0;
-      for(auto h:col) colQ+=h->GetQ();
+      for(auto h:col){
+        colQ+=h->GetQ();
+        _hTime->Fill(h->GetTime());
+      }
       if(colQ) QsegmentS.push_back(colQ);
       _mult->Fill(col.size());
     }
@@ -61,18 +66,17 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 bool dEdxAna::WriteOutput() {
   AnalysisBase::WriteOutput();
 
-  std::cout << "selEvents: " << _selEvents << std::endl;
-  std::cout << "Write dedx output........................";
+  // std::cout << "selEvents: " << _selEvents << std::endl;
+  // std::cout << "Write dedx output........................";
 
+  // if (!_file_out)
+  //   return true;
 
-  if (!_file_out)
-    return true;
+  // auto file = new TFile(_file_out_name.Data(), "UPDATE");
+  // // write
+  // file->Close();
 
-  auto file = new TFile(_file_out_name.Data(), "UPDATE");
-  // write
-  file->Close();
-
-  std::cout << "done" << std::endl;
+  // std::cout << "done" << std::endl;
   return true;
 }
 
