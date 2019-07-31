@@ -3,13 +3,24 @@
 
 #include "Selection.hxx"
 
-int sel::GetMMHits(const TEvent* event, int trackID){
-  return event->GetHits().size();
+int sel::GetColsMaxSep(const TTrack* track){
+  int maxsep = 0;
+  for(auto col:track->GetCols()) if(col.size()){
+    int first = 0;
+    int last = 0;
+    for(auto h:col){
+      if (!h->GetQ()) continue;
+      if(!first) first = h->GetRow();
+      else last = h->GetRow();
+    }
+    if(maxsep < (last-first)) maxsep = last-first;
+  }
+  return maxsep+1;
 }
 
-std::vector <double> sel::GetNonZeroRows(const TEvent* event, int trackID){
+std::vector <double> sel::GetNonZeroRows(const TTrack* track){
   std::vector <double> rows;
-  for(auto row:event->GetTracks()[trackID]->GetRows()) if(row.size()){
+  for(auto row:track->GetRows()) if(row.size()){
     int rowQ = 0;
     for(auto h:row) rowQ+=h->GetQ();
     if(rowQ) rows.push_back(rowQ);
@@ -17,9 +28,9 @@ std::vector <double> sel::GetNonZeroRows(const TEvent* event, int trackID){
   return rows;
 }
 
-std::vector <double> sel::GetNonZeroCols(const TEvent* event, int trackID){
+std::vector <double> sel::GetNonZeroCols(const TTrack* track){
   std::vector <double> cols;
-  for(auto col:event->GetTracks()[trackID]->GetCols()) if(col.size()){
+  for(auto col:track->GetCols()) if(col.size()){
     int colQ = 0;
     for(auto h:col) colQ+=h->GetQ();
     if(colQ) cols.push_back(colQ);
@@ -27,11 +38,11 @@ std::vector <double> sel::GetNonZeroCols(const TEvent* event, int trackID){
   return cols;
 }
 
-std::vector <double> sel::GetFitParams(const TEvent* event, int trackID){
+std::vector <double> sel::GetFitParams(const TTrack* track){
   std::vector <double> params;
 
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  for(auto h:event->GetTracks()[trackID]->GetHits()) if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  for(auto h:track->GetHits()) if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
 
   MM->Fit("pol1", "Q");
   TF1* fit = MM->GetFunction("pol1");
@@ -96,9 +107,9 @@ bool first = true;
 
 // function Object to be minimized
 struct SumDistance2 {
-  TTrack *fTrack;
+  const TTrack *fTrack;
 
-  SumDistance2(TTrack *g) : fTrack(g) {}
+  SumDistance2(const TTrack *g) : fTrack(g) {}
 
   // calculate distance line-point
   double distance2(double x,double y,double z, const double *p) {
@@ -126,7 +137,7 @@ struct SumDistance2 {
 
 };
 
-std::vector<double> sel::Get3DFitParams(TTrack* track)
+std::vector<double> sel::Get3DFitParams(const TTrack* track)
 {
   gStyle->SetOptStat(0);
   gStyle->SetOptFit();

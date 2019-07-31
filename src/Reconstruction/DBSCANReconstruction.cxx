@@ -220,7 +220,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   // stored unselected hits
   for (uint i = 0; i<nodes.size(); i++){
     Node n = nodes[i];
-    unusedHits.push_back(new THit(n.x,n.y,n.t,n.q));
+    if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q));
   }
 
 

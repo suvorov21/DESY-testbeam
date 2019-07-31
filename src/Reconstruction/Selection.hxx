@@ -9,11 +9,11 @@
 
 namespace sel
 {
-  int GetMMHits(const TEvent* event, int trackID);
-  std::vector <double> GetNonZeroRows(const TEvent* event, int trackID);
-  std::vector <double> GetNonZeroCols(const TEvent* event, int trackID);
-  std::vector <double> GetFitParams(const TEvent* event, int trackID);
-  std::vector <double> Get3DFitParams(TTrack* track);
+  int                  GetColsMaxSep (const TTrack*);
+  std::vector <double> GetNonZeroRows(const TTrack*);
+  std::vector <double> GetNonZeroCols(const TTrack*);
+  std::vector <double> GetFitParams  (const TTrack*);
+  std::vector <double> Get3DFitParams(const TTrack*);
 }
 
 #endif  // SRC_SELECTION_SELECTION_HXX_

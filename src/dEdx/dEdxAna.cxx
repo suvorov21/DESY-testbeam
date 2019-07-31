@@ -27,12 +27,13 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
   for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
     TTrack* itrack = event->GetTracks()[trkID];
     if(_verbose == 2){
-      std::cout << "sel::GetNonZeroCols(event,trkID).size(): " << sel::GetNonZeroCols(event,trkID).size() << std::endl;
-      std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(event,trkID).size() << std::endl;
+      std::cout << "sel::GetNonZeroCols(event,trkID).size(): " << sel::GetNonZeroCols(itrack).size() << std::endl;
+      std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(itrack).size() << std::endl;
     }
-    if(sel::GetNonZeroCols(event,trkID).size() != 36) return false;
-    if(sel::GetNonZeroRows(event,trkID).size()>5) return false;
-    if(sel::GetFitParams(event,trkID)[0]>1.0e6) return false;
+    if(sel::GetNonZeroCols(itrack).size() != 36) return false;
+    if(sel::GetColsMaxSep(itrack)>5) return false;
+    if(sel::GetFitParams(itrack)[0]>1.0e6) return false;
+
     //If survives the selection, use track info:
     _selEvents++;
     if(_batch == 0) DrawSelection(event,trkID);

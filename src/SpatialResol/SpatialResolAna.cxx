@@ -161,12 +161,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
   for (uint trackId = 0; trackId < event->GetTracks().size(); ++trackId) {
 
-    if(sel::GetNonZeroCols(event  , trackId).size() != geom::nPadx) return false;
-    if(sel::GetNonZeroRows(event  , trackId).size()>5) return false;
-
     TTrack* track = event->GetTracks()[trackId];
     if (!track)
       continue;
+    
+    if(sel::GetNonZeroCols(track).size() != geom::nPadx) return false;
+    if(sel::GetNonZeroRows(track).size()>5) return false;
 
     if(_batch == 0) DrawSelection(event,trackId);
 
