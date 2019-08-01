@@ -8,14 +8,24 @@ int sel::GetColsMaxSep(const TTrack* track){
   for(auto col:track->GetCols()) if(col.size()){
     int first = 0;
     int last = 0;
-    for(auto h:col){
-      if (!h->GetQ()) continue;
-      if(!first) first = h->GetRow();
-      else last = h->GetRow();
-    }
-    if(maxsep < (last-first)) maxsep = last-first;
+    std::sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetRow() < hit2->GetRow();});
+    int diff = (*(col.end()-1))->GetRow() - (*col.begin())->GetRow();
+    if (diff > maxsep) maxsep = diff;
   }
   return maxsep+1;
+}
+
+int sel::GetColsMaxGap(const TTrack* track){
+  int maxgap  = 0;
+  for(auto col:track->GetCols()) if(col.size()){
+    std::sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetRow() < hit2->GetRow();});
+    for (uint padID = 1; padID < col.size(); ++padID) {
+      if (col[padID]->GetRow() - col[padID-1]->GetRow()-1 > maxgap)
+        maxgap = col[padID]->GetRow() - col[padID-1]->GetRow()-1;
+
+    }
+  }
+  return maxgap;
 }
 
 std::vector <double> sel::GetNonZeroRows(const TTrack* track){
