@@ -6,8 +6,6 @@
 int sel::GetColsMaxSep(const TTrack* track){
   int maxsep = 0;
   for(auto col:track->GetCols()) if(col.size()){
-    int first = 0;
-    int last = 0;
     std::sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetRow() < hit2->GetRow();});
     int diff = (*(col.end()-1))->GetRow() - (*col.begin())->GetRow();
     if (diff > maxsep) maxsep = diff;
@@ -22,7 +20,6 @@ int sel::GetColsMaxGap(const TTrack* track){
     for (uint padID = 1; padID < col.size(); ++padID) {
       if (col[padID]->GetRow() - col[padID-1]->GetRow()-1 > maxgap)
         maxgap = col[padID]->GetRow() - col[padID-1]->GetRow()-1;
-
     }
   }
   return maxgap;
