@@ -135,14 +135,29 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
       double real, virt;
       process_mem_usage(virt, real);
-      double CPUtime = sw_event.CpuTime();
-      CPUtime *= 1.e3;  CPUtime /= eventID;
+      double CPUtime  = sw_event.CpuTime();
+      double REALtime = sw_event.RealTime();
+      int m, s;
+      if (eventID) {
+        int EET         = (int)((N_events - eventID) * REALtime / eventID);
+        CPUtime *= 1.e3;  CPUtime /= eventID;
+        m = EET / 60;
+        s = EET % 60;
+      }
 
       for (auto i = 0; i < 30; ++i)
-        if (i < 30.*eventID/N_events) std::cout << ".";
+        if (i < 30.*eventID/N_events) std::cout << "#";
         else std::cout << " ";
       std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-      std::cout << "\tMemory  " <<  real << "\t" << virt << "\t Av speed " << CPUtime << " ms/event" << "\r[" << std::flush;
+      std::cout << "\t Memory  " <<  real << "\t" << virt;
+      if (eventID) {
+        std::cout << "\t Av speed CPU " << CPUtime << " ms/event";
+        std::cout << "\t EET real " << m << ":" << s;
+      }
+      std::cout << "      \r[" << std::flush;
+      //std::cout << "\r[" << std::flush;
+
+      //std::cout << "\tMemory  " <<  real << "\t" << virt << "\t Av speed " << CPUtime << " ms/event" << "\r[" << std::flush;
 
       sw_event.Continue();
     }
@@ -160,7 +175,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   }
 
   if (_verbose == 1)
-    std::cout << "]" << std::endl;
+    std::cout << std::endl;
 
   return true;
 }
