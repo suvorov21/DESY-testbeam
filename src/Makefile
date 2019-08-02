@@ -13,11 +13,15 @@ OutPutSuf     = exe
 BINDIR        = ../bin/
 OBJDIR 				=	../obj/
 
-RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer -g
-# add ROOT
-CXXFLAGS += $(ROOTCFLAGS)
-# add degub and warnings
-CXXFLAGS += -g -Wall
+RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer
+# add ROOT and warnings
+CXXFLAGS += $(ROOTCFLAGS) -Wall
+# add degub
+#CXXFLAGS += -g
+#RLXX += -g
+# for release
+CXXFLAGS += -O3
+RLXX += -O3
 # add include folders
 CXXFLAGS += -I./base/ -I./Reconstruction/ -I../utils/
 

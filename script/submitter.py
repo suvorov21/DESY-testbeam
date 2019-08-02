@@ -22,6 +22,13 @@ if __name__ == "__main__":
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
   outpt_version = "v3"
 
+  # espresso     = 20 minutes
+  # microcentury = 1 hour
+  # longlunch    = 2 hours
+  # workday      = 8 hours
+  # tomorrow     = 1 day
+  # testmatch    = 3 days
+  # nextweek     = 1 week
   JobFlavour    = "longlunch"
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/script/"
   # end of input definition

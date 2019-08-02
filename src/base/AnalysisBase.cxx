@@ -116,11 +116,14 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (_test_mode)
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
 
+  TStopwatch sw_event;
+
   if (_verbose == 1) {
     std::cout << "Input file..............................." << _file_in_name << std::endl;
     std::cout << "output file.............................." << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << N_events << "\r[";
+    sw_event.Start(0);
   }
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
@@ -132,11 +135,16 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
       double real, virt;
       process_mem_usage(virt, real);
+      double CPUtime = sw_event.CpuTime();
+      CPUtime *= 1.e3;  CPUtime /= eventID;
+
       for (auto i = 0; i < 30; ++i)
         if (i < 30.*eventID/N_events) std::cout << ".";
         else std::cout << " ";
       std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r[" << std::flush;
+      std::cout << "\tMemory  " <<  real << "\t" << virt << "\t Av speed " << CPUtime << " ms/event" << "\r[" << std::flush;
+
+      sw_event.Continue();
     }
 
     _chain->GetEntry(EventList[eventID]);
@@ -165,7 +173,6 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 }
 
 bool AnalysisBase::WriteOutput() {
-  // WARNING add error
 
   if(_test_mode) return true;
   if (!_file_out->IsOpen()){
