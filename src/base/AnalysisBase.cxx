@@ -137,7 +137,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       process_mem_usage(virt, real);
       double CPUtime  = sw_event.CpuTime();
       double REALtime = sw_event.RealTime();
-      int m, s;
+      int m = 0;
+      int s = 0;
       if (eventID) {
         int EET         = (int)((N_events - eventID) * REALtime / eventID);
         CPUtime *= 1.e3;  CPUtime /= eventID;
