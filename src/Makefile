@@ -16,12 +16,15 @@ OBJDIR 				=	../obj/
 RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer
 # add ROOT and warnings
 CXXFLAGS += $(ROOTCFLAGS) -Wall
-# add degub
-#CXXFLAGS += -g
-#RLXX += -g
 # for release
-CXXFLAGS += -O3
-RLXX += -O3
+ifeq ($(TYPE), RELEASE)
+	CXXFLAGS += -O3
+	RLXX += -O3
+else
+	# add degub
+	CXXFLAGS += -g
+	RLXX += -g
+endif
 # add include folders
 CXXFLAGS += -I./base/ -I./Reconstruction/ -I../utils/
 
