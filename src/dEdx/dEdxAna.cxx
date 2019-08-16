@@ -86,5 +86,5 @@ int main(int argc, char** argv) {
   ana->Loop(ana->GetEventList());
   ana->WriteOutput();
 
-  return 1;
+  return 0;
 }

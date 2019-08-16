@@ -164,7 +164,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     TTrack* track = event->GetTracks()[trackId];
     if (!track)
       continue;
-    
+
     if(sel::GetNonZeroCols(track).size() != geom::nPadx) return false;
     if(sel::GetNonZeroRows(track).size()>5) return false;
 
@@ -509,5 +509,5 @@ int main(int argc, char** argv) {
   ana->Loop(ana->GetEventList());
   ana->WriteOutput();
 
-  return 1;
+  return 0;
 }
