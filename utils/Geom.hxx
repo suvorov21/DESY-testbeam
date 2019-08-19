@@ -48,4 +48,9 @@ namespace geom
     */
 }
 
+namespace units {
+    const float clight  =   299792458.;
+    const float B       =   0.2;
+}
+
 #endif

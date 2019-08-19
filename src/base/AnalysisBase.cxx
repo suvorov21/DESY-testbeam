@@ -91,6 +91,7 @@ bool AnalysisBase::Initialize() {
   // Open the output file
   if (!_test_mode){
     _file_out = new TFile(_file_out_name.Data(), "NEW");
+    if(_overwrite) _file_out = new TFile(_file_out_name.Data(), "RECREATE");
     if (!_file_out->IsOpen()) {
       std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
       std::cerr << "File already exists or directory is not writable" << std::endl;
@@ -115,9 +116,14 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (_test_mode)
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
 
+  TStopwatch sw_event;
+
   if (_verbose == 1) {
+    std::cout << "Input file..............................." << _file_in_name << std::endl;
+    std::cout << "output file.............................." << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << N_events << "\r[";
+    sw_event.Start(0);
   }
 
   for (auto eventID = 0; eventID < N_events; ++eventID) {
@@ -129,11 +135,32 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_verbose == 1 && (eventID%(N_events/100)) == 0) {
       double real, virt;
       process_mem_usage(virt, real);
+      double CPUtime  = sw_event.CpuTime();
+      double REALtime = sw_event.RealTime();
+      int m = 0;
+      int s = 0;
+      if (eventID) {
+        int EET         = (int)((N_events - eventID) * REALtime / eventID);
+        CPUtime *= 1.e3;  CPUtime /= eventID;
+        m = EET / 60;
+        s = EET % 60;
+      }
+
       for (auto i = 0; i < 30; ++i)
-        if (i < 30.*eventID/N_events) std::cout << ".";
+        if (i < 30.*eventID/N_events) std::cout << "#";
         else std::cout << " ";
       std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-      std::cout << "\tMemory  " <<  real << "\t" << virt << "\r[" << std::flush;
+      std::cout << "\t Memory  " <<  real << "\t" << virt;
+      if (eventID) {
+        std::cout << "\t Av speed CPU " << CPUtime << " ms/event";
+        std::cout << "\t EET real " << m << ":" << s;
+      }
+      std::cout << "      \r[" << std::flush;
+      //std::cout << "\r[" << std::flush;
+
+      //std::cout << "\tMemory  " <<  real << "\t" << virt << "\t Av speed " << CPUtime << " ms/event" << "\r[" << std::flush;
+
+      sw_event.Continue();
     }
 
     _chain->GetEntry(EventList[eventID]);
@@ -149,7 +176,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   }
 
   if (_verbose == 1)
-    std::cout << "]" << std::endl;
+    std::cout << std::endl;
 
   return true;
 }
@@ -162,11 +189,12 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 }
 
 bool AnalysisBase::WriteOutput() {
-  // WARNING add error
 
   if(_test_mode) return true;
-  if (!_file_out->IsOpen())
+  if (!_file_out->IsOpen()){
+    std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
+  }
 
   std::cout << "Writing standard output..................";
 
@@ -192,16 +220,29 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   // all hits
-  for(auto h:event->GetHits()){
-    MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-  }
+  //for(auto h:event->GetHits()){
+  //  MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  //}
 
   // sel hits
   for (auto h:event->GetTracks()[trkID]->GetHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-    MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    //MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  }
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      auto max = 0;
+      for (auto t = 0; t < geom::Nsamples; ++t) {
+        if (_padAmpl[x][y][t] > max) {
+          max = _padAmpl[x][y][t];
+        }
+      } // over t
+      if (max)
+        MM->Fill(x, y, max);
+    }
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);

@@ -29,6 +29,20 @@ class SpatialResolAna: public AnalysisBase {
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
 
+  /// Whehter to use arc function for track fitting
+  bool    _do_arc_fit;
+  /// Whether to use full track fitting
+  bool    _do_full_track_fit;
+
+  TF1*    _circle_function_up;
+  TF1*    _circle_function_dn;
+
+  TH1F*   _mom_reco;
+  TH1F*   _pos_reco;
+  TH1F*   _ang_reco;
+  TH1F*   _qulity_ratio;
+  TH1F*   _chi2_ratio;
+
   /// Chi2 function of the track fit
   TH1F* _Chi2_track;
 
@@ -56,6 +70,8 @@ class SpatialResolAna: public AnalysisBase {
   TH2F* _PRF_histo_3pad;
   TH2F* _PRF_histo_4pad;
 
+  TH2F* _PRF_histo_col[geom::nPadx];
+
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
 
@@ -66,9 +82,9 @@ class SpatialResolAna: public AnalysisBase {
   std::vector<Int_t> _passed_events;
 
   /// Chi2 track scan delta
-  const float   scan_delta    = 0.1;
+  const float   scan_delta    = 0.001;
   /// Chi2 track scan steps
-  const int     scan_Nsteps   = 1000;
+  const int     scan_Nsteps   = 100;
   /// Chi2 track scan step
   const double  scan_step     = 2. * scan_delta / scan_Nsteps;
 
@@ -79,7 +95,7 @@ class SpatialResolAna: public AnalysisBase {
 
   const float resol_min   = -0.008;
   const float resol_max   = 0.008;
-  const int   resol_bin   = 75.;
+  const int   resol_bin   = 200.;
 
   const float fit_bound_left  = -0.015;
   const float fit_bound_right =  0.015;

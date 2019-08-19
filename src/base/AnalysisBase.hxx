@@ -11,6 +11,7 @@
 #include <TF1.h>
 #include <TH2F.h>
 #include <TH3F.h>
+#include "TStopwatch.h"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"

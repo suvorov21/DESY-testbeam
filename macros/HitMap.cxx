@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
   // 2 = presentation small fonts
   // 3 = publication/paper
 
-  auto t2kstyle = SetT2KStyle(T2KstyleIndex, localStyleName);
+  auto t2kstyle = T2K().SetT2KStyle(T2KstyleIndex, localStyleName);
   gROOT->SetStyle(t2kstyle->GetName());
   gROOT->ForceStyle();
 

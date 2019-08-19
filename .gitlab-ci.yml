@@ -1,0 +1,45 @@
+image: bars21/dev_hep_root:latest
+
+build:
+  stage: build
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+  script:
+    - cd src
+    - make all
+  artifacts:
+    paths:
+      - ./bin/SpatialResol.exe
+      - ./bin/dEdx.exe
+
+# run tests using the binary built before
+SpatialResol_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mv download input.root
+  script:
+    - pwd
+    - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 0
+
+dEdx_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mv download input.root
+  script:
+    - ./bin/dEdx.exe -b -t 0 -i input.root -o dEdx_test_iter0.root -v 0
+
+cppcheck:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - cppcheck --version
+  script:
+    - cppcheck src/*/*.cxx --enable=all --language=c++ --suppress=uninitMemberVar --inline-suppr

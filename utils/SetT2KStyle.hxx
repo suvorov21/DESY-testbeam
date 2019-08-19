@@ -123,7 +123,7 @@ class T2K {
     t2kStyle->SetErrorX(0.001);
 
     // do not display any of the standard histogram decorations
-    t2kStyle->SetOptTitle(0);
+    t2kStyle->SetOptTitle(1);
     t2kStyle->SetOptStat(0);
     t2kStyle->SetOptFit(1); // switch fitter pad on
 
