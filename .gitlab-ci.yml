@@ -3,8 +3,7 @@ image: bars21/dev_hep_root:latest
 build:
   stage: build
   before_script:
-    - source /opt/rh/devtoolset-7/enable
-    - source /usr/local//bin/thisroot.sh
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v
   script:
     - cd src
@@ -18,8 +17,7 @@ build:
 SpatialResol_test:
   stage: test
   before_script:
-    - source /opt/rh/devtoolset-7/enable
-    - source /usr/local//bin/thisroot.sh
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
@@ -30,8 +28,7 @@ SpatialResol_test:
 dEdx_test:
   stage: test
   before_script:
-    - source /opt/rh/devtoolset-7/enable
-    - source /usr/local//bin/thisroot.sh
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
@@ -41,8 +38,7 @@ dEdx_test:
 cppcheck:
   stage: test
   before_script:
-    - source /opt/rh/devtoolset-7/enable
-    - source /usr/local//bin/thisroot.sh
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v
     - cppcheck --version
   script:
