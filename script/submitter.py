@@ -13,7 +13,7 @@ if __name__ == "__main__":
   doiter    = True
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
-  bin_name  = "SpatialResol_circ.exe"
+  bin_name  = "SpatialResol.exe"
   bin_flag  = "-b"
 
   input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
@@ -108,4 +108,4 @@ if __name__ == "__main__":
   os.chdir(project_path + "/script/temp")
   subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
-  shutil.rmtree(project_path + "/script/temp")
+  #shutil.rmtree(project_path + "/script/temp")
