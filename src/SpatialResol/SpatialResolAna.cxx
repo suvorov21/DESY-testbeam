@@ -205,8 +205,6 @@ bool SpatialResolAna::Initialize() {
 
 bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
-  bool passed = false;
-
   for (uint trackId = 0; trackId < event->GetTracks().size(); ++trackId) {
 
     TTrack* track = event->GetTracks()[trackId];
@@ -220,7 +218,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     if(_test_mode) DrawSelection(event,trackId);
 
-    passed = true;
+    _store_event = true;
 
     if (_verbose > 1)
       std::cout << "Track id = " << trackId << std::endl;
@@ -551,7 +549,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     }
   } // loop over tracks
 
-  if (passed)
+  if (_store_event)
     _passed_events.push_back(event->GetID());
 
   return true;
@@ -652,9 +650,9 @@ bool SpatialResolAna::WriteOutput() {
 
 int main(int argc, char** argv) {
   auto ana = new SpatialResolAna(argc, argv);
-  ana->Initialize();
-  ana->Loop(ana->GetEventList());
-  ana->WriteOutput();
+  if (!ana->Initialize())               return -1;
+  if (!ana->Loop(ana->GetEventList()))  return -1;
+  if (!ana->WriteOutput())              return -1;
 
   return 0;
 }

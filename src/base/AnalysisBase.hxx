@@ -33,6 +33,8 @@ class AnalysisBase {
   virtual bool WriteOutput();
   virtual void DrawSelection(const TEvent *event, int trackID);
 
+  virtual void CL_progress_dump(int eventID, int Nevents);
+
   /// Print usage
   void help(const std::string name);
 
@@ -52,6 +54,13 @@ class AnalysisBase {
 
   TString _event_list_file_name;
   std::vector<Int_t> _EventList;
+  bool    _store_event;
+
+  TEvent* _event;
+  bool    _store_event_tree;
+  TFile*  _event_file;
+  TTree*  _event_tree;
+  bool    _work_with_event_file;
 
   TFile* _file_in;
   TFile* _file_out;
@@ -78,6 +87,7 @@ class AnalysisBase {
   bool _overwrite;
 
   TApplication* _app;
+  TStopwatch* _sw_event;
 };
 
 

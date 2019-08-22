@@ -36,6 +36,8 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     if(sel::GetColsMaxSep(itrack)>5) return false;
     if(sel::GetFitParams(itrack)[0]>1.0e6) return false;
 
+    _store_event = true;
+
     //sel::Get3DFitParams(itrack);
 
     //If survives the selection, use track info:
