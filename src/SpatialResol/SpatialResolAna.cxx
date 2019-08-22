@@ -279,55 +279,72 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (!cluster[it_x] || !charge_max[it_x])
         continue;
 
-      // minimise chi2 to extimate true_track
-      double chi2_min     = 1e9;
-      double scan_y       = cluster_mean[it_x] - scan_delta;
+      /// ********** Start of the fitter
+      auto chi2Function = [&](const Double_t *par) {
+        //minimisation function computing the sum of squares of residuals
+        // looping at the graph points
+        double chi2 = 0;
 
-      if (/*_iteration > 0 && */cluster_N[it_x] != 1) {
-        for (Int_t scanId = 0; scanId < scan_Nsteps; ++scanId) {
-          // TODO implement ROOT fitter instead of manual fit
-          double chi2 = 0;
+        double a_nom = 0.;
+        double a_den = 0.;
+        double a_tot = 0.;
 
-          double a_nom = 0.;
-          double a_den = 0.;
-          double a_tot = 0.;
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+          double center_pad_y = geom::y_pos[it_y];
 
-          for (auto pad:row) {
-            auto q      = pad->GetQ();
-            auto it_y   = pad->GetRow();
-            if (!q)
-              continue;
-            double center_pad_y = geom::y_pos[it_y];
-
-            a_nom += _PRF_function->Eval(scan_y - center_pad_y);
-            a_den += TMath::Power(_PRF_function->Eval(scan_y - center_pad_y), 2) / q;
-          }
-          a_tot = a_nom / a_den;
-
-          for (auto pad:row) {
-            auto q      = pad->GetQ();
-            auto it_y   = pad->GetRow();
-            if (!q)
-              continue;
-            double center_pad_y = geom::y_pos[it_y];
-
-            double part = (q - a_tot*_PRF_function->Eval(scan_y - center_pad_y));
-            part *= part;
-            part /= q;
-
-            chi2 += part;
-          }
-
-          if (chi2 < chi2_min) {
-            chi2_min = chi2;
-            track_pos[it_x] = scan_y;
-            a_peak[it_x] = a_tot;
-          }
-
-          scan_y += scan_step;
+          a_nom += _PRF_function->Eval(par[0] - center_pad_y);
+          a_den += TMath::Power(_PRF_function->Eval(par[0] - center_pad_y), 2) / q;
         }
-      } else
-        track_pos[it_x] = cluster_mean[it_x];
+        a_tot = a_nom / a_den;
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+          double center_pad_y = geom::y_pos[it_y];
+
+          double part = (q - a_tot*_PRF_function->Eval(par[0] - center_pad_y));
+          part *= part;
+          part /= q;
+
+          chi2 += part;
+        }
+
+        return chi2;
+      };
+
+      ROOT::Math::Functor fcn(chi2Function,1);
+      ROOT::Fit::Fitter  fitter;
+
+      double pStart[1] = {cluster_mean[it_x]};
+      fitter.SetFCN(fcn, pStart);
+      fitter.Config().ParSettings(0).SetName("y");
+
+      bool ok = fitter.FitFCN();
+      const ROOT::Fit::FitResult & result = fitter.Result();
+      track_pos[it_x] = result.GetParams()[0];
+
+      double a_nom = 0.;
+      double a_den = 0.;
+
+      for (auto pad:row) {
+        auto q      = pad->GetQ();
+        auto it_y   = pad->GetRow();
+        if (!q)
+          continue;
+        double center_pad_y = geom::y_pos[it_y];
+
+        a_nom += _PRF_function->Eval(track_pos[it_x] - center_pad_y);
+        a_den += TMath::Power(_PRF_function->Eval(track_pos[it_x] - center_pad_y), 2) / q;
+      }
+
+      a_peak[it_x] = a_nom / a_den;
+      /// ********** End of the fitter
 
       double x = geom::x_pos[it_x];
 
@@ -362,41 +379,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       track_gr->Fit(func, "Q");
       fit = track_gr->GetFunction(func);
     } else {
-/*
-      auto chi2Function = [&](const Double_t *par) {
-        //minimisation function computing the sum of squares of residuals
-        // looping at the graph points
-        Int_t np = track_gr->GetN();
-        Double_t f = 0;
-        Double_t *x = track_gr->GetX();
-        Double_t *y = track_gr->GetY();
-        Double_t *ye = track_gr->GetEY();
-        for (Int_t i=0;i<np;i++) {
-           Double_t u = x[i] - par[0] * par[1] + 0.198;
-           Double_t v = y[i] - par[0]*sqrt(1+par[1]*par[1])+par[2];
-           Double_t dr = par[0] - std::sqrt(u*u+v*v);
-           Double_t re = ye[i] * (y[i] - par[0]/sqrt(1+par[1]*par[1]) + par[2]) / par[0];
-           dr /= re;
-           f += dr*dr;
-        }
-        return f;
-      };
 
-      ROOT::Math::Functor fcn(chi2Function,3);
-      ROOT::Fit::Fitter  fitter;
-
-      double pStart[3] = {80., 0., 0.};
-      fitter.SetFCN(fcn, pStart);
-      fitter.Config().ParSettings(0).SetName("R");
-      fitter.Config().ParSettings(1).SetName("tan");
-      fitter.Config().ParSettings(2).SetName("c");
-
-      bool ok = fitter.FitFCN();
-      const ROOT::Fit::FitResult & result = fitter.Result();
-      result.Print(std::cout);
-*/
-
-      // *********** end of debug
       _circle_function_dn->SetParameters(80., 0., 0.);
       //_circle_function_dn->SetParLimits(0, 5., 1000.);
       _circle_function_dn->SetParLimits(1, -0.3, 0.3);
