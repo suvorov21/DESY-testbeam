@@ -1,6 +1,6 @@
 image: bars21/dev_hep_root:latest
 
-build:
+compile:
   stage: build
   before_script:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
@@ -13,33 +13,44 @@ build:
       - ./bin/SpatialResol.exe
       - ./bin/dEdx.exe
 
-# run tests using the binary built before
-SpatialResol_test:
-  stage: test
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input.root
-  script:
-    - pwd
-    - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 0
-
-dEdx_test:
-  stage: test
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input.root
-  script:
-    - ./bin/dEdx.exe -b -t 0 -i input.root -o dEdx_test_iter0.root -v 0
-
 cppcheck:
-  stage: test
+  stage: build
   before_script:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v
     - cppcheck --version
   script:
     - cppcheck src/*/*.cxx --enable=all --language=c++ --suppress=uninitMemberVar --inline-suppr
+
+# run tests using the binary built before
+SpatialResol_raw_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mv download input.root
+  script:
+    - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+
+dEdx_raw_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mv download input.root
+  script:
+    - ./bin/dEdx.exe -b -t 0 -i input.root -o dEdx_test_iter0.root -v 1
+
+dEdx_TEvent_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mkdir input; mkdir output;
+    - mv download input/input.root
+  script:
+    - ./bin/dEdx.exe -b -t 0 -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
+    - ./bin/dEdx.exe -b -t 0 -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1

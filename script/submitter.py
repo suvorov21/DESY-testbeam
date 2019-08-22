@@ -30,7 +30,7 @@ if __name__ == "__main__":
   # testmatch    = 3 days
   # nextweek     = 1 week
   JobFlavour    = "longlunch"
-  log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/script/"
+  log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/log/"
   # end of input definition
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')

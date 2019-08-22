@@ -1,9 +1,4 @@
-#include <DataStorage.hxx>
-
-
-//// THIT
-
-
+#include "TTrack.hxx"
 
 //// TTRACK
 TTrack::~TTrack() {
@@ -48,20 +43,5 @@ void TTrack::AddHit(THit* hit) {
     std::vector<THit*> temp_v;
     temp_v.push_back(hit);
     fr.push_back(temp_v);
-  }
-}
-
-
-//// TEVENT
-TEvent::~TEvent() {
-  for (auto hit:funusedhits) {
-    if (hit)
-      delete hit;
-    hit = NULL;
-  }
-  for (auto track:ftracks) {
-    if (track)
-      delete track;
-    track = NULL;
   }
 }

@@ -5,7 +5,10 @@
 #include <TCanvas.h>
 /** @endcond */
 
-#include "DataStorage.hxx"
+#include "THit.hxx"
+#include "TTrack.hxx"
+#include "TEvent.hxx"
+#include "Geom.hxx"
 
 namespace sel
 {

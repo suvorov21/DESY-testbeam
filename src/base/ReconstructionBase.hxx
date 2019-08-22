@@ -7,7 +7,10 @@
 #include <string>
 /** @endcond */
 
-#include "DataStorage.hxx"
+#include "THit.hxx"
+#include "TTrack.hxx"
+#include "TEvent.hxx"
+#include "Geom.hxx"
 
 /// Template for the Reconstruction class
 class ReconstructionBase {
