@@ -40,7 +40,7 @@ class AnalysisBase {
 
   void process_mem_usage(double& vm_usage, double& resident_set);
 
-  void SetEventList(std::vector<Int_t> var) {_EventList = var;}
+  void SetEventList(std::vector<Int_t> var) {_EventList.clear(); _EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
  protected:
