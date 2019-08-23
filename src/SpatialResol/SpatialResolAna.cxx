@@ -61,16 +61,21 @@ bool SpatialResolAna::Initialize() {
       for (auto i = 2; i < geom::nPadx; ++i)
         _uncertainty += uncertainty_hist->GetBinContent(i) / (geom::nPadx - 2);
 
-      Int_t read_var;
-      auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
-      event_tree->SetBranchAddress("PassedEvents",    &read_var);
-      std::vector<Int_t> vec;
-      vec.clear();
-      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-        event_tree->GetEntry(i);
-        vec.push_back(read_var);
+      // read event list passed reconstruction+selection
+      // at the moment skip for the 1 iteration (after 0) files with TEvent
+      // reason: in at the step 0 TEvent file is generated need to look at all events in it
+      if (!_work_with_event_file || _iteration != 1) {
+        Int_t read_var;
+        auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
+        event_tree->SetBranchAddress("PassedEvents",    &read_var);
+        std::vector<Int_t> vec;
+        vec.clear();
+        for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+          event_tree->GetEntry(i);
+          vec.push_back(read_var);
+        }
+        this->SetEventList(vec);
       }
-      this->SetEventList(vec);
 
     }
     if (!_PRF_function) {
