@@ -1,5 +1,3 @@
-//#include <iostream>
-
 #include "SpatialResolAna.hxx"
 
 #include "Math/Functor.h"
@@ -11,11 +9,24 @@
 //! 3           print fit details
 //! 4           print PRF details
 
-SpatialResolAna::SpatialResolAna(int argc, char** argv): AnalysisBase(argc, argv) {
+SpatialResolAna::SpatialResolAna(int argc, char** argv):
+  AnalysisBase(argc, argv),
+  _correction(true) {
 
   if (_iteration == -1) {
     std::cerr << "ERROR. SpatialResolAna::SpatialResolAna(). Iteration should be defined as a input param" << std::endl;
     exit(1);
+  }
+
+  // read CLI
+  optind = 1;
+  for (;;) {
+    int c = getopt(argc, argv, "i:o:bv:drmst:c");
+    if (c < 0) break;
+    switch (c) {
+      case 't' : _iteration        = atoi(optarg);  break;
+      case 'c' : _correction       = false;         break;
+    }
   }
 
 }
@@ -200,6 +211,14 @@ bool SpatialResolAna::Initialize() {
   _reconstruction = new DBSCANReconstruction();
   _reconstruction->Initialize();
 
+  // Initialize timers
+  _sw_partial[2] = new TStopwatch();
+  _sw_partial[2]->Reset();
+  _sw_partial[3] = new TStopwatch();
+  _sw_partial[3]->Reset();
+  _sw_partial[4] = new TStopwatch();
+  _sw_partial[4]->Reset();
+
   return true;
 }
 
@@ -240,6 +259,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     // At the moment ommit first and last column
     // first loop over columns
+    _sw_partial[2]->Start(false);
     for (auto row:track->GetCols()) {
       if (!row[0])
         continue;
@@ -326,6 +346,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       fitter.Config().ParSettings(0).SetName("y");
 
       bool ok = fitter.FitFCN();
+      (void)ok;
       const ROOT::Fit::FitResult & result = fitter.Result();
       track_pos[it_x] = result.GetParams()[0];
 
@@ -370,6 +391,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           track_1[i]->SetPointError(track_1[i]->GetN() - 1, 0., error);
       }
     } // loop over columns
+    _sw_partial[2]->Stop();
+    _sw_partial[3]->Start(false);
 
     TF1* fit;
     TF1* lin_fit;
@@ -451,21 +474,20 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     TF1* fit1[geom::nPadx];
 
     for (int i = 1; i < geom::nPadx-1; ++i) {
-      if (!_do_arc_fit) {
-        track_1[i]->Fit("pol1", "Q");
-        fit1[i] = track_1[i]->GetFunction("pol1");
-      } else {
-        track_1[i]->Fit(func, "Q");
-        fit1[i] = track_1[i]->GetFunction(func);
-      }
-      if (!fit1[i]) {
-        std::cout << "Arc fit" << std::endl;
-        std::cout << "r\t" <<  fit->GetParameter(0) << std::endl;
-        std::cout << "x0\t" << fit->GetParameter(1) << std::endl;
-        std::cout << "y0\t" << fit->GetParameter(2) << std::endl;
-        std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
-      }
+      if (_correction) {
+         if (!_do_arc_fit) {
+          track_1[i]->Fit("pol1", "Q");
+          fit1[i] = track_1[i]->GetFunction("pol1");
+        } else {
+          track_1[i]->Fit(func, "Q");
+          fit1[i] = track_1[i]->GetFunction(func);
+        }
+      } else
+        fit1[i] = fit;
     }
+
+    _sw_partial[3]->Stop();
+    _sw_partial[4]->Start(false);
 
     // second loop over columns
     for (auto row:track->GetCols()) {
@@ -525,6 +547,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           _PRF_histo_4pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
       }
     } // loop over colums
+    _sw_partial[4]->Stop();
     delete track_gr;
     delete track_m;
     for (int i = 0; i < geom::nPadx; ++i) {
@@ -628,6 +651,13 @@ bool SpatialResolAna::WriteOutput() {
     _Prev_iter_file->Close();
 
   std::cout << "done" << std::endl;
+
+  std::cout << "*************** Time consuming **************" << std::endl;
+  std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "  Fitters:     \t"        << _sw_partial[3]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "  Filling:     \t"        << _sw_partial[4]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   return true;
 }
 

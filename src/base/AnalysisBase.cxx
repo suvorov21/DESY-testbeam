@@ -27,7 +27,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bv:drmt:s");
+    int c = getopt(argc, argv, "i:o:bv:drhst:c");
     if (c < 0) break;
     switch (c) {
       case 'i' : _file_in_name     = optarg;       break;
@@ -36,10 +36,9 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
       case 'r' : _overwrite        = true;         break;
-      case 'm' : help(argv[0]);                    break;
-      case 't' : _iteration        = atoi(optarg); break;
+      case 'h' : help(argv[0]);                    break;
       case 's' : _store_event_tree = true; break;
-      case '?' : help(argv[0]);
+      //case '?' : help(argv[0]);
     }
   }
 
@@ -188,6 +187,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   _sw_event = new TStopwatch();
 
+  _sw_partial[0] = new TStopwatch();
+  _sw_partial[0]->Reset();
+  _sw_partial[1] = new TStopwatch();
+  _sw_partial[1]->Reset();
+
   if (_verbose == 1) {
     std::cout << "Input file..............................." << _file_in_name << std::endl;
     std::cout << "output file.............................." << _file_out_name << std::endl;
@@ -206,6 +210,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _chain->GetEntry(EventList[eventID]);
     _store_event = false;
 
+    _sw_partial[0]->Start(false);
+
     if (!_work_with_event_file) {
       if (_event && !_store_event_tree)
         delete _event;
@@ -215,7 +221,10 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
         continue;
     }
 
+    _sw_partial[0]->Stop();
+    _sw_partial[1]->Start(false);
     ProcessEvent(_event);
+    _sw_partial[1]->Stop();
 
     if (_store_event_tree && _store_event)
       _event_tree->Fill();

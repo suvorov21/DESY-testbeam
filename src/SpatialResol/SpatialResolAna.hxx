@@ -34,6 +34,11 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to use full track fitting
   bool    _do_full_track_fit;
 
+  bool    _correction;
+
+  /// iteration number. Starting from 0
+  Int_t   _iteration;
+
   TF1*    _circle_function_up;
   TF1*    _circle_function_dn;
 
