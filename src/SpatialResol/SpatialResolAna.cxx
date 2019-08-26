@@ -298,7 +298,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         continue;
 
       /// ********** Start of the fitter
-      auto chi2Function = [&](const Double_t *par) {
+      auto chi2Function_cluster = [&](const Double_t *par) {
         //minimisation function computing the sum of squares of residuals
         // looping at the graph points
         double chi2 = 0;
@@ -336,18 +336,18 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         return chi2;
       };
 
-      ROOT::Math::Functor fcn(chi2Function,1);
-      ROOT::Fit::Fitter  fitter;
+      ROOT::Math::Functor fcn_cluster(chi2Function_cluster,1);
+      ROOT::Fit::Fitter  fitter_cluster;
 
       double pStart[1] = {cluster_mean[it_x]};
-      fitter.SetFCN(fcn, pStart);
-      fitter.Config().ParSettings(0).SetName("y");
+      fitter_cluster.SetFCN(fcn_cluster, pStart);
+      fitter_cluster.Config().ParSettings(0).SetName("y");
 
-      bool ok = fitter.FitFCN();
+      bool ok = fitter_cluster.FitFCN();
       (void)ok;
-      const ROOT::Fit::FitResult & result = fitter.Result();
-      track_pos[it_x] = result.GetParams()[0];
-
+      const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
+      track_pos[it_x] = result_cluster.GetParams()[0];
+/*
       double a_nom = 0.;
       double a_den = 0.;
 
@@ -362,10 +362,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_pos[it_x]), 2) / q;
       }
 
-      a_peak[it_x] = a_nom / a_den;
+      a_peak[it_x] = a_nom / a_den;*/
       /// ********** End of the fitter
 
-      double x = geom::x_pos[it_x];
+      /*double x = geom::x_pos[it_x];
 
       track_gr->SetPoint(track_gr->GetN(), x, track_pos[it_x]);
       for (int i = 1; i < geom::nPadx - 1; ++i) {
@@ -387,12 +387,80 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       for (int i = 1; i < geom::nPadx-1; ++i) {
         if (i != it_x)
           track_1[i]->SetPointError(track_1[i]->GetN() - 1, 0., error);
-      }
+      }*/
     } // loop over columns
+
+    auto chi2Function = [&](const Double_t *par) {
+      //minimisation function computing the sum of squares of residuals
+      // looping at the graph points
+      double chi2 = 0;
+      float y_pos = 0;
+
+      for (auto row:track->GetCols()) {
+        auto it_x = row[0]->GetCol();
+        auto x    = geom::x_pos[it_x];
+
+        double a_nom = 0.;
+        double a_den = 0.;
+        double a_tot = 0.;
+
+        _circle_function_dn->SetParameters(par[0], par[1], par[2]);
+        y_pos = _circle_function_dn->Eval(x);
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+
+          double center_pad_y = geom::y_pos[it_y];
+
+          a_nom += _PRF_function->Eval(center_pad_y - y_pos);
+          a_den += TMath::Power(_PRF_function->Eval(center_pad_y - y_pos), 2) / q;
+        }
+        a_tot = a_nom / a_den;
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+          double center_pad_y = geom::y_pos[it_y];
+
+          double part = (q - a_tot*_PRF_function->Eval(center_pad_y - y_pos));
+          part *= part;
+          part /= q;
+
+          chi2 += part;
+        }
+      }
+      return chi2;
+    };
+
     _sw_partial[2]->Stop();
     _sw_partial[3]->Start(false);
 
-    TF1* fit;
+    ROOT::Math::Functor fcn(chi2Function,3);
+    ROOT::Fit::Fitter  fitter;
+
+    double pStart[3] = {80., 0., cluster_mean[1]};
+    fitter.SetFCN(fcn, pStart);
+    fitter.Config().ParSettings(0).SetName("R");
+    fitter.Config().ParSettings(1).SetName("sin(#alpha)");
+    fitter.Config().ParSettings(2).SetName("Target");
+
+    bool ok = fitter.FitFCN();
+    (void)ok;
+    const ROOT::Fit::FitResult & result = fitter.Result();
+
+    _circle_function_dn->SetParameters( result.GetParams()[0],
+                                        result.GetParams()[1],
+                                        result.GetParams()[2]);
+
+    TF1* fit = _circle_function_dn;
+    float quality = result.MinFcnValue() * 1.e-3;
+    TString func = "circle_dn";
+    /*TF1* fit;
     TF1* lin_fit;
     TString func = "";
     if (!_do_arc_fit) {
@@ -467,7 +535,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       std::cout << "b\t" << fit->GetParameter(0) << std::endl;
       std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
     }
-
+*/
     _Chi2_track->Fill(quality);
     TF1* fit1[geom::nPadx];
 
@@ -542,13 +610,16 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         if (!cluster[it_x] || !q)
           continue;
 
+        // WARNING
+        if (q > 2000)
+          continue;
+
         //double charge = 1. * q / cluster[it_x];
         double center_pad_y = geom::y_pos[it_y];
 
         // fill PRF
         _PRF_histo->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
         _PRF_histo_col[it_x]->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
-
         if (_verbose > 3) {
           std::cout << "PRF fill " << center_pad_y - track_fit_y << "\t" << q / a_peak_fit[it_x] << "\t( " << q << " / " <<  a_peak_fit[it_x] << " )";
           std::cout << "\t(" << a_peak[it_x] << ")";
