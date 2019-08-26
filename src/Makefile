@@ -78,9 +78,8 @@ build:
 .PHONY: clean
 clean:
 	@echo "Cleaning..."
-	rm -f $(OBJDIR)/*.$(ObjSuf)
-	rm -r $(BINDIR)/*.$(OutPutSuf)
-	rm $(OBJDIR)$(DICT)
+	rm -rf $(OBJDIR)/*
+	rm -rf $(BINDIR)/*
 
 .PHONY: cleanObj
 cleanObj:
