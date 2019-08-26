@@ -20,6 +20,8 @@ class SpatialResolAna: public AnalysisBase {
   bool Initialize();
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event);
+  /// Draw the histograms of interest
+  void DrawSelection(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();

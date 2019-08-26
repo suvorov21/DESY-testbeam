@@ -84,17 +84,20 @@ bool SpatialResolAna::Initialize() {
       exit(1);
     }
   } else {
-    /*_PRF_function = new TF1("PRF_function",
+/*
+    _PRF_function = new TF1("PRF_function",
       " [0] * exp(-4*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "r");
     _PRF_function->SetParName(2, "w");
 
-    auto c = 0.8;
+    auto c = 1.;
     auto r = 0.5;
-    auto s = 0.7;
-    _PRF_function->SetParameters(c, r, s);*/
+    auto s = 0.005;
+    _PRF_function->SetParameters(c, r, s);
+    _PRF_function->FixParameter(0, 1.);
 
+*/
     _PRF_function  = new TF1("PRF_function", "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "a2");
@@ -102,17 +105,6 @@ bool SpatialResolAna::Initialize() {
     _PRF_function->SetParName(3, "b2");
     _PRF_function->SetParName(4, "b4");
 
-    /*double g  = 3. * 0.01;
-    double delta  = g / 2.;
-    double a      = 1.;
-    double b      = 0.;
-
-
-    double co = 1.;
-    double a2 = -1.* TMath::Power(2/delta, 2) * (1+a);
-    double a4 = TMath::Power(2./delta, 4) * a;
-    double b2 = TMath::Power(2./g, 2) * (1-b-2*(1+a)*TMath::Power(g/delta, 2) + 2.*a*TMath::Power(g/delta, 4));
-    double b4 = TMath::Power(2./g, 4)*b;*/
     double co = 1.;
     double a2 = 2.35167e3;
     double a4 = 6.78962e7;
@@ -122,6 +114,7 @@ bool SpatialResolAna::Initialize() {
 
     _PRF_function->SetParameters(co, a2, a4, b2, b4);
     _PRF_function->FixParameter(0, 1.);
+
   }
 
   _do_arc_fit        = true;
@@ -173,7 +166,7 @@ bool SpatialResolAna::Initialize() {
 
   _residual_mean            = new TH1F("mean", "", geom::nPadx, 0., geom::nPadx);
 
-  _Chi2_track = new TH1F("Chi2_Track", "", 100, 0., 3.);
+  _Chi2_track = new TH1F("Chi2_Track", "", 300, 0., 10.);
 
   // schedule the output for writing
   _output_vector.push_back(_PRF_function);
@@ -240,8 +233,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if(sel::GetColsMaxSep(track) > 6) return false;
     if(sel::GetColsMaxGap(track) > 1) return false;
 
-    if(_test_mode) DrawSelection(event,trackId);
-
     _store_event = true;
 
     if (_verbose > 1)
@@ -261,6 +252,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     double cluster_mean[geom::nPadx];
     float charge_max[geom::nPadx];
     double a_peak[geom::nPadx];
+    double a_peak_fit[geom::nPadx];
 
     // At the moment ommit first and last column
     // first loop over columns
@@ -279,6 +271,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       track_pos[it_x]     = -999.;
       cluster_mean[it_x]  = 0.;
       a_peak[it_x]        = 0.;
+      a_peak_fit[it_x]    = 0.;
 
       TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
 
@@ -321,8 +314,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
             continue;
           double center_pad_y = geom::y_pos[it_y];
 
-          a_nom += _PRF_function->Eval(par[0] - center_pad_y);
-          a_den += TMath::Power(_PRF_function->Eval(par[0] - center_pad_y), 2) / q;
+          a_nom += _PRF_function->Eval(center_pad_y - par[0]);
+          a_den += TMath::Power(_PRF_function->Eval(center_pad_y - par[0]), 2) / q;
         }
         a_tot = a_nom / a_den;
 
@@ -333,7 +326,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
             continue;
           double center_pad_y = geom::y_pos[it_y];
 
-          double part = (q - a_tot*_PRF_function->Eval(par[0] - center_pad_y));
+          double part = (q - a_tot*_PRF_function->Eval(center_pad_y - par[0]));
           part *= part;
           part /= q;
 
@@ -365,8 +358,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           continue;
         double center_pad_y = geom::y_pos[it_y];
 
-        a_nom += _PRF_function->Eval(track_pos[it_x] - center_pad_y);
-        a_den += TMath::Power(_PRF_function->Eval(track_pos[it_x] - center_pad_y), 2) / q;
+        a_nom += _PRF_function->Eval(center_pad_y - track_pos[it_x]);
+        a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_pos[it_x]), 2) / q;
       }
 
       a_peak[it_x] = a_nom / a_den;
@@ -464,7 +457,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       std::cout << "Arc fit" << std::endl;
       std::cout << "radius\t" <<  fit->GetParameter(0) << std::endl;
       std::cout << "tan(a)\t" << fit->GetParameter(1) << std::endl;
-      std::cout << "target\t" << 1/fit->GetParameter(2) << std::endl;
+      std::cout << "target\t" << fit->GetParameter(2) << std::endl;
       std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
 
       track_gr->Fit("pol1", "Q");
@@ -521,6 +514,21 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _resol_col_hist_3pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
       }
 
+      float a_nom = 0.;
+      float a_den = 0.;
+      for (auto pad:row) {
+        auto q      = pad->GetQ();
+        auto it_y   = pad->GetRow();
+        if (!q)
+          continue;
+        double center_pad_y = geom::y_pos[it_y];
+
+        a_nom += _PRF_function->Eval(center_pad_y - track_fit_y);
+        a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_fit_y), 2) / q;
+      }
+
+      a_peak_fit[it_x] = a_nom / a_den;
+
       if (cluster_N[it_x] == 1)
         continue;
       // Fill PRF
@@ -538,18 +546,22 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         double center_pad_y = geom::y_pos[it_y];
 
         // fill PRF
-        _PRF_histo->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
-        _PRF_histo_col[it_x]->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+        _PRF_histo->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
+        _PRF_histo_col[it_x]->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
 
-        if (_verbose > 3)
-          std::cout << "PRF fill " << center_pad_y - track_fit_y << "\t" << q / a_peak[it_x] << "\t( " << q << " / " <<  a_peak[it_x] << " )" << std::endl;
+        if (_verbose > 3) {
+          std::cout << "PRF fill " << center_pad_y - track_fit_y << "\t" << q / a_peak_fit[it_x] << "\t( " << q << " / " <<  a_peak_fit[it_x] << " )";
+          std::cout << "\t(" << a_peak[it_x] << ")";
+          std::cout << "\tx:y\t" << it_x << " : " << it_y;
+          std::cout << "\tmult " << cluster_N[it_x] << std::endl;
+        }
 
         if (cluster_N[it_x] == 2)
-          _PRF_histo_2pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+          _PRF_histo_2pad->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
         else if (cluster_N[it_x] == 3)
-          _PRF_histo_3pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+          _PRF_histo_3pad->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
         else if (cluster_N[it_x] == 4)
-          _PRF_histo_4pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+          _PRF_histo_4pad->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
       }
     } // loop over colums
     _sw_partial[4]->Stop();
@@ -558,12 +570,48 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     for (int i = 0; i < geom::nPadx; ++i) {
       delete track_1[i];
     }
+
+    if(_test_mode) this->DrawSelection(event,trackId);
   } // loop over tracks
 
   if (_store_event)
     _passed_events.push_back(event->GetID());
 
   return true;
+}
+
+void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
+  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+
+  // sel hits
+  for (auto h:event->GetTracks()[trkID]->GetHits()){
+    if(!h->GetQ()) continue;
+    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
+    MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  }
+
+  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  canv->Divide(3,1);
+  canv->cd(1);
+  _PRF_histo->Draw("COLZ");
+  canv->cd(2);
+  MMsel->Draw("COLZ");
+
+  canv->cd(3);
+  event3D->Draw("x:y:z:c","","box2");
+  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
+  htemp->GetYaxis()->SetLimits(0,geom::nPady);
+  htemp->GetZaxis()->SetLimits(0,500);
+  htemp->SetTitle("");
+  canv->Update();
+  canv->WaitPrimitive();
+  delete htemp;
+  delete canv;
+
+  delete MMsel;
+  delete event3D;
 }
 
 bool SpatialResolAna::WriteOutput() {
