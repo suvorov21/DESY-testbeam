@@ -17,6 +17,11 @@ class dEdxAna: public AnalysisBase {
   TH1F* _mult;
   int   _selEvents;
 
+  TH1F* _mult_col[geom::nPadx];
+  TGraphErrors* _mult_graph;
+
+  TH1F* _max_charge_pad;
+
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
