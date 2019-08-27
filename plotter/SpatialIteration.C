@@ -14,7 +14,7 @@ const Int_t Niter = 5;
 
 float GetAverage(TH1F* h, float& RMS);
 
-void Spatial() {
+void SpatialIteration() {
   Int_t T2KstyleIndex = 3;
   // Official T2K style as described in http://www.t2k.org/comm/pubboard/style/index_html
   TString localStyleName = "T2K";
