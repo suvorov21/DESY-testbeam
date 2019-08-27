@@ -11,7 +11,8 @@
 
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
-  _correction(true) {
+  // WARNING
+  _correction(false) {
 
   if (_iteration == -1) {
     std::cerr << "ERROR. SpatialResolAna::SpatialResolAna(). Iteration should be defined as a input param" << std::endl;
@@ -118,7 +119,6 @@ bool SpatialResolAna::Initialize() {
   }
 
   _do_arc_fit        = true;
-  _do_full_track_fit = false;
 
   _circle_function_up = new TF1("circle_up", "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]", -0.5, 0.5);
   _circle_function_up->SetParName(0, "radius");
@@ -166,7 +166,7 @@ bool SpatialResolAna::Initialize() {
 
   _residual_mean            = new TH1F("mean", "", geom::nPadx, 0., geom::nPadx);
 
-  _Chi2_track = new TH1F("Chi2_Track", "", 300, 0., 10.);
+  _Chi2_track = new TH1F("Chi2_Track", "", 1000, 0., 100.);
 
   // schedule the output for writing
   _output_vector.push_back(_PRF_function);
@@ -404,8 +404,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         double a_den = 0.;
         double a_tot = 0.;
 
-        _circle_function_dn->SetParameters(par[0], par[1], par[2]);
-        y_pos = _circle_function_dn->Eval(x);
+
+        if (par[4] > 0) {
+          _circle_function_up->SetParameters(par[0], par[1], par[2]);
+          y_pos = _circle_function_up->Eval(x);
+        } else {
+          _circle_function_dn->SetParameters(par[0], par[1], par[2]);
+          y_pos = _circle_function_dn->Eval(x);
+        }
 
         for (auto pad:row) {
           auto q      = pad->GetQ();
@@ -443,8 +449,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     ROOT::Math::Functor fcn(chi2Function,3);
     ROOT::Fit::Fitter  fitter;
 
-    double pStart[3] = {80., 0., cluster_mean[1]};
-    fitter.SetFCN(fcn, pStart);
+    // fitting arc down
+    double pStart[4] = {80., 0., cluster_mean[1], -1};
+    fitter.SetFCN(fcn, pStart, 3, true);
     fitter.Config().ParSettings(0).SetName("R");
     fitter.Config().ParSettings(1).SetName("sin(#alpha)");
     fitter.Config().ParSettings(2).SetName("Target");
@@ -457,9 +464,45 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                         result.GetParams()[1],
                                         result.GetParams()[2]);
 
-    TF1* fit = _circle_function_dn;
-    float quality = result.MinFcnValue() * 1.e-3;
-    TString func = "circle_dn";
+    result.Print(std::cout);
+
+    float quality_dn = result.Chi2() / (track->GetHits().size() - 3);
+
+    // fitting arc up
+    double pStart_up[4] = {80., 0., cluster_mean[1], 1};
+    fitter.SetFCN(fcn, pStart_up, 3, true);
+    fitter.Config().ParSettings(0).SetName("R");
+    fitter.Config().ParSettings(1).SetName("sin(#alpha)");
+    fitter.Config().ParSettings(2).SetName("Target");
+    ok = fitter.FitFCN();
+
+    const ROOT::Fit::FitResult & result_up = fitter.Result();
+
+    _circle_function_dn->SetParameters( result_up.GetParams()[0],
+                                        result_up.GetParams()[1],
+                                        result_up.GetParams()[2]);
+
+    float quality_up = result_up.Chi2() / (track->GetHits().size() - 3);
+
+    TF1* fit;
+    TString func;
+    float quality;
+    if (quality_up > quality_dn) {
+      fit = _circle_function_dn;
+      func = "circle_dn";
+      quality = quality_dn;
+    } else {
+      fit = _circle_function_up;
+      func = "circle_up";
+      quality = quality_up;
+    }
+
+    float mom = fit->GetParameter(0) * units::B * units::clight / 1.e9;
+    if (func.CompareTo("circle_dn") == 0) mom *= -1.;
+    _mom_reco->Fill(mom);
+    _pos_reco->Fill(fit->GetParameter(2));
+    _ang_reco->Fill(fit->GetParameter(1));
+
     /*TF1* fit;
     TF1* lin_fit;
     TString func = "";
@@ -620,7 +663,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         // fill PRF
         _PRF_histo->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
         _PRF_histo_col[it_x]->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
-        if (_verbose > 3) {
+        if (_verbose > 3 || q / a_peak_fit[it_x] > 1.1) {
           std::cout << "PRF fill " << center_pad_y - track_fit_y << "\t" << q / a_peak_fit[it_x] << "\t( " << q << " / " <<  a_peak_fit[it_x] << " )";
           std::cout << "\t(" << a_peak[it_x] << ")";
           std::cout << "\tx:y\t" << it_x << " : " << it_y;
@@ -652,8 +695,22 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 }
 
 void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
+  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      auto max = 0;
+      for (auto t = 0; t < geom::Nsamples; ++t) {
+        if (_padAmpl[x][y][t] > max) {
+          max = _padAmpl[x][y][t];
+        }
+      } // over t
+      if (max)
+        MM->Fill(x, y, max);
+    }
+  }
 
   // sel hits
   for (auto h:event->GetTracks()[trkID]->GetHits()){
@@ -665,7 +722,9 @@ void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
   TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
-  _PRF_histo->Draw("COLZ");
+  if (MM->Integral())
+    MM->Draw("colz");
+  //_PRF_histo->Draw("COLZ");
   canv->cd(2);
   MMsel->Draw("COLZ");
 
@@ -681,6 +740,7 @@ void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
   delete htemp;
   delete canv;
 
+  delete MM;
   delete MMsel;
   delete event3D;
 }

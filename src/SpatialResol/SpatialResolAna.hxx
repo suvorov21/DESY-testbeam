@@ -6,10 +6,6 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
-/** @cond */
-#include "TGraphErrors.h"
-/** @endcond */
-
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
  public:
