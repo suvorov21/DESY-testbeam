@@ -279,6 +279,9 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
+// TODO
+// make the inheritance possible
+// e.g. draw events here but also draw some analysi specific stuff in the analysis
 void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);

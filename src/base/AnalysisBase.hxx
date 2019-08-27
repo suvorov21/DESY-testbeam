@@ -12,6 +12,7 @@
 #include <TH2F.h>
 #include <TH3F.h>
 #include "TStopwatch.h"
+#include "TGraphErrors.h"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"
