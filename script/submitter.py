@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python3
 
 import argparse
 import subprocess
@@ -8,9 +8,13 @@ import random
 
 if __name__ == "__main__":
 
-  #define input
+# **********************************************************************************
+#define input
   Niter     = 5
   doiter    = True
+
+  GenerateTEventFile  = True
+  TakeTEventFile      = False
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
   bin_name  = "SpatialResol.exe"
@@ -20,7 +24,7 @@ if __name__ == "__main__":
   input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "v3"
+  outpt_version = "v6"
 
   # espresso     = 20 minutes
   # microcentury = 1 hour
@@ -31,7 +35,8 @@ if __name__ == "__main__":
   # nextweek     = 1 week
   JobFlavour    = "longlunch"
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/log/"
-  # end of input definition
+# end of input definition
+# **********************************************************************************
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -58,7 +63,11 @@ if __name__ == "__main__":
       # create a file list in case of existing subruns
       temp_filename = project_path + "/FileLists/temp" + str(round(random.random()*1000)) + ".list"
       temp_file = open(temp_filename, "w")
-      path = input_prefix+"/"+input_version+"/"
+
+      if ((Niter > 0 and GenerateTEventFile) or TakeTEventFile):
+        path = outpt_prefix+"/"+outpt_version+"/"
+      else:
+        path = input_prefix+"/"+input_version+"/"
 
       for r, d, f in os.walk(path):
         if "soft" in r:
@@ -80,6 +89,8 @@ if __name__ == "__main__":
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
+        if (Niter == 0 and GenerateTEventFile and !TakeTEventFile):
+          command += "-s"
       # rm temp file list
       command += "rm " + temp_filename
 
