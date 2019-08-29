@@ -93,6 +93,7 @@ bool AnalysisBase::Initialize() {
   std::cout << "Initializing analysis base...............";
   // read and chain input files
   _chain = new TChain(tree_name);
+  TString first_file_name = "";
 
   if (_file_in_name.Contains(".root")) {
     _chain->AddFile(_file_in_name);
@@ -107,6 +108,8 @@ bool AnalysisBase::Initialize() {
       getline(fList, filename);
       if (fList.eof()) break;
       _chain->AddFile(filename.c_str());
+      if (first_file_name.CompareTo("") == 0)
+        first_file_name = filename;
     }
   }
 
@@ -157,9 +160,9 @@ bool AnalysisBase::Initialize() {
       slash_pos = _file_out_name.Index("/", 1, slash_pos+1, TString::kExact);
     TString file_dir  = _file_out_name(0, slash_pos+1);
     slash_pos = 0;
-    while (filename.Index("/", 1, slash_pos+1, TString::kExact) != -1)
-      slash_pos = filename.Index("/", 1, slash_pos+1, TString::kExact);
-    TString file_name = filename(slash_pos+1, filename.Length());
+    while (first_file_name.Index("/", 1, slash_pos+1, TString::kExact) != -1)
+      slash_pos = first_file_name.Index("/", 1, slash_pos+1, TString::kExact);
+    TString file_name = first_file_name(slash_pos+1, first_file_name.Length());
 
     _event_file = new TFile((file_dir + file_name).Data(), "RECREATE");
     _event_tree = new TTree("event_tree", "");

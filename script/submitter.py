@@ -5,11 +5,11 @@ import subprocess
 import shutil
 import os
 import random
+from sys import exit
 
-if __name__ == "__main__":
-
-# **********************************************************************************
-#define input
+def main():
+  # **********************************************************************************
+  #define input
   Niter     = 5
   doiter    = True
 
@@ -35,8 +35,13 @@ if __name__ == "__main__":
   # nextweek     = 1 week
   JobFlavour    = "longlunch"
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/log/"
-# end of input definition
-# **********************************************************************************
+  # end of input definition
+  # **********************************************************************************
+
+  if (GenerateTEventFile and TakeTEventFile):
+    print("ERROR. Could not take the TEvent and generate TEvent at the same moment.")
+    print("Wrong input")
+    sys.exit(-1)
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -50,24 +55,23 @@ if __name__ == "__main__":
     shutil.rmtree(project_path + "/script/temp")
   os.mkdir(project_path + "/script/temp");
 
-  # for each input file
   with open(args.f) as fl:
     i = 0
+    # for each input file
     for line in fl:
       in_file  = line.split()[0]
       ot_file  = line.split()[1]
 
       if (in_file == "" or ot_file == ""):
-        Print("Error")
+        print("ERROR. No file names specified")
+        sys.exit(-1)
 
       # create a file list in case of existing subruns
       temp_filename = project_path + "/FileLists/temp" + str(round(random.random()*1000)) + ".list"
       temp_file = open(temp_filename, "w")
+      first_file_name = ""
 
-      if ((Niter > 0 and GenerateTEventFile) or TakeTEventFile):
-        path = outpt_prefix+"/"+outpt_version+"/"
-      else:
-        path = input_prefix+"/"+input_version+"/"
+      path = input_prefix+"/"+input_version+"/"
 
       for r, d, f in os.walk(path):
         if "soft" in r:
@@ -75,6 +79,9 @@ if __name__ == "__main__":
         for file in f:
           if in_file[:21] in file and ".root" in file:
             temp_file.write(os.path.join(r, file) + "\n")
+            if (first_file_name == ""):
+              first_file_name = file
+
       temp_file.close()
 
       file_out = open(project_path + "/script/temp/" + str(i) + ".sh", "w")
@@ -84,12 +91,16 @@ if __name__ == "__main__":
       # fo each iteration
       for it in range(0, Niter):
         command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(it)
-        command += " -i " + temp_filename
+        if (not GenerateTEventFile or it == 0):
+          command += " -i " + temp_filename
+        else:
+          command += " -i " + outpt_prefix+"/"+outpt_version+"/"+first_file_name
+
         command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
-        if (Niter == 0 and GenerateTEventFile and !TakeTEventFile):
+        if (it == 0 and GenerateTEventFile and not TakeTEventFile):
           command += "-s"
       # rm temp file list
       command += "rm " + temp_filename
@@ -120,3 +131,8 @@ if __name__ == "__main__":
   subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
   #shutil.rmtree(project_path + "/script/temp")
+  return 0
+
+
+if __name__ == "__main__":
+  main()
