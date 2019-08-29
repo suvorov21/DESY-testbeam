@@ -97,6 +97,7 @@ bool AnalysisBase::Initialize() {
 
   if (_file_in_name.Contains(".root")) {
     _chain->AddFile(_file_in_name);
+    first_file_name = _file_in_name;
   } else {
     std::ifstream fList(_file_in_name.Data());
     if (!fList.good()) {
@@ -260,14 +261,16 @@ bool AnalysisBase::WriteOutput() {
     return false;
   }
 
-  std::cout << "Writing standard output..................";
-
   // Write the TEvents in the file
   if (_store_event_tree) {
     _event_file->cd();
     _event_tree->Write("", TObject::kOverwrite);
+    std::cout << "Wrote TEvent events into " << _event_file->GetName() << std::endl;
     _event_file->Close();
   }
+
+  std::cout << "Writing standard output..................";
+
 
   _file_out->cd();
 
