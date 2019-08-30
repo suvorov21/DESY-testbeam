@@ -363,7 +363,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         double a_den = 0.;
         double a_tot = 0.;
 
-
         if (par[3] > 0) {
           _circle_function_up->SetParameters(par[0], par[1], par[2]);
           y_pos = _circle_function_up->Eval(x);
@@ -405,17 +404,19 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _sw_partial[2]->Stop();
     _sw_partial[3]->Start(false);
 
-    ROOT::Math::Functor fcn(chi2Function,3);
+    ROOT::Math::Functor fcn(chi2Function,4);
     ROOT::Fit::Fitter  fitter_dn;
 
     // fitting arc down
     double pStart[4] = {80., 0., cluster_mean[1], -1};
-    fitter_dn.SetFCN(fcn, pStart, 3, true);
+    fitter_dn.SetFCN(fcn, pStart, 4, true);
     fitter_dn.Config().ParSettings(0).SetName("R");
     fitter_dn.Config().ParSettings(1).SetName("sin(#alpha)");
     fitter_dn.Config().ParSettings(2).SetName("Target");
+    fitter_dn.Config().ParSettings(3).SetName("Arc_dir (up/down)");
 
     fitter_dn.Config().ParSettings(0).SetLimits(0., 1.e5);
+    fitter_dn.Config().ParSettings(3).Fix();
 
     bool ok = fitter_dn.FitFCN();
     (void)ok;
@@ -424,18 +425,21 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _circle_function_dn->SetParameters( result_dn.GetParams()[0],
                                         result_dn.GetParams()[1],
                                         result_dn.GetParams()[2]);
-    result_dn.Print(std::cout);
+    if (_verbose > 2)
+      result_dn.Print(std::cout);
 
     float quality_dn = result_dn.Chi2() / (track->GetHits().size() - 3);
 
     // fitting arc up
     ROOT::Fit::Fitter  fitter_up;
     double pStart_up[4] = {80., 0., cluster_mean[1], 1};
-    fitter_up.SetFCN(fcn, pStart_up, 3, true);
+    fitter_up.SetFCN(fcn, pStart_up, 4, true);
     fitter_up.Config().ParSettings(0).SetName("R");
     fitter_up.Config().ParSettings(1).SetName("sin(#alpha)");
     fitter_up.Config().ParSettings(2).SetName("Target");
+    fitter_up.Config().ParSettings(3).SetName("Arc_dir (up/down)");
     fitter_up.Config().ParSettings(0).SetLimits(0., 1.e5);
+    fitter_up.Config().ParSettings(3).Fix();
 
     ok = fitter_up.FitFCN();
 
@@ -444,7 +448,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _circle_function_up->SetParameters( result_up.GetParams()[0],
                                         result_up.GetParams()[1],
                                         result_up.GetParams()[2]);
-    result_up.Print(std::cout);
+    if (_verbose > 2)
+      result_up.Print(std::cout);
 
     float quality_up = result_up.Chi2() / (track->GetHits().size() - 3);
 
