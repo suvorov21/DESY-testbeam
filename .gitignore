@@ -1,6 +1,7 @@
 *.exe
 *.o
 doc/*
+log/*
 /Doxyfile
 
 *ipynb

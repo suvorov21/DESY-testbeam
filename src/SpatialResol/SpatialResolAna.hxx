@@ -6,10 +6,6 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
-/** @cond */
-#include "TGraphErrors.h"
-/** @endcond */
-
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
  public:
@@ -20,6 +16,8 @@ class SpatialResolAna: public AnalysisBase {
   bool Initialize();
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event);
+  /// Draw the histograms of interest
+  TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
@@ -34,7 +32,15 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to use full track fitting
   bool    _do_full_track_fit;
 
+  /// Whether to apply correction of spatial resolution (take geometrical mean)
+  bool    _correction;
+
+  /// iteration number. Starting from 0
+  Int_t   _iteration;
+
+  /// Fitting function for track going up
   TF1*    _circle_function_up;
+  /// Fitting function for track going down
   TF1*    _circle_function_dn;
 
   TH1F*   _mom_reco;

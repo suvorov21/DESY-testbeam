@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
 
   auto c1         = new TCanvas("c1", "2D max ampl",  0, 0, plot::canvas_x_size, plot::canvas_y_size);
   auto c2         = new TCanvas("c2", "3D",           plot::canvas_x_size, 0, plot::canvas_x_size, plot::canvas_y_size);
+  auto c3         = new TCanvas("c3", "WF",           0, plot::canvas_y_size, plot::canvas_x_size, plot::canvas_y_size);
   auto h2d        = new TH2F("h2d",   "",
     geom::nPadx+2, -1, geom::nPadx + 1, geom::nPady+2, -1, geom::nPady+1);
   auto h3d        = new TH3F("h3d",   "",
@@ -110,7 +111,7 @@ int main(int argc, char** argv) {
   if (verbose == 1)
     std::cout << "Processing" << std::endl;
 
-  for (auto eventID = 0; eventID < N_events; ++eventID) {
+  for (auto eventID = 2; eventID < N_events; ++eventID) {
     chain->GetEntry(eventID);
 
     std::cout << "Event " << eventID << std::endl;
@@ -143,8 +144,29 @@ int main(int argc, char** argv) {
     if (!batch) {
       c1->cd();
       h2d->Draw("colz");
+      c1->Update();
       c2->cd();
       h3d->Draw("box1");
+      c2->Update();
+      for (;;) {
+        int x, y;
+        std::cin >> x >> y;
+        std::cout << x << "\t" << y << std::endl;
+        if (!x || !y)
+          break;
+        TH1F* h_wf = new TH1F("h_wf", "", 511, 0., 511.);
+        for (auto it = 0; it < geom::Nsamples; ++it) {
+          h_wf->SetBinContent(it, padAmpl[x][y][it]);
+          std::cout << it << "\t" << padAmpl[x][y][it] << std::endl;
+        }
+
+        c3->cd();
+        h_wf->Draw();
+        c3->Update();
+        char k;
+        std::cin >> k;
+        delete h_wf;
+      }
       c2->WaitPrimitive();
     }
   } // end of loop over events

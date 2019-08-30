@@ -27,7 +27,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bv:drmt:s");
+    int c = getopt(argc, argv, "i:o:bv:drhst:c");
     if (c < 0) break;
     switch (c) {
       case 'i' : _file_in_name     = optarg;       break;
@@ -36,10 +36,9 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
       case 'r' : _overwrite        = true;         break;
-      case 'm' : help(argv[0]);                    break;
-      case 't' : _iteration        = atoi(optarg); break;
+      case 'h' : help(argv[0]);                    break;
       case 's' : _store_event_tree = true; break;
-      case '?' : help(argv[0]);
+      //case '?' : help(argv[0]);
     }
   }
 
@@ -94,9 +93,11 @@ bool AnalysisBase::Initialize() {
   std::cout << "Initializing analysis base...............";
   // read and chain input files
   _chain = new TChain(tree_name);
+  TString first_file_name = "";
 
   if (_file_in_name.Contains(".root")) {
     _chain->AddFile(_file_in_name);
+    first_file_name = _file_in_name;
   } else {
     std::ifstream fList(_file_in_name.Data());
     if (!fList.good()) {
@@ -108,6 +109,8 @@ bool AnalysisBase::Initialize() {
       getline(fList, filename);
       if (fList.eof()) break;
       _chain->AddFile(filename.c_str());
+      if (first_file_name.CompareTo("") == 0)
+        first_file_name = filename;
     }
   }
 
@@ -158,9 +161,9 @@ bool AnalysisBase::Initialize() {
       slash_pos = _file_out_name.Index("/", 1, slash_pos+1, TString::kExact);
     TString file_dir  = _file_out_name(0, slash_pos+1);
     slash_pos = 0;
-    while (filename.Index("/", 1, slash_pos+1, TString::kExact) != -1)
-      slash_pos = filename.Index("/", 1, slash_pos+1, TString::kExact);
-    TString file_name = filename(slash_pos+1, filename.Length());
+    while (first_file_name.Index("/", 1, slash_pos+1, TString::kExact) != -1)
+      slash_pos = first_file_name.Index("/", 1, slash_pos+1, TString::kExact);
+    TString file_name = first_file_name(slash_pos+1, first_file_name.Length());
 
     _event_file = new TFile((file_dir + file_name).Data(), "RECREATE");
     _event_tree = new TTree("event_tree", "");
@@ -188,6 +191,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   _sw_event = new TStopwatch();
 
+  _sw_partial[0] = new TStopwatch();
+  _sw_partial[0]->Reset();
+  _sw_partial[1] = new TStopwatch();
+  _sw_partial[1]->Reset();
+
   if (_verbose == 1) {
     std::cout << "Input file..............................." << _file_in_name << std::endl;
     std::cout << "output file.............................." << _file_out_name << std::endl;
@@ -206,6 +214,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _chain->GetEntry(EventList[eventID]);
     _store_event = false;
 
+    _sw_partial[0]->Start(false);
+
     if (!_work_with_event_file) {
       if (_event && !_store_event_tree)
         delete _event;
@@ -214,8 +224,12 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       if (!_reconstruction->SelectEvent(_padAmpl, _event))
         continue;
     }
+    else _event->SetID(EventList[eventID]);
 
+    _sw_partial[0]->Stop();
+    _sw_partial[1]->Start(false);
     ProcessEvent(_event);
+    _sw_partial[1]->Stop();
 
     if (_store_event_tree && _store_event)
       _event_tree->Fill();
@@ -247,14 +261,16 @@ bool AnalysisBase::WriteOutput() {
     return false;
   }
 
-  std::cout << "Writing standard output..................";
-
   // Write the TEvents in the file
   if (_store_event_tree) {
     _event_file->cd();
     _event_tree->Write("", TObject::kOverwrite);
+    std::cout << "Wrote TEvent events into " << _event_file->GetName() << std::endl;
     _event_file->Close();
   }
+
+  std::cout << "Writing standard output..................";
+
 
   _file_out->cd();
 
@@ -269,6 +285,9 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
+// TODO
+// make the inheritance possible
+// e.g. draw events here but also draw some analysi specific stuff in the analysis
 void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);

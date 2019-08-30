@@ -41,7 +41,7 @@ dEdx_raw_test:
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
-    - ./bin/dEdx.exe -b -t 0 -i input.root -o dEdx_test_iter0.root -v 1
+    - ./bin/dEdx.exe -b -i input.root -o dEdx_test_iter0.root -v 1
 
 dEdx_TEvent_test:
   stage: test
@@ -52,5 +52,5 @@ dEdx_TEvent_test:
     - mkdir input; mkdir output;
     - mv download input/input.root
   script:
-    - ./bin/dEdx.exe -b -t 0 -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
-    - ./bin/dEdx.exe -b -t 0 -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1
+    - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
+    - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1

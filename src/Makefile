@@ -61,8 +61,8 @@ dEdx: $(OBJ) $(OBJDIR)/dEdxAna.o
 	@echo "Compilation done"
 
 $(OBJDIR)$(DICT).$(ObjSuf):
-	rootcint -v1 -f $(OBJDIR)$(DICT).$(SrcSuf) -c $(addprefix ../src/, $(wildcard $(BASEDATASRC)/*.hxx)) ../src/$(BASEDATASRC)/linkDef.h
-	$(CXX) -c $(OutPutOpt) $@ $(OBJDIR)$(DICT).$(SrcSuf) $(CXXFLAGS)
+	rootcint -v1 -f $(BINDIR)$(DICT).$(SrcSuf) -c $(addprefix ../src/, $(wildcard $(BASEDATASRC)/*.hxx)) ../src/$(BASEDATASRC)/linkDef.h
+	$(CXX) -c $(OutPutOpt) $@ $(BINDIR)$(DICT).$(SrcSuf) $(CXXFLAGS)
 
 $(OBJDIR)/%.o: */DataStorage/%.cxx
 	$(CXX) -c $(OutPutOpt) $@ $< $(CXXFLAGS)
@@ -78,9 +78,8 @@ build:
 .PHONY: clean
 clean:
 	@echo "Cleaning..."
-	rm -f $(OBJDIR)/*.$(ObjSuf)
-	rm -r $(BINDIR)/*.$(OutPutSuf)
-	rm $(OBJDIR)$(DICT)
+	rm -rf $(OBJDIR)/*
+	rm -rf $(BINDIR)/*
 
 .PHONY: cleanObj
 cleanObj:

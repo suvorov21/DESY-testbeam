@@ -12,9 +12,23 @@ bool dEdxAna::Initialize() {
   _hdEdx  = new TH1F("dEdx","",300,0,5000);
   _hTime  = new TH1F("tDist","",511,0,511);
   _mult   = new TH1F("Mult", "multiplicity", 10, 0., 10.);
+
+  _max_charge_pad = new TH1F("MaxChargePad", "", 1000, 0., 10000);
+
+  _mult_graph = new TGraphErrors();
+  _mult_graph->SetName("mult_graph");
+
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
+
+  _output_vector.push_back(_mult_graph);
+  _output_vector.push_back(_max_charge_pad);
+
+  for (auto i = 0; i < geom::nPadx; ++i) {
+    _mult_col[i] = new TH1F(Form("Mult_col_%i", i), "multiplicity", 10, 0., 10.);
+    _output_vector.push_back(_mult_col[i]);
+  }
   _selEvents = 0;
 
   // Initilise selection
@@ -48,24 +62,39 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     std::vector <double> QsegmentS;
     for(auto col:itrack->GetCols()) if(col.size()){
       int colQ = 0;
+      auto it_x = col[0]->GetCol();
       for(auto h:col){
         colQ+=h->GetQ();
         _hTime->Fill(h->GetTime());
       }
       if(colQ) QsegmentS.push_back(colQ);
       _mult->Fill(col.size());
-    }
+      _mult_col[it_x]->Fill(col.size());
+    } // loop over column
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
     Int_t i_max = round(alpha * QsegmentS.size());
     for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
     double dEdx= totQ / (alpha * QsegmentS.size());
     _hdEdx->Fill(dEdx);
+
+    // look for max charge in the pad in the event
+    std::vector<THit*> hits = itrack->GetHits();
+    auto it_max = std::max_element(hits.begin(), hits.end(),
+                       [](THit* h1, THit* h2) { return h1->GetQ() < h2->GetQ(); });
+    int MaxCharge = (it_max == hits.end()) ? 0 : (*it_max)->GetQ();
+    _max_charge_pad->Fill(MaxCharge);
   }
   return true;
 }
 
 bool dEdxAna::WriteOutput() {
+  std::cout << "Process result for output................";
+  for (auto i = 0; i < geom::nPadx; ++i) {
+    _mult_graph->SetPoint(_mult_graph->GetN(), i, _mult_col[i]->GetMean());
+    _mult_graph->SetPointError(_mult_graph->GetN() - 1, 0, _mult_col[i]->GetRMS());
+  }
+  std::cout << "done" << std::endl;
   AnalysisBase::WriteOutput();
 
   // std::cout << "selEvents: " << _selEvents << std::endl;

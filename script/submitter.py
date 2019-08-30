@@ -1,16 +1,20 @@
-#! /usr/bin/python
+#!/usr/bin/env python3
 
 import argparse
 import subprocess
 import shutil
 import os
 import random
+from sys import exit
 
-if __name__ == "__main__":
-
+def main():
+  # **********************************************************************************
   #define input
   Niter     = 5
   doiter    = True
+
+  GenerateTEventFile  = True
+  TakeTEventFile      = False
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
   bin_name  = "SpatialResol.exe"
@@ -20,7 +24,7 @@ if __name__ == "__main__":
   input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "v3"
+  outpt_version = "v6"
 
   # espresso     = 20 minutes
   # microcentury = 1 hour
@@ -32,6 +36,12 @@ if __name__ == "__main__":
   JobFlavour    = "longlunch"
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/log/"
   # end of input definition
+  # **********************************************************************************
+
+  if (GenerateTEventFile and TakeTEventFile):
+    print("ERROR. Could not take the TEvent and generate TEvent at the same moment.")
+    print("Wrong input")
+    sys.exit(-1)
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -45,19 +55,22 @@ if __name__ == "__main__":
     shutil.rmtree(project_path + "/script/temp")
   os.mkdir(project_path + "/script/temp");
 
-  # for each input file
   with open(args.f) as fl:
     i = 0
+    # for each input file
     for line in fl:
       in_file  = line.split()[0]
       ot_file  = line.split()[1]
 
       if (in_file == "" or ot_file == ""):
-        Print("Error")
+        print("ERROR. No file names specified")
+        sys.exit(-1)
 
       # create a file list in case of existing subruns
       temp_filename = project_path + "/FileLists/temp" + str(round(random.random()*1000)) + ".list"
       temp_file = open(temp_filename, "w")
+      first_file_name = ""
+
       path = input_prefix+"/"+input_version+"/"
 
       for r, d, f in os.walk(path):
@@ -66,6 +79,9 @@ if __name__ == "__main__":
         for file in f:
           if in_file[:21] in file and ".root" in file:
             temp_file.write(os.path.join(r, file) + "\n")
+            if (first_file_name == ""):
+              first_file_name = file
+
       temp_file.close()
 
       file_out = open(project_path + "/script/temp/" + str(i) + ".sh", "w")
@@ -75,11 +91,18 @@ if __name__ == "__main__":
       # fo each iteration
       for it in range(0, Niter):
         command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(it)
-        command += " -i " + temp_filename
+        if (it == 0 and GenerateTEventFile and not TakeTEventFile):
+          command += " -s "
+        if (not GenerateTEventFile or it == 0):
+          command += " -i " + temp_filename
+        else:
+          command += " -i " + outpt_prefix+"/"+outpt_version+"/"+first_file_name
+
         command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
+
       # rm temp file list
       command += "rm " + temp_filename
 
@@ -106,6 +129,11 @@ if __name__ == "__main__":
   submit_file.close()
 
   os.chdir(project_path + "/script/temp")
-  subprocess.run(["condor_submit",  "Submit.sub"])
+  #subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
   #shutil.rmtree(project_path + "/script/temp")
+  return 0
+
+
+if __name__ == "__main__":
+  main()

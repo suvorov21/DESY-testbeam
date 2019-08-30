@@ -1,5 +1,3 @@
-//#include <iostream>
-
 #include "SpatialResolAna.hxx"
 
 #include "Math/Functor.h"
@@ -11,11 +9,25 @@
 //! 3           print fit details
 //! 4           print PRF details
 
-SpatialResolAna::SpatialResolAna(int argc, char** argv): AnalysisBase(argc, argv) {
+SpatialResolAna::SpatialResolAna(int argc, char** argv):
+  AnalysisBase(argc, argv),
+  // WARNING
+  _correction(false) {
 
   if (_iteration == -1) {
     std::cerr << "ERROR. SpatialResolAna::SpatialResolAna(). Iteration should be defined as a input param" << std::endl;
     exit(1);
+  }
+
+  // read CLI
+  optind = 1;
+  for (;;) {
+    int c = getopt(argc, argv, "i:o:bv:drmst:c");
+    if (c < 0) break;
+    switch (c) {
+      case 't' : _iteration        = atoi(optarg);  break;
+      case 'c' : _correction       = false;         break;
+    }
   }
 
 }
@@ -50,16 +62,21 @@ bool SpatialResolAna::Initialize() {
       for (auto i = 2; i < geom::nPadx; ++i)
         _uncertainty += uncertainty_hist->GetBinContent(i) / (geom::nPadx - 2);
 
-      Int_t read_var;
-      auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
-      event_tree->SetBranchAddress("PassedEvents",    &read_var);
-      std::vector<Int_t> vec;
-      vec.clear();
-      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-        event_tree->GetEntry(i);
-        vec.push_back(read_var);
+      // read event list passed reconstruction+selection
+      // at the moment skip for the 1 iteration (after 0) files with TEvent
+      // reason: in at the step 0 TEvent file is generated need to look at all events in it
+      if (!_work_with_event_file || _iteration != 1) {
+        Int_t read_var;
+        auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
+        event_tree->SetBranchAddress("PassedEvents",    &read_var);
+        std::vector<Int_t> vec;
+        vec.clear();
+        for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+          event_tree->GetEntry(i);
+          vec.push_back(read_var);
+        }
+        this->SetEventList(vec);
       }
-      this->SetEventList(vec);
 
     }
     if (!_PRF_function) {
@@ -68,17 +85,20 @@ bool SpatialResolAna::Initialize() {
       exit(1);
     }
   } else {
-    /*_PRF_function = new TF1("PRF_function",
+/*
+    _PRF_function = new TF1("PRF_function",
       " [0] * exp(-4*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "r");
     _PRF_function->SetParName(2, "w");
 
-    auto c = 0.8;
+    auto c = 1.;
     auto r = 0.5;
-    auto s = 0.7;
-    _PRF_function->SetParameters(c, r, s);*/
+    auto s = 0.005;
+    _PRF_function->SetParameters(c, r, s);
+    _PRF_function->FixParameter(0, 1.);
 
+*/
     _PRF_function  = new TF1("PRF_function", "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "a2");
@@ -86,17 +106,6 @@ bool SpatialResolAna::Initialize() {
     _PRF_function->SetParName(3, "b2");
     _PRF_function->SetParName(4, "b4");
 
-    /*double g  = 3. * 0.01;
-    double delta  = g / 2.;
-    double a      = 1.;
-    double b      = 0.;
-
-
-    double co = 1.;
-    double a2 = -1.* TMath::Power(2/delta, 2) * (1+a);
-    double a4 = TMath::Power(2./delta, 4) * a;
-    double b2 = TMath::Power(2./g, 2) * (1-b-2*(1+a)*TMath::Power(g/delta, 2) + 2.*a*TMath::Power(g/delta, 4));
-    double b4 = TMath::Power(2./g, 4)*b;*/
     double co = 1.;
     double a2 = 2.35167e3;
     double a4 = 6.78962e7;
@@ -106,10 +115,10 @@ bool SpatialResolAna::Initialize() {
 
     _PRF_function->SetParameters(co, a2, a4, b2, b4);
     _PRF_function->FixParameter(0, 1.);
+
   }
 
   _do_arc_fit        = true;
-  _do_full_track_fit = false;
 
   _circle_function_up = new TF1("circle_up", "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]", -0.5, 0.5);
   _circle_function_up->SetParName(0, "radius");
@@ -157,7 +166,7 @@ bool SpatialResolAna::Initialize() {
 
   _residual_mean            = new TH1F("mean", "", geom::nPadx, 0., geom::nPadx);
 
-  _Chi2_track = new TH1F("Chi2_Track", "", 100, 0., 3.);
+  _Chi2_track = new TH1F("Chi2_Track", "", 1000, 0., 100.);
 
   // schedule the output for writing
   _output_vector.push_back(_PRF_function);
@@ -200,6 +209,14 @@ bool SpatialResolAna::Initialize() {
   _reconstruction = new DBSCANReconstruction();
   _reconstruction->Initialize();
 
+  // Initialize timers
+  _sw_partial[2] = new TStopwatch();
+  _sw_partial[2]->Reset();
+  _sw_partial[3] = new TStopwatch();
+  _sw_partial[3]->Reset();
+  _sw_partial[4] = new TStopwatch();
+  _sw_partial[4]->Reset();
+
   return true;
 }
 
@@ -215,8 +232,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if(sel::GetNonZeroRows(track).size() > 8) return false;
     if(sel::GetColsMaxSep(track) > 6) return false;
     if(sel::GetColsMaxGap(track) > 1) return false;
-
-    if(_test_mode) DrawSelection(event,trackId);
 
     _store_event = true;
 
@@ -237,9 +252,11 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     double cluster_mean[geom::nPadx];
     float charge_max[geom::nPadx];
     double a_peak[geom::nPadx];
+    double a_peak_fit[geom::nPadx];
 
     // At the moment ommit first and last column
     // first loop over columns
+    _sw_partial[2]->Start(false);
     for (auto row:track->GetCols()) {
       if (!row[0])
         continue;
@@ -254,6 +271,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       track_pos[it_x]     = -999.;
       cluster_mean[it_x]  = 0.;
       a_peak[it_x]        = 0.;
+      a_peak_fit[it_x]    = 0.;
 
       TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
 
@@ -279,210 +297,202 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (!cluster[it_x] || !charge_max[it_x])
         continue;
 
-      // minimise chi2 to extimate true_track
-      double chi2_min     = 1e9;
-      double scan_y       = cluster_mean[it_x] - scan_delta;
-
-      if (/*_iteration > 0 && */cluster_N[it_x] != 1) {
-        for (Int_t scanId = 0; scanId < scan_Nsteps; ++scanId) {
-          // TODO implement ROOT fitter instead of manual fit
-          double chi2 = 0;
-
-          double a_nom = 0.;
-          double a_den = 0.;
-          double a_tot = 0.;
-
-          for (auto pad:row) {
-            auto q      = pad->GetQ();
-            auto it_y   = pad->GetRow();
-            if (!q)
-              continue;
-            double center_pad_y = geom::y_pos[it_y];
-
-            a_nom += _PRF_function->Eval(scan_y - center_pad_y);
-            a_den += TMath::Power(_PRF_function->Eval(scan_y - center_pad_y), 2) / q;
-          }
-          a_tot = a_nom / a_den;
-
-          for (auto pad:row) {
-            auto q      = pad->GetQ();
-            auto it_y   = pad->GetRow();
-            if (!q)
-              continue;
-            double center_pad_y = geom::y_pos[it_y];
-
-            double part = (q - a_tot*_PRF_function->Eval(scan_y - center_pad_y));
-            part *= part;
-            part /= q;
-
-            chi2 += part;
-          }
-
-          if (chi2 < chi2_min) {
-            chi2_min = chi2;
-            track_pos[it_x] = scan_y;
-            a_peak[it_x] = a_tot;
-          }
-
-          scan_y += scan_step;
-        }
-      } else
-        track_pos[it_x] = cluster_mean[it_x];
-
-      double x = geom::x_pos[it_x];
-
-      track_gr->SetPoint(track_gr->GetN(), x, track_pos[it_x]);
-      for (int i = 1; i < geom::nPadx - 1; ++i) {
-        if (i != it_x)
-          track_1[i]->SetPoint(track_1[i]->GetN(), x, track_pos[it_x]);
-      }
-
-      track_m->SetPoint(track_m->GetN(), x, cluster_mean[it_x]);
-      double error;
-      if (cluster_N[it_x] == 1)
-        error = one_pad_error;
-      else {
-        if (_iteration == 0)
-          error = default_error;
-        else
-          error = _uncertainty;
-      }
-      track_gr->SetPointError(track_gr->GetN()-1, 0., error);
-      for (int i = 1; i < geom::nPadx-1; ++i) {
-        if (i != it_x)
-          track_1[i]->SetPointError(track_1[i]->GetN() - 1, 0., error);
-      }
-    } // loop over columns
-
-    TF1* fit;
-    TF1* lin_fit;
-    TString func = "";
-    if (!_do_arc_fit) {
-      func = "pol1";
-      track_gr->Fit(func, "Q");
-      fit = track_gr->GetFunction(func);
-    } else {
-/*
-      auto chi2Function = [&](const Double_t *par) {
+      /// ********** Start of the fitter
+      auto chi2Function_cluster = [&](const Double_t *par) {
         //minimisation function computing the sum of squares of residuals
         // looping at the graph points
-        Int_t np = track_gr->GetN();
-        Double_t f = 0;
-        Double_t *x = track_gr->GetX();
-        Double_t *y = track_gr->GetY();
-        Double_t *ye = track_gr->GetEY();
-        for (Int_t i=0;i<np;i++) {
-           Double_t u = x[i] - par[0] * par[1] + 0.198;
-           Double_t v = y[i] - par[0]*sqrt(1+par[1]*par[1])+par[2];
-           Double_t dr = par[0] - std::sqrt(u*u+v*v);
-           Double_t re = ye[i] * (y[i] - par[0]/sqrt(1+par[1]*par[1]) + par[2]) / par[0];
-           dr /= re;
-           f += dr*dr;
+        double chi2 = 0;
+
+        double a_nom = 0.;
+        double a_den = 0.;
+        double a_tot = 0.;
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+          double center_pad_y = geom::y_pos[it_y];
+
+          a_nom += _PRF_function->Eval(center_pad_y - par[0]);
+          a_den += TMath::Power(_PRF_function->Eval(center_pad_y - par[0]), 2) / q;
         }
-        return f;
+        a_tot = a_nom / a_den;
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+          double center_pad_y = geom::y_pos[it_y];
+
+          double part = (q - a_tot*_PRF_function->Eval(center_pad_y - par[0]));
+          part *= part;
+          part /= q;
+
+          chi2 += part;
+        }
+
+        return chi2;
       };
 
-      ROOT::Math::Functor fcn(chi2Function,3);
-      ROOT::Fit::Fitter  fitter;
+      ROOT::Math::Functor fcn_cluster(chi2Function_cluster,1);
+      ROOT::Fit::Fitter  fitter_cluster;
 
-      double pStart[3] = {80., 0., 0.};
-      fitter.SetFCN(fcn, pStart);
-      fitter.Config().ParSettings(0).SetName("R");
-      fitter.Config().ParSettings(1).SetName("tan");
-      fitter.Config().ParSettings(2).SetName("c");
+      double pStart[1] = {cluster_mean[it_x]};
+      fitter_cluster.SetFCN(fcn_cluster, pStart);
+      fitter_cluster.Config().ParSettings(0).SetName("y");
 
-      bool ok = fitter.FitFCN();
-      const ROOT::Fit::FitResult & result = fitter.Result();
-      result.Print(std::cout);
-*/
+      bool ok = fitter_cluster.FitFCN();
+      (void)ok;
+      const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
+      track_pos[it_x] = result_cluster.GetParams()[0];
+    } // loop over columns
 
-      // *********** end of debug
-      _circle_function_dn->SetParameters(80., 0., 0.);
-      //_circle_function_dn->SetParLimits(0, 5., 1000.);
-      _circle_function_dn->SetParLimits(1, -0.3, 0.3);
-      _circle_function_dn->SetParLimits(2, -0.1, 0.1);
-      track_gr->Fit("circle_dn", "Q");
-      double chi_dn = track_gr->GetFunction("circle_dn")->GetChisquare();
-      _circle_function_up->SetParameters(80., 0., 0.);
-      //_circle_function_up->SetParLimits(0, 5., 1000.);
-      _circle_function_up->SetParLimits(1, -0.3, 0.3);
-      _circle_function_up->SetParLimits(2, -0.1, 0.1);
-      track_gr->Fit("circle_up", "Q");
-      double chi_up = track_gr->GetFunction("circle_up")->GetChisquare();
+    auto chi2Function = [&](const Double_t *par) {
+      //minimisation function computing the sum of squares of residuals
+      // looping at the graph points
+      double chi2 = 0;
+      float y_pos = 0;
 
-      double best_chi, best_q;
-      if (chi_up > chi_dn) {
-        func = "circle_dn";
-        best_chi = chi_dn;
-        best_q = best_chi / track_gr->GetFunction("circle_up")->GetNDF();
-      } else {
-        func = "circle_up";
-        best_chi = chi_up;
-        best_q = best_chi / track_gr->GetFunction("circle_up")->GetNDF();
+      for (auto row:track->GetCols()) {
+        auto it_x = row[0]->GetCol();
+        auto x    = geom::x_pos[it_x];
+
+        double a_nom = 0.;
+        double a_den = 0.;
+        double a_tot = 0.;
+
+        if (par[3] > 0) {
+          _circle_function_up->SetParameters(par[0], par[1], par[2]);
+          y_pos = _circle_function_up->Eval(x);
+        } else {
+          _circle_function_dn->SetParameters(par[0], par[1], par[2]);
+          y_pos = _circle_function_dn->Eval(x);
+        }
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+
+          double center_pad_y = geom::y_pos[it_y];
+
+          a_nom += _PRF_function->Eval(center_pad_y - y_pos);
+          a_den += TMath::Power(_PRF_function->Eval(center_pad_y - y_pos), 2) / q;
+        }
+        a_tot = a_nom / a_den;
+
+        for (auto pad:row) {
+          auto q      = pad->GetQ();
+          auto it_y   = pad->GetRow();
+          if (!q)
+            continue;
+          double center_pad_y = geom::y_pos[it_y];
+
+          double part = (q - a_tot*_PRF_function->Eval(center_pad_y - y_pos));
+          part *= part;
+          part /= q;
+
+          chi2 += part;
+        }
       }
+      return chi2;
+    };
 
-      // TEMP fill comparison arc/lin fitting
+    _sw_partial[2]->Stop();
+    _sw_partial[3]->Start(false);
 
-      track_gr->Fit("pol1", "Q");
-      lin_fit = track_gr->GetFunction("pol1");
-      double lin_chi2 = lin_fit->GetChisquare();
-      double lin_q = lin_chi2 / lin_fit->GetNDF();
+    ROOT::Math::Functor fcn(chi2Function,4);
+    ROOT::Fit::Fitter  fitter_dn;
 
-      _chi2_ratio->Fill(best_chi / lin_chi2);
-      _qulity_ratio->Fill(best_q / lin_q);
-      // end of TEMP
+    // fitting arc down
+    double pStart[4] = {80., 0., cluster_mean[1], -1};
+    fitter_dn.SetFCN(fcn, pStart, 4, true);
+    fitter_dn.Config().ParSettings(0).SetName("R");
+    fitter_dn.Config().ParSettings(1).SetName("sin(#alpha)");
+    fitter_dn.Config().ParSettings(2).SetName("Target");
+    fitter_dn.Config().ParSettings(3).SetName("Arc_dir (up/down)");
 
-      track_gr->Fit(func, "Q");
-      fit = track_gr->GetFunction(func);
+    fitter_dn.Config().ParSettings(0).SetLimits(0., 1.e5);
+    fitter_dn.Config().ParSettings(3).Fix();
+
+    bool ok = fitter_dn.FitFCN();
+    (void)ok;
+    const ROOT::Fit::FitResult & result_dn = fitter_dn.Result();
+
+    _circle_function_dn->SetParameters( result_dn.GetParams()[0],
+                                        result_dn.GetParams()[1],
+                                        result_dn.GetParams()[2]);
+    if (_verbose > 2)
+      result_dn.Print(std::cout);
+
+    float quality_dn = result_dn.Chi2() / (track->GetHits().size() - 3);
+
+    // fitting arc up
+    ROOT::Fit::Fitter  fitter_up;
+    double pStart_up[4] = {80., 0., cluster_mean[1], 1};
+    fitter_up.SetFCN(fcn, pStart_up, 4, true);
+    fitter_up.Config().ParSettings(0).SetName("R");
+    fitter_up.Config().ParSettings(1).SetName("sin(#alpha)");
+    fitter_up.Config().ParSettings(2).SetName("Target");
+    fitter_up.Config().ParSettings(3).SetName("Arc_dir (up/down)");
+    fitter_up.Config().ParSettings(0).SetLimits(0., 1.e5);
+    fitter_up.Config().ParSettings(3).Fix();
+
+    ok = fitter_up.FitFCN();
+
+    const ROOT::Fit::FitResult & result_up = fitter_up.Result();
+
+    _circle_function_up->SetParameters( result_up.GetParams()[0],
+                                        result_up.GetParams()[1],
+                                        result_up.GetParams()[2]);
+    if (_verbose > 2)
+      result_up.Print(std::cout);
+
+    float quality_up = result_up.Chi2() / (track->GetHits().size() - 3);
+
+    TF1* fit;
+    TString func;
+    float quality;
+    if (quality_up > quality_dn) {
+      fit = _circle_function_dn;
+      func = "circle_dn";
+      quality = quality_dn;
+    } else {
+      fit = _circle_function_up;
+      func = "circle_up";
+      quality = quality_up;
     }
 
-    if (!fit)
+    if (quality > 100.)
       continue;
 
     float mom = fit->GetParameter(0) * units::B * units::clight / 1.e9;
-    if (fit->GetParameter(2) < 0) mom *= -1.;
+    if (func.CompareTo("circle_dn") == 0) mom *= -1.;
     _mom_reco->Fill(mom);
     _pos_reco->Fill(fit->GetParameter(2));
     _ang_reco->Fill(fit->GetParameter(1));
-
-    double quality = fit->GetChisquare() / fit->GetNDF();
-
-    if (_verbose > 2) {
-      //fit = track_gr->GetFunction(func);
-
-      std::cout << "Arc fit" << std::endl;
-      std::cout << "radius\t" <<  fit->GetParameter(0) << std::endl;
-      std::cout << "tan(a)\t" << fit->GetParameter(1) << std::endl;
-      std::cout << "target\t" << 1/fit->GetParameter(2) << std::endl;
-      std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
-
-      track_gr->Fit("pol1", "Q");
-      fit = track_gr->GetFunction("pol1");
-      std::cout << "Linear fit" << std::endl;
-      std::cout << "k\t" << fit->GetParameter(1) << std::endl;
-      std::cout << "b\t" << fit->GetParameter(0) << std::endl;
-      std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
-    }
 
     _Chi2_track->Fill(quality);
     TF1* fit1[geom::nPadx];
 
     for (int i = 1; i < geom::nPadx-1; ++i) {
-      if (!_do_arc_fit) {
-        track_1[i]->Fit("pol1", "Q");
-        fit1[i] = track_1[i]->GetFunction("pol1");
-      } else {
-        track_1[i]->Fit(func, "Q");
-        fit1[i] = track_1[i]->GetFunction(func);
-      }
-      if (!fit1[i]) {
-        std::cout << "Arc fit" << std::endl;
-        std::cout << "r\t" <<  fit->GetParameter(0) << std::endl;
-        std::cout << "x0\t" << fit->GetParameter(1) << std::endl;
-        std::cout << "y0\t" << fit->GetParameter(2) << std::endl;
-        std::cout << "q\t" << fit->GetChisquare() << "/" << fit->GetNDF() << std::endl;
-      }
+      if (_correction) {
+         if (!_do_arc_fit) {
+          track_1[i]->Fit("pol1", "Q");
+          fit1[i] = track_1[i]->GetFunction("pol1");
+        } else {
+          track_1[i]->Fit(func, "Q");
+          fit1[i] = track_1[i]->GetFunction(func);
+        }
+      } else
+        fit1[i] = fit;
     }
+
+    _sw_partial[3]->Stop();
+    _sw_partial[4]->Start(false);
 
     // second loop over columns
     for (auto row:track->GetCols()) {
@@ -511,6 +521,21 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _resol_col_hist_3pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
       }
 
+      float a_nom = 0.;
+      float a_den = 0.;
+      for (auto pad:row) {
+        auto q      = pad->GetQ();
+        auto it_y   = pad->GetRow();
+        if (!q)
+          continue;
+        double center_pad_y = geom::y_pos[it_y];
+
+        a_nom += _PRF_function->Eval(center_pad_y - track_fit_y);
+        a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_fit_y), 2) / q;
+      }
+
+      a_peak_fit[it_x] = a_nom / a_den;
+
       if (cluster_N[it_x] == 1)
         continue;
       // Fill PRF
@@ -524,35 +549,98 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         if (!cluster[it_x] || !q)
           continue;
 
+        // WARNING
+        if (q > 2000)
+          continue;
+
         //double charge = 1. * q / cluster[it_x];
         double center_pad_y = geom::y_pos[it_y];
 
         // fill PRF
-        _PRF_histo->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
-        _PRF_histo_col[it_x]->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
-
-        if (_verbose > 3)
-          std::cout << "PRF fill " << center_pad_y - track_fit_y << "\t" << q / a_peak[it_x] << "\t( " << q << " / " <<  a_peak[it_x] << " )" << std::endl;
+        _PRF_histo->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
+        _PRF_histo_col[it_x]->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
+        if (_verbose > 3) {
+          std::cout << "PRF fill " << center_pad_y - track_fit_y << "\t" << q / a_peak_fit[it_x] << "\t( " << q << " / " <<  a_peak_fit[it_x] << " )";
+          std::cout << "\t(" << a_peak[it_x] << ")";
+          std::cout << "\tx:y\t" << it_x << " : " << it_y;
+          std::cout << "\tmult " << cluster_N[it_x] << std::endl;
+        }
 
         if (cluster_N[it_x] == 2)
-          _PRF_histo_2pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+          _PRF_histo_2pad->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
         else if (cluster_N[it_x] == 3)
-          _PRF_histo_3pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+          _PRF_histo_3pad->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
         else if (cluster_N[it_x] == 4)
-          _PRF_histo_4pad->Fill(center_pad_y - track_fit_y, q / a_peak[it_x]);
+          _PRF_histo_4pad->Fill(center_pad_y - track_fit_y, q / a_peak_fit[it_x]);
       }
     } // loop over colums
+    _sw_partial[4]->Stop();
     delete track_gr;
     delete track_m;
     for (int i = 0; i < geom::nPadx; ++i) {
       delete track_1[i];
     }
+
+    if(_test_mode) this->DrawSelection(event,trackId);
   } // loop over tracks
 
   if (_store_event)
     _passed_events.push_back(event->GetID());
 
   return true;
+}
+
+TCanvas* SpatialResolAna::DrawSelectionCan(const TEvent* event, int trkID) {
+  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
+                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
+  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      auto max = 0;
+      for (auto t = 0; t < geom::Nsamples; ++t) {
+        if (_padAmpl[x][y][t] > max) {
+          max = _padAmpl[x][y][t];
+        }
+      } // over t
+      if (max)
+        MM->Fill(x, y, max);
+    }
+  }
+
+  // sel hits
+  for (auto h:event->GetTracks()[trkID]->GetHits()){
+    if(!h->GetQ()) continue;
+    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
+    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
+  }
+
+  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  canv->Divide(3,1);
+  canv->cd(1);
+  if (MM->Integral())
+    MM->Draw("colz");
+  //_PRF_histo->Draw("COLZ");
+  canv->cd(2);
+  MMsel->Draw("COLZ");
+
+  canv->cd(3);
+  event3D->Draw("x:y:z:c","","box2");
+  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
+  htemp->GetYaxis()->SetLimits(0,geom::nPady);
+  htemp->GetZaxis()->SetLimits(0,500);
+  htemp->SetTitle("");
+  canv->Update();
+  return canv;
+  //canv->WaitPrimitive();
+  /*delete htemp;
+  delete canv;
+
+  delete MM;
+  delete MMsel;
+  delete event3D;*/
 }
 
 bool SpatialResolAna::WriteOutput() {
@@ -645,6 +733,13 @@ bool SpatialResolAna::WriteOutput() {
     _Prev_iter_file->Close();
 
   std::cout << "done" << std::endl;
+
+  std::cout << "*************** Time consuming **************" << std::endl;
+  std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "  Fitters:     \t"        << _sw_partial[3]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
+  std::cout << "  Filling:     \t"        << _sw_partial[4]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   return true;
 }
 
