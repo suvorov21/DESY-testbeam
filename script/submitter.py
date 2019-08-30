@@ -91,6 +91,8 @@ def main():
       # fo each iteration
       for it in range(0, Niter):
         command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(it)
+        if (it == 0 and GenerateTEventFile and not TakeTEventFile):
+          command += " -s "
         if (not GenerateTEventFile or it == 0):
           command += " -i " + temp_filename
         else:
@@ -100,8 +102,7 @@ def main():
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
-        if (it == 0 and GenerateTEventFile and not TakeTEventFile):
-          command += "-s"
+
       # rm temp file list
       command += "rm " + temp_filename
 
@@ -128,7 +129,7 @@ def main():
   submit_file.close()
 
   os.chdir(project_path + "/script/temp")
-  subprocess.run(["condor_submit",  "Submit.sub"])
+  #subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
   #shutil.rmtree(project_path + "/script/temp")
   return 0
