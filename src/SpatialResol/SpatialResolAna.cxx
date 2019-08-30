@@ -406,38 +406,45 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _sw_partial[3]->Start(false);
 
     ROOT::Math::Functor fcn(chi2Function,3);
-    ROOT::Fit::Fitter  fitter;
+    ROOT::Fit::Fitter  fitter_dn;
 
     // fitting arc down
     double pStart[4] = {80., 0., cluster_mean[1], -1};
-    fitter.SetFCN(fcn, pStart, 3, true);
-    fitter.Config().ParSettings(0).SetName("R");
-    fitter.Config().ParSettings(1).SetName("sin(#alpha)");
-    fitter.Config().ParSettings(2).SetName("Target");
+    fitter_dn.SetFCN(fcn, pStart, 3, true);
+    fitter_dn.Config().ParSettings(0).SetName("R");
+    fitter_dn.Config().ParSettings(1).SetName("sin(#alpha)");
+    fitter_dn.Config().ParSettings(2).SetName("Target");
 
-    bool ok = fitter.FitFCN();
+    fitter_dn.Config().ParSettings(0).SetLimits(0., 1.e5);
+
+    bool ok = fitter_dn.FitFCN();
     (void)ok;
-    const ROOT::Fit::FitResult & result_dn = fitter.Result();
+    const ROOT::Fit::FitResult & result_dn = fitter_dn.Result();
 
     _circle_function_dn->SetParameters( result_dn.GetParams()[0],
                                         result_dn.GetParams()[1],
                                         result_dn.GetParams()[2]);
+    result_dn.Print(std::cout);
 
     float quality_dn = result_dn.Chi2() / (track->GetHits().size() - 3);
 
     // fitting arc up
+    ROOT::Fit::Fitter  fitter_up;
     double pStart_up[4] = {80., 0., cluster_mean[1], 1};
-    fitter.SetFCN(fcn, pStart_up, 3, true);
-    fitter.Config().ParSettings(0).SetName("R");
-    fitter.Config().ParSettings(1).SetName("sin(#alpha)");
-    fitter.Config().ParSettings(2).SetName("Target");
-    ok = fitter.FitFCN();
+    fitter_up.SetFCN(fcn, pStart_up, 3, true);
+    fitter_up.Config().ParSettings(0).SetName("R");
+    fitter_up.Config().ParSettings(1).SetName("sin(#alpha)");
+    fitter_up.Config().ParSettings(2).SetName("Target");
+    fitter_up.Config().ParSettings(0).SetLimits(0., 1.e5);
 
-    const ROOT::Fit::FitResult & result_up = fitter.Result();
+    ok = fitter_up.FitFCN();
+
+    const ROOT::Fit::FitResult & result_up = fitter_up.Result();
 
     _circle_function_up->SetParameters( result_up.GetParams()[0],
                                         result_up.GetParams()[1],
                                         result_up.GetParams()[2]);
+    result_up.Print(std::cout);
 
     float quality_up = result_up.Chi2() / (track->GetHits().size() - 3);
 
@@ -453,6 +460,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       func = "circle_up";
       quality = quality_up;
     }
+
+    if (quality > 100.)
+      continue;
 
     float mom = fit->GetParameter(0) * units::B * units::clight / 1.e9;
     if (func.CompareTo("circle_dn") == 0) mom *= -1.;
@@ -575,9 +585,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   return true;
 }
 
-void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
+TCanvas* SpatialResolAna::DrawSelectionCan(const TEvent* event, int trkID) {
   TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
+                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   for (auto x = 0; x < geom::nPadx; ++x) {
@@ -597,7 +608,7 @@ void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
   for (auto h:event->GetTracks()[trkID]->GetHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
-    MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
@@ -617,13 +628,14 @@ void SpatialResolAna::DrawSelection(const TEvent* event, int trkID) {
   htemp->GetZaxis()->SetLimits(0,500);
   htemp->SetTitle("");
   canv->Update();
-  canv->WaitPrimitive();
-  delete htemp;
+  return canv;
+  //canv->WaitPrimitive();
+  /*delete htemp;
   delete canv;
 
   delete MM;
   delete MMsel;
-  delete event3D;
+  delete event3D;*/
 }
 
 bool SpatialResolAna::WriteOutput() {
