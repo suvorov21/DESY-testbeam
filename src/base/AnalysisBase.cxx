@@ -1,6 +1,3 @@
-#include <iostream>  // stream
-#include <unistd.h>  // getopt on Mac
-#include <fstream>   // read file lists
 #include <algorithm>
 
 #include "TROOT.h"

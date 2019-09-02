@@ -5,6 +5,8 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <unistd.h>  // getopt on Mac
+#include <fstream>   // read file lists
 /** @endcond */
 
 #include "THit.hxx"
