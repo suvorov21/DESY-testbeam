@@ -129,7 +129,7 @@ def main():
   submit_file.close()
 
   os.chdir(project_path + "/script/temp")
-  #subprocess.run(["condor_submit",  "Submit.sub"])
+  subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
   #shutil.rmtree(project_path + "/script/temp")
   return 0
