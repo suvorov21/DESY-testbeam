@@ -10,11 +10,11 @@
 
 using namespace std;
 
-const Int_t Niter = 5;
+const Int_t Niter = 0;
 
 float GetAverage(TH1F* h, float& RMS);
 
-void SpatialIteration() {
+void SpatialScan() {
   Int_t T2KstyleIndex = 3;
   // Official T2K style as described in http://www.t2k.org/comm/pubboard/style/index_html
   TString localStyleName = "T2K";
@@ -34,14 +34,35 @@ void SpatialIteration() {
   TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/v6/";
   vector<pair<TString, Float_t> > file_name_scan;
 
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_410.root", 410));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_430.root", 430));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_450.root", 450));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_470.root", 470));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_490.root", 490));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_510.root", 510));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_530.root", 530));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_550.root", 550));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_490_iter" + TString::Itoa(Niter, 10) +  ".root", 490));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
+  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
+
+  TGraphErrors* resol_vs_dist = new TGraphErrors();
+
+  for (auto pair:file_name_scan) {
+    TFile* f = new TFile(pair.first.Data(), "READ");
+    TH1F* resol_final = (TH1F*)f->Get("resol_final");
+    resol_final->SetName(Form("resol_final_%f", pair.second));
+    float mean, RMS;
+    mean = GetAverage(resol_final, RMS);
+
+    resol_vs_dist->SetPoint(resol_vs_dist->GetN(), pair.second, 1.e6*mean);
+    resol_vs_dist->SetPointError(resol_vs_dist->GetN()-1, 1.e6*RMS);
+  }
+
+  c1.cd();
+  resol_vs_dist->Draw("ap");
+  resol_vs_dist->GetYaxis()->SetRangeUser(0., 500.);
+  resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
+  gPad->Modified();
+  gPad->Update();
+  c1.WaitPrimitive();
 
 }
 
