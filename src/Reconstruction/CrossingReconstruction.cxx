@@ -22,8 +22,8 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
   std::vector<int>   front_cluster_charge;
 
   // fill max per WF ampl
-  int PadDisplay[geom::nPadx][geom::nPady]  = {0};
-  int PadTime[geom::nPadx][geom::nPady]     = {0};
+  int PadDisplay[geom::nPadx][geom::nPady]  = {{0}};
+  int PadTime[geom::nPadx][geom::nPady]     = {{0}};
   for (auto it_x = 0; it_x < geom::nPadx; ++it_x)
     for (auto it_y = 0; it_y < geom::nPady; ++it_y)
       for (auto it_t = 0; it_t < geom::Nsamples; ++it_t)
@@ -226,8 +226,8 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
       if (breaking > breaking_thr || columns < column_thr || pad_OOT > OOT_thr)
         continue;
 
-      if (pileup && pile_up_cut)
-        continue;
+      //if (pileup && pile_up_cut)
+      //  continue;
 
       track_container.push_back(TrackDraft);
       track_container_time.push_back(TrackDraft_time);

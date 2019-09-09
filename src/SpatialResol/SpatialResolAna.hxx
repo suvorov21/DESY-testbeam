@@ -30,7 +30,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Whehter to use arc function for track fitting
   bool    _do_arc_fit;
   /// Whether to use full track fitting
-  bool    _do_full_track_fit;
+  //bool    _do_full_track_fit;
 
   /// Whether to apply correction of spatial resolution (take geometrical mean)
   bool    _correction;
@@ -86,14 +86,14 @@ class SpatialResolAna: public AnalysisBase {
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
-
+/*
   /// Chi2 track scan delta
   const float   scan_delta    = 0.001;
   /// Chi2 track scan steps
   const int     scan_Nsteps   = 100;
   /// Chi2 track scan step
   const double  scan_step     = 2. * scan_delta / scan_Nsteps;
-
+*/
   // [units are meters]
   const float prf_min     = -0.018;
   const float prf_max     = 0.018;
@@ -106,8 +106,8 @@ class SpatialResolAna: public AnalysisBase {
   const float fit_bound_left  = -0.015;
   const float fit_bound_right =  0.015;
 
-  const float default_error   = 0.001;
-  const float one_pad_error   = 0.002;
+  //const float default_error   = 0.001;
+  //const float one_pad_error   = 0.002;
 };
 
 #endif  // SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_

@@ -581,7 +581,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       delete track_1[i];
     }
 
-    if(_test_mode) this->DrawSelection(event,trackId);
+    if(_test_mode) this->DrawSelectionCan(event,trackId);
   } // loop over tracks
 
   if (_store_event)

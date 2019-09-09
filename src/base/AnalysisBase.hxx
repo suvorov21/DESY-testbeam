@@ -37,12 +37,15 @@ class AnalysisBase {
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   /// Print usage
-  void help(const std::string name);
+  void help(const std::string& name);
 
   void process_mem_usage(double& vm_usage, double& resident_set);
 
-  void SetEventList(std::vector<Int_t> var) {_EventList.clear(); _EventList = var;}
+  void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
+
+  AnalysisBase(const AnalysisBase& ana){std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+  bool operator==(const AnalysisBase* ana){std::cerr << "Comparison is depricated" << std::endl; exit(1);}
 
  protected:
 

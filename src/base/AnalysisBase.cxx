@@ -102,12 +102,12 @@ bool AnalysisBase::Initialize() {
       exit(1);
     }
     while (fList.good()) {
-      std::string filename;
-      getline(fList, filename);
+      std::string temp_filename;
+      getline(fList, temp_filename);
       if (fList.eof()) break;
-      _chain->AddFile(filename.c_str());
+      _chain->AddFile(temp_filename.c_str());
       if (first_file_name.CompareTo("") == 0)
-        first_file_name = filename;
+        first_file_name = temp_filename;
     }
   }
 
@@ -343,7 +343,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   delete event3D;
 }
 
-void AnalysisBase::help(const std::string name) {
+void AnalysisBase::help(const std::string& name) {
   std::cout << name << " usage\n" << std::endl;
   std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
   std::cout << "   -o <output_path>     : output files path" << std::endl;
