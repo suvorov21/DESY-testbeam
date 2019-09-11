@@ -18,11 +18,15 @@ bool dEdxAna::Initialize() {
   _mult_graph = new TGraphErrors();
   _mult_graph->SetName("mult_graph");
 
+  _mult_graph_err = new TGraphErrors();
+  _mult_graph_err->SetName("mult_graph_err");
+
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
 
   _output_vector.push_back(_mult_graph);
+  _output_vector.push_back(_mult_graph_err);
   _output_vector.push_back(_max_charge_pad);
 
   for (auto i = 0; i < geom::nPadx; ++i) {
@@ -93,6 +97,9 @@ bool dEdxAna::WriteOutput() {
   for (auto i = 0; i < geom::nPadx; ++i) {
     _mult_graph->SetPoint(_mult_graph->GetN(), i, _mult_col[i]->GetMean());
     _mult_graph->SetPointError(_mult_graph->GetN() - 1, 0, _mult_col[i]->GetRMS());
+
+    _mult_graph_err->SetPoint(_mult_graph_err->GetN(), i, _mult_col[i]->GetMean());
+    _mult_graph_err->SetPointError(_mult_graph_err->GetN() - 1, 0, _mult_col[i]->GetMeanError());
   }
   std::cout << "done" << std::endl;
   AnalysisBase::WriteOutput();

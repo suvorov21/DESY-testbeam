@@ -19,6 +19,7 @@ class dEdxAna: public AnalysisBase {
 
   TH1F* _mult_col[geom::nPadx];
   TGraphErrors* _mult_graph;
+  TGraphErrors* _mult_graph_err;
 
   TH1F* _max_charge_pad;
 
