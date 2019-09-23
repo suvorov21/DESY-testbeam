@@ -21,7 +21,16 @@ class dEdxAna: public AnalysisBase {
   TGraphErrors* _mult_graph;
   TGraphErrors* _mult_graph_err;
 
+  /// maximum charge in pad in event
   TH1F* _max_charge_pad;
+
+  /// cluster charge before truncation
+  TH1F* _un_trunk_cluster;
+  /// leading pad charge
+  TH1F* _fst_pad_charge;
+  TH1F* _scd_pad_charge;
+  TH1F* _trd_pad_charge;
+  TH1F* _fth_pad_charge;
 
   /// Initialise histoes, input files, selections
   bool Initialize();
