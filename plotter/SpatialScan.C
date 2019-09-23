@@ -10,9 +10,10 @@
 
 using namespace std;
 
-const Int_t Niter = 0;
+const Int_t Niter = 19;
 
 float GetAverage(TH1F* h, float& RMS);
+float GetAverage(TH1F* h, float& RMS, float& mean_e);
 
 void SpatialScan() {
   Int_t T2KstyleIndex = 3;
@@ -29,35 +30,45 @@ void SpatialScan() {
   gROOT->ForceStyle();
 
   TCanvas c1("c1", "", 0, 0, 800, 630);
+  TString volt      = "360";
+  TString field     = "275";
+  TString peack     = "200";
+  TString mag       = "02T";
 
-
-  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/v6/";
+  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/v14/";
   vector<pair<TString, Float_t> > file_name_scan;
 
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_490_iter" + TString::Itoa(Niter, 10) +  ".root", 490));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
-  file_name_scan.push_back(make_pair(input_prefix + "z_360_275_200_02T_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_490_iter" + TString::Itoa(Niter, 10) +  ".root", 490));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
+  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
 
-  TGraphErrors* resol_vs_dist = new TGraphErrors();
+  TGraphErrors* resol_vs_dist     = new TGraphErrors();
+  TGraphErrors* resol_vs_dist_e   = new TGraphErrors();
 
   for (auto pair:file_name_scan) {
     TFile* f = new TFile(pair.first.Data(), "READ");
     TH1F* resol_final = (TH1F*)f->Get("resol_final");
     resol_final->SetName(Form("resol_final_%f", pair.second));
-    float mean, RMS;
-    mean = GetAverage(resol_final, RMS);
+    float mean, RMS, mean_e;
+    mean = GetAverage(resol_final, RMS, mean_e);
+    cout << pair.second << "\t\t" << 1.e6*mean << "\t" << 1.e6*RMS << "\t" << 1.e6*mean_e << endl;
 
     resol_vs_dist->SetPoint(resol_vs_dist->GetN(), pair.second, 1.e6*mean);
-    resol_vs_dist->SetPointError(resol_vs_dist->GetN()-1, 1.e6*RMS);
+    resol_vs_dist->SetPointError(resol_vs_dist->GetN()-1, 0, 1.e6*RMS);
+
+    resol_vs_dist_e->SetPoint(resol_vs_dist_e->GetN(), pair.second, 1.e6*mean);
+    resol_vs_dist_e->SetPointError(resol_vs_dist_e->GetN()-1, 0, 1.e6*mean_e);
   }
 
   c1.cd();
-  resol_vs_dist->Draw("ap");
+  resol_vs_dist->Draw("ap>");
+  resol_vs_dist_e->Draw("p same");
+
   resol_vs_dist->GetYaxis()->SetRangeUser(0., 500.);
   resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
   gPad->Modified();
@@ -67,6 +78,11 @@ void SpatialScan() {
 }
 
 float GetAverage(TH1F* h, float& RMS) {
+  float mean_e;
+  return GetAverage(h, RMS, mean_e);
+}
+
+float GetAverage(TH1F* h, float& RMS, float& mean_e) {
   int N = 0;
   float av = 0;
   for (int i = 1; i <= h->GetXaxis()->GetNbins(); ++i) {
@@ -82,6 +98,7 @@ float GetAverage(TH1F* h, float& RMS) {
     RMS += (h->GetBinContent(i) - av) * (h->GetBinContent(i) - av);
   }
   RMS = sqrt(RMS/N);
+  mean_e = RMS/sqrt(N);
 
   return av;
 }

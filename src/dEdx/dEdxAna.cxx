@@ -21,6 +21,13 @@ bool dEdxAna::Initialize() {
   _mult_graph_err = new TGraphErrors();
   _mult_graph_err->SetName("mult_graph_err");
 
+  _un_trunk_cluster = new TH1F("un_trunc_cluster", "", 1000, 0., 10000);
+
+  _fst_pad_charge = new TH1F("fst_pad", "", 1000, 0., 10000);
+  _scd_pad_charge = new TH1F("scd_pad", "", 1000, 0., 10000);
+  _trd_pad_charge = new TH1F("trd_pad", "", 1000, 0., 10000);
+  _fth_pad_charge = new TH1F("fth_pad", "", 1000, 0., 10000);
+
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
@@ -28,6 +35,12 @@ bool dEdxAna::Initialize() {
   _output_vector.push_back(_mult_graph);
   _output_vector.push_back(_mult_graph_err);
   _output_vector.push_back(_max_charge_pad);
+  _output_vector.push_back(_un_trunk_cluster);
+
+  _output_vector.push_back(_fst_pad_charge);
+  _output_vector.push_back(_scd_pad_charge);
+  _output_vector.push_back(_trd_pad_charge);
+  _output_vector.push_back(_fth_pad_charge);
 
   for (auto i = 0; i < geom::nPadx; ++i) {
     _mult_col[i] = new TH1F(Form("Mult_col_%i", i), "multiplicity", 10, 0., 10.);
@@ -67,13 +80,22 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     for(auto col:itrack->GetCols()) if(col.size()){
       int colQ = 0;
       auto it_x = col[0]->GetCol();
+      std::vector <double> Qpads;
       for(auto h:col){
         colQ+=h->GetQ();
         _hTime->Fill(h->GetTime());
+        Qpads.push_back(h->GetQ());
       }
       if(colQ) QsegmentS.push_back(colQ);
+      _un_trunk_cluster->Fill(colQ);
       _mult->Fill(col.size());
       _mult_col[it_x]->Fill(col.size());
+
+      sort(Qpads.begin(), Qpads.end(), [](double x1, double x2){return x1 > x2;});
+      if (Qpads.size() > 0) _fst_pad_charge->Fill(Qpads[0]);
+      if (Qpads.size() > 1) _scd_pad_charge->Fill(Qpads[1]);
+      if (Qpads.size() > 2) _trd_pad_charge->Fill(Qpads[2]);
+      if (Qpads.size() > 3) _fth_pad_charge->Fill(Qpads[3]);
     } // loop over column
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
