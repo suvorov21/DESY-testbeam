@@ -10,6 +10,7 @@ TTrack::~TTrack() {
 
   fc.clear();
   fr.clear();
+  fhits.clear();
 }
 
 void TTrack::AddHit(THit* hit) {
