@@ -10,21 +10,21 @@ from sys import exit
 def main():
   # **********************************************************************************
   #define input
-  Niter     = 5
+  Niter     = 20
   doiter    = True
 
   GenerateTEventFile  = True
-  TakeTEventFile      = False
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
   bin_name  = "SpatialResol.exe"
   bin_flag  = "-b"
 
   input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
+  #input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
   input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "v6"
+  outpt_version = "nom"
 
   # espresso     = 20 minutes
   # microcentury = 1 hour
@@ -37,11 +37,6 @@ def main():
   log_folder    = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/log/"
   # end of input definition
   # **********************************************************************************
-
-  if (GenerateTEventFile and TakeTEventFile):
-    print("ERROR. Could not take the TEvent and generate TEvent at the same moment.")
-    print("Wrong input")
-    sys.exit(-1)
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -91,7 +86,7 @@ def main():
       # fo each iteration
       for it in range(0, Niter):
         command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(it)
-        if (it == 0 and GenerateTEventFile and not TakeTEventFile):
+        if (it == 0 and GenerateTEventFile):
           command += " -s "
         if (not GenerateTEventFile or it == 0):
           command += " -i " + temp_filename
