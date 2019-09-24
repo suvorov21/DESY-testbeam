@@ -69,6 +69,9 @@ bool AnalysisBase::Initialize() {
   } // end of list input parse
 
   file = new TFile(filename.Data(), "READ");
+
+  // find out which tree was send as an input
+  // padAmpl or TEvent
   tree = (TTree*)file->Get("tree");
   if (tree) {
     std::cout << "Raw data is using" << std::endl;
@@ -86,6 +89,11 @@ bool AnalysisBase::Initialize() {
     }
   }
   file->Close();
+
+  if (_work_with_event_file && _store_event_tree) {
+    std::cerr << "ERROR. AnalysisBase::Initialize. Prohibited to generate TEvent over TEvent. Exit" << std::endl;
+    exit(1);
+  }
 
   std::cout << "Initializing analysis base...............";
   // read and chain input files
