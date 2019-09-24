@@ -26,6 +26,11 @@ else
 	CXXFLAGS += -g
 	RLXX += -g
 endif
+
+# for tests
+ifeq ($(TYPE), TEST)
+	OutPutSuf=exe.test
+endif
 # add include folders
 CXXFLAGS += -I./base/DataStorage/ -I./base/ -I./Reconstruction/ -I../utils/
 

@@ -10,6 +10,7 @@ class TTrack : public TObject{
  public:
   void AddHit(THit* hit);
 
+  // WARNING memory like with GetHits() observed
   std::vector<THit*> GetHits()                const     {return fhits;}
   std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}
   std::vector<std::vector<THit*>> GetRows ()  const     {return fr;}
