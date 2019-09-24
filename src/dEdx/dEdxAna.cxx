@@ -28,6 +28,9 @@ bool dEdxAna::Initialize() {
   _trd_pad_charge = new TH1F("trd_pad", "", 1000, 0., 10000);
   _fth_pad_charge = new TH1F("fth_pad", "", 1000, 0., 10000);
 
+  _max_charge_time  = new TH1F("max_charge_time","",511,0,511);
+  _max_charge_pos   = new TH1F("max_charge_pos", "", 40, 0., 40.);
+
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
@@ -41,6 +44,9 @@ bool dEdxAna::Initialize() {
   _output_vector.push_back(_scd_pad_charge);
   _output_vector.push_back(_trd_pad_charge);
   _output_vector.push_back(_fth_pad_charge);
+
+  _output_vector.push_back(_max_charge_time);
+  _output_vector.push_back(_max_charge_pos);
 
   for (auto i = 0; i < geom::nPadx; ++i) {
     _mult_col[i] = new TH1F(Form("Mult_col_%i", i), "multiplicity", 10, 0., 10.);
@@ -107,9 +113,13 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     // look for max charge in the pad in the event
     std::vector<THit*> hits = itrack->GetHits();
     auto it_max = std::max_element(hits.begin(), hits.end(),
-                       [](THit* h1, THit* h2) { return h1->GetQ() < h2->GetQ(); });
-    int MaxCharge = (it_max == hits.end()) ? 0 : (*it_max)->GetQ();
+                  [](THit* h1, THit* h2) { return h1->GetQ() < h2->GetQ(); });
+    int MaxCharge       = (it_max == hits.end()) ? 0 : (*it_max)->GetQ();
+    int MaxCharge_pos   = (it_max == hits.end()) ? 0 : (*it_max)->GetCol();
+    int MaxCharge_time  = (it_max == hits.end()) ? 0 : (*it_max)->GetTime();
     _max_charge_pad->Fill(MaxCharge);
+    _max_charge_pos->Fill(MaxCharge_pos);
+    _max_charge_time->Fill(MaxCharge_time);
   }
   return true;
 }

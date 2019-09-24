@@ -32,6 +32,10 @@ class dEdxAna: public AnalysisBase {
   TH1F* _trd_pad_charge;
   TH1F* _fth_pad_charge;
 
+  /// Max charge pos and time
+  TH1F* _max_charge_pos;
+  TH1F* _max_charge_time;
+
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
