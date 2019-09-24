@@ -6,10 +6,6 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
-/** @cond */
-#include "TGraphErrors.h"
-/** @endcond */
-
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
  public:
@@ -20,6 +16,24 @@ class SpatialResolAna: public AnalysisBase {
   bool Initialize();
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event);
+
+  /// Fit the whole track with CERN method
+  TF1* GetTrackFitCERN(const double* track_pos, const int* mult, const int miss_id = -1);
+  /// Fit the whole track with ILC method
+  TF1* GetTrackFitILC(const TTrack* track, const double pos, const int miss_id = -1);
+
+  /// Extract cluster position with CERN method
+  double GetClusterPosCERN(const std::vector<THit*> col, const int cluster, const double pos);
+  /// Extract cluster position with ILC method
+  double GetClusterPosILC(const std::vector<THit*> col, const double pos);
+
+  /// Whether to miss the column in the fitter
+  bool MissColumn(int it_x);
+  /// Whether the cluster is good for fitting
+  bool UseCluster(const std::vector<THit*> col);
+
+  /// Draw the histograms of interest
+  TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
@@ -29,12 +43,20 @@ class SpatialResolAna: public AnalysisBase {
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
 
-  /// Whehter to use arc function for track fitting
+  /// Whether to use arc function for track fitting
   bool    _do_arc_fit;
   /// Whether to use full track fitting
   bool    _do_full_track_fit;
 
+  /// Whether to apply correction of spatial resolution (take geometrical mean)
+  bool    _correction;
+
+  /// iteration number. Starting from 0
+  Int_t   _iteration;
+
+  /// Fitting function for track going up
   TF1*    _circle_function_up;
+  /// Fitting function for track going down
   TF1*    _circle_function_dn;
 
   TH1F*   _mom_reco;
@@ -45,6 +67,9 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Chi2 function of the track fit
   TH1F* _Chi2_track;
+
+  /// How many columns are used for fit
+  TH1F* _Cols_used;
 
   /// Residuals X_track - X_fit histoes
   TH1F* _resol_col_hist[geom::nPadx];
@@ -80,18 +105,18 @@ class SpatialResolAna: public AnalysisBase {
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
-
+/*
   /// Chi2 track scan delta
   const float   scan_delta    = 0.001;
   /// Chi2 track scan steps
   const int     scan_Nsteps   = 100;
   /// Chi2 track scan step
   const double  scan_step     = 2. * scan_delta / scan_Nsteps;
-
+*/
   // [units are meters]
-  const float prf_min     = -0.018;
-  const float prf_max     = 0.018;
-  const int   prf_bin     = 120;
+  const float prf_min     = -0.027;
+  const float prf_max     = 0.027;
+  const int   prf_bin     = 180;
 
   const float resol_min   = -0.008;
   const float resol_max   = 0.008;

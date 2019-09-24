@@ -1,45 +1,115 @@
 image: bars21/dev_hep_root:latest
 
-build:
+stages:
+  - build
+  - analyse
+  - test
+
+compile_gcc:
   stage: build
   before_script:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
+    - gcc -v > ../gcc.log 2>&1
   script:
     - cd src
-    - make all
+    - make all >> ../gcc.log 2>&1
   artifacts:
     paths:
       - ./bin/SpatialResol.exe
       - ./bin/dEdx.exe
+      - gcc.log
 
-# run tests using the binary built before
-SpatialResol_test:
-  stage: test
+compile_clang:
+  stage: build
   before_script:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input.root
+    - yum -y install gcc-c++
+    - yum -y install clang
+    - export CXX=clang++
+    - clang -v > ../clang.log 2>&1
   script:
-    - pwd
-    - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 0
+    - cd src
+    - make all >> ../clang.log 2>&1
+  artifacts:
+    paths:
+      - clang.log
 
-dEdx_test:
-  stage: test
+# run GCC warning test
+gcc_warning:
+  stage: analyse
+  allow_failure: true
   before_script:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input.root
   script:
-    - ./bin/dEdx.exe -b -t 0 -i input.root -o dEdx_test_iter0.root -v 0
+    - cat gcc.log | grep "warning:"        > gcc_warning.log || echo "ok"
+    - COUNT_WAR=$(wc -l < gcc_warning.log )
+    - echo "Total warnings $COUNT_WAR"
+    - if [ $COUNT_WAR -gt 0 ]; then exit 1; fi
+  artifacts:
+    paths:
+      - gcc_warning.log
+
+# run clang warning test
+clang_warning:
+  stage: analyse
+  allow_failure: true
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - echo -e "\e[31mClang test\e[0m"
+  script:
+    - cat clang.log | grep "warning:"        > clang_warning.log || echo "ok"
+    - COUNT_WAR=$(wc -l < clang_warning.log )
+    - echo "Total warnings $COUNT_WAR"
+    - if [ $COUNT_WAR -gt 0 ]; then exit 1; fi
+  artifacts:
+    paths:
+      - clang_warning.log
 
 cppcheck:
-  stage: test
+  stage: analyse
   before_script:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v
     - cppcheck --version
+    - pip3 install pygments
+    - wget https://github.com/danmar/cppcheck/archive/1.88.tar.gz
+    - tar -xf 1.88.tar.gz
   script:
-    - cppcheck src/*/*.cxx --enable=all --language=c++ --suppress=uninitMemberVar --inline-suppr
+    - cppcheck src/*/*.cxx --enable=all --language=c++ --inline-suppr --xml 2>err.xml
+    - cppcheck-1.88/htmlreport/cppcheck-htmlreport --file=err.xml  --report-dir=html --source-dir=.
+  artifacts:
+    paths:
+      - html/*
+
+# run tests using the binary built before
+SpatialResol_raw_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mv download input.root
+  script:
+    - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+
+dEdx_raw_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mv download input.root
+  script:
+    - ./bin/dEdx.exe -b -i input.root -o dEdx_test_iter0.root -v 1
+
+dEdx_TEvent_test:
+  stage: test
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - gcc -v
+    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    - mkdir input; mkdir output;
+    - mv download input/input.root
+  script:
+    - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
+    - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1

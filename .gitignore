@@ -1,6 +1,9 @@
 *.exe
 *.o
 doc/*
+log/*
 /Doxyfile
 
 *ipynb
+/bin/eventdict.cxx
+/bin/eventdict_rdict.pcm

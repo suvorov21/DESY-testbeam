@@ -1,9 +1,4 @@
-#include <DataStorage.hxx>
-
-
-//// THIT
-
-
+#include "TTrack.hxx"
 
 //// TTRACK
 TTrack::~TTrack() {
@@ -15,6 +10,7 @@ TTrack::~TTrack() {
 
   fc.clear();
   fr.clear();
+  fhits.clear();
 }
 
 void TTrack::AddHit(THit* hit) {
@@ -23,7 +19,7 @@ void TTrack::AddHit(THit* hit) {
 
   // fill column vector
   auto col_found = false;
-  for (uint colID = 0; colID < fc.size(); ++colID) {
+  for (UInt_t colID = 0; colID < fc.size(); ++colID) {
     if (fc[colID][0]->GetCol() == hit->GetCol()) {
       fc[colID].push_back(hit);
       col_found = true;
@@ -37,7 +33,7 @@ void TTrack::AddHit(THit* hit) {
   }
   // fill row vector
   auto row_found = false;
-  for (uint rowID = 0; rowID < fr.size(); ++rowID) {
+  for (UInt_t rowID = 0; rowID < fr.size(); ++rowID) {
     if (fr[rowID][0]->GetRow() == hit->GetRow()) {
       fr[rowID].push_back(hit);
       row_found = true;
@@ -48,20 +44,5 @@ void TTrack::AddHit(THit* hit) {
     std::vector<THit*> temp_v;
     temp_v.push_back(hit);
     fr.push_back(temp_v);
-  }
-}
-
-
-//// TEVENT
-TEvent::~TEvent() {
-  for (auto hit:funusedhits) {
-    if (hit)
-      delete hit;
-    hit = NULL;
-  }
-  for (auto track:ftracks) {
-    if (track)
-      delete track;
-    track = NULL;
   }
 }

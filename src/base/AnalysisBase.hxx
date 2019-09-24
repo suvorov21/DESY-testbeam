@@ -12,6 +12,7 @@
 #include <TH2F.h>
 #include <TH3F.h>
 #include "TStopwatch.h"
+#include "TGraphErrors.h"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"
@@ -33,25 +34,33 @@ class AnalysisBase {
   virtual bool WriteOutput();
   virtual void DrawSelection(const TEvent *event, int trackID);
 
+  virtual void CL_progress_dump(int eventID, int Nevents);
+
   /// Print usage
-  void help(const std::string name);
+  void help(const std::string& name);
 
   void process_mem_usage(double& vm_usage, double& resident_set);
 
-  void SetEventList(std::vector<Int_t> var) {_EventList = var;}
+  void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
+  AnalysisBase(const AnalysisBase& ana){std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+  bool operator==(const AnalysisBase* ana){std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+
  protected:
-  /// iteration number. Starting from 0
-  // TODO remove it out to particular analysis
-  // Don't know how to parse CLI in different classes
-  Int_t   _iteration;
 
   TString _file_in_name;
   TString _file_out_name;
 
   TString _event_list_file_name;
   std::vector<Int_t> _EventList;
+  bool    _store_event;
+
+  TEvent* _event;
+  bool    _store_event_tree;
+  TFile*  _event_file;
+  TTree*  _event_tree;
+  bool    _work_with_event_file;
 
   TFile* _file_in;
   TFile* _file_out;
@@ -78,6 +87,9 @@ class AnalysisBase {
   bool _overwrite;
 
   TApplication* _app;
+  TStopwatch* _sw_event;
+
+  TStopwatch* _sw_partial[5];
 };
 
 

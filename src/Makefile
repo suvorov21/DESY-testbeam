@@ -1,4 +1,3 @@
-
 ROOTCFLAGS 	= $(shell root-config --cflags)
 ROOTLIBS   	= $(shell root-config --libs)
 ROOTGLIBS  	= $(shell root-config --glibs)
@@ -13,6 +12,8 @@ OutPutSuf     = exe
 BINDIR        = ../bin/
 OBJDIR 				=	../obj/
 
+DICT 					= eventdict
+
 RLXX=$(LFLAGS) $(ROOTLIBS) -lMinuit -lTreePlayer
 # add ROOT and warnings
 CXXFLAGS += $(ROOTCFLAGS) -Wall
@@ -25,13 +26,20 @@ else
 	CXXFLAGS += -g
 	RLXX += -g
 endif
+
+# for tests
+ifeq ($(TYPE), TEST)
+	OutPutSuf=exe.test
+endif
 # add include folders
-CXXFLAGS += -I./base/ -I./Reconstruction/ -I../utils/
+CXXFLAGS += -I./base/DataStorage/ -I./base/ -I./Reconstruction/ -I../utils/
 
 BASESRC 		= 	base/
+BASEDATASRC = 	base/DataStorage/
 BASESEL 		=		Reconstruction/
-SRC 				= 	$(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf)))
-OBJ 				= 	$(addprefix $(OBJDIR)/, $(SRC:.$(SrcSuf)=.$(ObjSuf)))
+#SRC 				= 	$(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf)))
+SRC 				= 	$(notdir $(wildcard $(BASEDATASRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf)))
+OBJ 				= 	$(OBJDIR)$(DICT).$(ObjSuf) $(addprefix $(OBJDIR)/, $(SRC:.$(SrcSuf)=.$(ObjSuf)))
 
 $(info Beginning of compilation)
 $(info )
@@ -45,7 +53,7 @@ $(info Binary directory : $(BINDIR))
 $(info -------------------------------------)
 $(info )
 
-all: build SpatialResol dEdx cleanObj
+all: build SpatialResol dEdx
 
 # declare your analysis like this
 SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
@@ -56,6 +64,13 @@ SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
 dEdx: $(OBJ) $(OBJDIR)/dEdxAna.o
 	$(CXX) $^ $(OutPutOpt) $(BINDIR)/$@.$(OutPutSuf) $(RLXX)
 	@echo "Compilation done"
+
+$(OBJDIR)$(DICT).$(ObjSuf):
+	rootcint -v1 -f $(BINDIR)$(DICT).$(SrcSuf) -c $(addprefix ../src/, $(wildcard $(BASEDATASRC)/*.hxx)) ../src/$(BASEDATASRC)/linkDef.h
+	$(CXX) -c $(OutPutOpt) $@ $(BINDIR)$(DICT).$(SrcSuf) $(CXXFLAGS)
+
+$(OBJDIR)/%.o: */DataStorage/%.cxx
+	$(CXX) -c $(OutPutOpt) $@ $< $(CXXFLAGS)
 
 $(OBJDIR)/%.o: */%.cxx
 	$(CXX) -c $(OutPutOpt) $@ $< $(CXXFLAGS)
@@ -68,8 +83,8 @@ build:
 .PHONY: clean
 clean:
 	@echo "Cleaning..."
-	rm -f $(OBJDIR)/*.$(ObjSuf)
-	rm -r $(BINDIR)/*.$(OutPutSuf)
+	rm -rf $(OBJDIR)/*
+	rm -rf $(BINDIR)/*
 
 .PHONY: cleanObj
 cleanObj:
