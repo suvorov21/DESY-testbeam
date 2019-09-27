@@ -114,12 +114,15 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     std::vector<THit*> hits = itrack->GetHits();
     auto it_max = std::max_element(hits.begin(), hits.end(),
                   [](THit* h1, THit* h2) { return h1->GetQ() < h2->GetQ(); });
-    int MaxCharge       = (it_max == hits.end()) ? 0 : (*it_max)->GetQ();
-    int MaxCharge_pos   = (it_max == hits.end()) ? 0 : (*it_max)->GetCol();
-    int MaxCharge_time  = (it_max == hits.end()) ? 0 : (*it_max)->GetTime();
-    _max_charge_pad->Fill(MaxCharge);
-    _max_charge_pos->Fill(MaxCharge_pos);
-    _max_charge_time->Fill(MaxCharge_time);
+
+    if (it_max != hits.end()) {
+      int MaxCharge       = (*it_max)->GetQ();
+      int MaxCharge_pos   = (*it_max)->GetCol();
+      int MaxCharge_time  = (*it_max)->GetTime();
+      _max_charge_pad->Fill(MaxCharge);
+      _max_charge_pos->Fill(MaxCharge_pos);
+      _max_charge_time->Fill(MaxCharge_time);
+    }
   }
   return true;
 }
