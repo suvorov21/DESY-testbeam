@@ -16,7 +16,7 @@ float GetAverage(TH1F* h, float& RMS);
 float GetAverage(TH1F* h, float& RMS, float& mean_e);
 
 void SpatialIteration() {
-  Int_t T2KstyleIndex = 3;
+  Int_t T2KstyleIndex = 2;
   // Official T2K style as described in http://www.t2k.org/comm/pubboard/style/index_html
   TString localStyleName = "T2K";
   // -- WhichStyle --
@@ -35,8 +35,8 @@ void SpatialIteration() {
   TCanvas c4("c4", "", 0, 630, 1600, 630);
 
   TFile* file_in[Niter];
-  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/v11/";
-  TString file_name = "z_360_275_200_02T_430";
+  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/Q2000/";
+  TString file_name = "z_360_275_200_0T_430";
 
   TGraphErrors* resol_vs_iter     = new TGraphErrors();
   TGraphErrors* resol_vs_iter_e   = new TGraphErrors();
@@ -110,9 +110,11 @@ void SpatialIteration() {
 
   c4.Divide(2);
   c4.cd(1);
+  PRF_fst->GetYaxis()->SetRangeUser(0., 1.);
   PRF_fst->Draw("colz");
   Fit_fst->Draw("same p");
   c4.cd(2);
+  PRF_lst->GetYaxis()->SetRangeUser(0., 1.);
   PRF_lst->Draw("colz");
   Fit_lst->Draw("same p");
 
