@@ -25,19 +25,21 @@ int main(int argc, char** argv) {
   auto batch        = false;
   auto test_mode    = false;
   auto verbose      = 1;
+  auto lookAtWF     = false;
 
   TString file_in_name  = "";
   TString file_out_name = "";
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bvdm");
+    int c = getopt(argc, argv, "i:o:bvdmw");
     if (c < 0) break;
     switch (c) {
       case 'i' : file_in_name     = optarg;       break;
       case 'b' : batch            = true;         break;
       case 'v' : verbose          = atoi(optarg); break;
       case 'd' : test_mode        = true;         break;
+      case 'w' : lookAtWF         = true;         break;
       case 'm' : help(argv[0]);                   break;
       case '?' : help(argv[0]);
     }
@@ -148,24 +150,26 @@ int main(int argc, char** argv) {
       c2->cd();
       h3d->Draw("box1");
       c2->Update();
-      for (;;) {
-        int x, y;
-        std::cin >> x >> y;
-        std::cout << x << "\t" << y << std::endl;
-        if (!x || !y)
-          break;
-        TH1F* h_wf = new TH1F("h_wf", "", 511, 0., 511.);
-        for (auto it = 0; it < geom::Nsamples; ++it) {
-          h_wf->SetBinContent(it, padAmpl[x][y][it]);
-          std::cout << it << "\t" << padAmpl[x][y][it] << std::endl;
-        }
+      if (lookAtWF) {
+        for (;;) {
+          int x, y;
+          std::cin >> x >> y;
+          std::cout << x << "\t" << y << std::endl;
+          if (!x || !y)
+            break;
+          TH1F* h_wf = new TH1F("h_wf", "", 511, 0., 511.);
+          for (auto it = 0; it < geom::Nsamples; ++it) {
+            h_wf->SetBinContent(it, padAmpl[x][y][it]);
+            std::cout << it << "\t" << padAmpl[x][y][it] << std::endl;
+          }
 
-        c3->cd();
-        h_wf->Draw();
-        c3->Update();
-        char k;
-        std::cin >> k;
-        delete h_wf;
+          c3->cd();
+          h_wf->Draw();
+          c3->Update();
+          char k;
+          std::cin >> k;
+          delete h_wf;
+        }
       }
       c2->WaitPrimitive();
     }
