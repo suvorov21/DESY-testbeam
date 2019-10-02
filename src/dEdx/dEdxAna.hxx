@@ -36,6 +36,10 @@ class dEdxAna: public AnalysisBase {
   TH1F* _max_charge_pos;
   TH1F* _max_charge_time;
 
+  /// TMP
+  TH1F* _pos_low_charge;
+  TH1F* _pos_hig_charge;
+
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
@@ -43,6 +47,9 @@ class dEdxAna: public AnalysisBase {
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
+
+  ///
+  bool DrawCharge();
 };
 
 #endif  // SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_
