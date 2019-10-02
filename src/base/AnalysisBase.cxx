@@ -246,7 +246,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
               (*_iPad)[chan] >= geom::nPady)
           continue;
         for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
-          if (it > geom::Nsamples)
+          if (it >= geom::Nsamples)
             continue;
           int adc = (*_listOfSamples)[ic][it];
           _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
@@ -317,8 +317,11 @@ bool AnalysisBase::WriteOutput() {
   _file_out->cd();
 
   auto size = static_cast<int>(_output_vector.size());
-  for (auto i = 0; i < size; ++i)
+  for (auto i = 0; i < size; ++i) {
+    if (!_output_vector[i])
+      std::cerr << "ERROR! AnalysisBase::WriteOutput()  output object pointer is NULL" << std::endl;
     _output_vector[i]->Write();
+  }
 
   _file_out->Close();
 
