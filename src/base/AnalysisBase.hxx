@@ -90,6 +90,16 @@ class AnalysisBase {
   TStopwatch* _sw_event;
 
   TStopwatch* _sw_partial[5];
+
+  /// Use CERN data
+  bool _useCern;
+  TTree* _tgeom;
+
+  std::vector<short>          *_listOfChannels;
+  std::vector<std::vector<short> > *_listOfSamples;
+
+  std::vector<int> *_iPad;
+  std::vector<int> *_jPad;
 };
 
 
