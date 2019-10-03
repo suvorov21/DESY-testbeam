@@ -36,6 +36,9 @@ class dEdxAna: public AnalysisBase {
   TH1F* _max_charge_pos;
   TH1F* _max_charge_time;
 
+  ///
+  std::vector<TH1F*> _charge_per_mult;
+
   /// TMP
   TH1F* _pos_low_charge;
   TH1F* _pos_hig_charge;

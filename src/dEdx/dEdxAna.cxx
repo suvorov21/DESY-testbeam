@@ -21,7 +21,7 @@ bool dEdxAna::Initialize() {
   _mult_graph_err = new TGraphErrors();
   _mult_graph_err->SetName("mult_graph_err");
 
-  _un_trunk_cluster = new TH1F("un_trunc_cluster", "", 1000, 0., 4000);
+  _un_trunk_cluster = new TH1F("un_trunc_cluster", "", 1000, 0., 10000);
 
   _fst_pad_charge = new TH1F("fst_pad", "", 1000, 0., 10000);
   _scd_pad_charge = new TH1F("scd_pad", "", 1000, 0., 10000);
@@ -34,6 +34,10 @@ bool dEdxAna::Initialize() {
   /// TMP
   _pos_low_charge = new TH1F("low_ch", "Pos low charge", 40, 0., 40.);
   _pos_hig_charge = new TH1F("high_ch", "Pos high charge", 40, 0., 40.);
+
+  for (auto i = 0; i < 4; ++i) {
+    _charge_per_mult.push_back(new TH1F(Form("charge_per_mult_%i", i), "", 1000, 0., 10000.));
+  }
 
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
@@ -54,6 +58,9 @@ bool dEdxAna::Initialize() {
 
   _output_vector.push_back(_pos_low_charge);
   _output_vector.push_back(_pos_hig_charge);
+
+  for (uint i = 0; i < _charge_per_mult.size(); ++i)
+    _output_vector.push_back(_charge_per_mult[i]);
 
   for (auto i = 0; i < geom::nPadx; ++i) {
     _mult_col[i] = new TH1F(Form("Mult_col_%i", i), "multiplicity", 10, 0., 10.);
@@ -108,6 +115,9 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
         _pos_low_charge->Fill(it_x);
       else
         _pos_hig_charge->Fill(it_x);
+
+      if (col.size() != 0 && col.size() <= _charge_per_mult.size())
+        _charge_per_mult[col.size()-1]->Fill(colQ);
 
       _mult->Fill(col.size());
       _mult_col[it_x]->Fill(col.size());
