@@ -252,6 +252,18 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
           _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
         }
       }
+    } else {
+      // Subtract the pedestal
+      for (auto x = 0; x < geom::nPadx; ++x) {
+        for (auto y = 0; y < geom::nPady; ++y) {
+          for (auto t = 0; t < geom::Nsamples; ++t) {
+            if (_padAmpl[x][y][t] - 250 < 0)
+              _padAmpl[x][y][t] = 0;
+            else
+              _padAmpl[x][y][t] = _padAmpl[x][y][t] - 250;
+          }
+        }
+      }
     }
 
     _store_event = false;

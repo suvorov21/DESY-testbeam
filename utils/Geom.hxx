@@ -22,6 +22,8 @@ namespace geom
     static const float dx = 0.011; //[m]
     static const float dy = 0.010; //[m]
 
+    static const int pedestal = 250;
+
     static const float x_pos[nPadx] = {-0.1925, -0.1815, -0.1705, -0.1595,
         -0.1485, -0.1375, -0.1265, -0.1155, -0.1045, -0.0935, -0.0825, -0.0715,
         -0.0605, -0.0495, -0.0385, -0.0275, -0.0165, -0.0055, 0.0055, 0.0165,
