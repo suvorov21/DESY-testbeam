@@ -228,7 +228,7 @@ bool SpatialResolAna::Initialize() {
 }
 
 //********************************************************************
-double SpatialResolAna::GetClusterPosCERN(const std::vector<THit*> col,
+double SpatialResolAna::GetClusterPosCERN(const std::vector<THit*>& col,
     const int cluster, const double pos) {
   //********************************************************************
 
@@ -275,7 +275,7 @@ double SpatialResolAna::GetClusterPosCERN(const std::vector<THit*> col,
 }
 
 //********************************************************************
-double SpatialResolAna::GetClusterPosILC(const std::vector<THit*> col,
+double SpatialResolAna::GetClusterPosILC(const std::vector<THit*>& col,
   const double pos) {
   //********************************************************************
 
@@ -414,7 +414,7 @@ bool SpatialResolAna::MissColumn(const int it_x) {
 
 // TODO move it to selection
 //********************************************************************
-bool SpatialResolAna::UseCluster(const std::vector<THit*> col) {
+bool SpatialResolAna::UseCluster(const std::vector<THit*>& col) {
   //********************************************************************
   return true;
   auto N = std::count_if(col.begin(), col.end(),
@@ -583,10 +583,19 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (!track)
       continue;
 
+    if(sel::GetNonZeroCols(track).size() != 36) return false;
+    if(sel::GetColsMaxSep(track)>8) return false;
+    if (sel::GetColsMaxGap(track) > 0) return false;
+    std::vector<double> fit_v = sel::GetFitParams(track);
+    if(fit_v[0]>1.0e6) return false;
+    if (abs(fit_v[2]) > 0.08) return false;
+
+    /*
+
     if(sel::GetNonZeroCols(track).size() != geom::nPadx) return false;
     if(sel::GetNonZeroRows(track).size() > 8) return false;
     if(sel::GetColsMaxSep(track) > 6) return false;
-    if(sel::GetColsMaxGap(track) > 1) return false;
+    if(sel::GetColsMaxGap(track) > 1) return false;*/
 
     _store_event = true;
 

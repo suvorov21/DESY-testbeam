@@ -23,14 +23,14 @@ class SpatialResolAna: public AnalysisBase {
   TF1* GetTrackFitILC(const TTrack* track, const double pos, const int miss_id = -1);
 
   /// Extract cluster position with CERN method
-  double GetClusterPosCERN(const std::vector<THit*> col, const int cluster, const double pos);
+  double GetClusterPosCERN(const std::vector<THit*>& col, const int cluster, const double pos);
   /// Extract cluster position with ILC method
-  double GetClusterPosILC(const std::vector<THit*> col, const double pos);
+  double GetClusterPosILC(const std::vector<THit*>& col, const double pos);
 
   /// Whether to miss the column in the fitter
   bool MissColumn(int it_x);
   /// Whether the cluster is good for fitting
-  bool UseCluster(const std::vector<THit*> col);
+  bool UseCluster(const std::vector<THit*>& col);
 
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
