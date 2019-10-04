@@ -19,7 +19,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _batch(false),
   _test_mode(false),
   _overwrite(false),
-  _app(NULL)
+  _app(NULL),
+  _useCern(false)
   {
 
   // read CLI
@@ -53,7 +54,7 @@ bool AnalysisBase::Initialize() {
   // read the first root file and decide
   // is it a raw file for the reconstruction or a file with TEvent
   TString tree_name = "";
-  TFile* file; TTree* tree;
+  TFile* file;
   TString filename = _file_in_name;
 
   // in case of list input
@@ -72,22 +73,30 @@ bool AnalysisBase::Initialize() {
 
   // find out which tree was send as an input
   // padAmpl or TEvent
-  tree = (TTree*)file->Get("tree");
-  if (tree) {
+
+  if ((TTree*)file->Get("tree")) {
     std::cout << "Raw data is using" << std::endl;
     tree_name = "tree";
     _work_with_event_file = false;
+  } else if((TTree*)file->Get("event_tree")) {
+    std::cout << "TEvent data is using" << std::endl;
+    tree_name = "event_tree";
+    _work_with_event_file = true;
+  } else if ((TTree*)file->Get("padData")) {
+    _useCern = true;
+    tree_name = "padData";
+    std::cout << "Running over CERN data" << std::endl;
+    _tgeom= (TTree*)file->Get("femGeomTree");
+    //std::vector<int> *iPad(0);
+    //std::vector<int> *jPad(0);
+    _tgeom->SetBranchAddress("jPad", &_jPad );
+    _tgeom->SetBranchAddress("iPad", &_iPad );
+    _tgeom->GetEntry(0); // put into memory geometry info
   } else {
-    tree = (TTree*)file->Get("event_tree");
-    if (tree) {
-      std::cout << "TEvent data is using" << std::endl;
-      tree_name = "event_tree";
-      _work_with_event_file = true;
-    } else {
-      std::cerr << "ERROR. AnalysisBase::Initialize. Unknown tree name" << std::endl;
-      exit(1);
-    }
+    std::cerr << "ERROR. AnalysisBase::Initialize. Unknown tree name" << std::endl;
+    exit(1);
   }
+
   file->Close();
 
   if (_work_with_event_file && _store_event_tree) {
@@ -119,7 +128,18 @@ bool AnalysisBase::Initialize() {
     }
   }
 
-  if (!_work_with_event_file)
+  if (_useCern) {
+
+    _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
+    _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
+
+    /*std::vector<int> *_iPadT(0);
+    std::vector<int> *_jPadT(0);
+    _tgeom->SetBranchAddress("jPad", &_jPadT );
+    _tgeom->SetBranchAddress("iPad", &_iPadT );*/
+
+
+  } else if (!_work_with_event_file)
     _chain->SetBranchAddress("PadAmpl", _padAmpl);
   else
     _chain->SetBranchAddress("Event", &_event);
@@ -217,6 +237,35 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       this->CL_progress_dump(eventID, N_events);
 
     _chain->GetEntry(EventList[eventID]);
+
+    if (_useCern) {
+      memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
+      for (uint ic=0; ic< _listOfChannels->size(); ic++){
+        int chan= (*_listOfChannels)[ic];
+        if ((*_jPad)[chan] >= geom::nPadx ||
+              (*_iPad)[chan] >= geom::nPady)
+          continue;
+        for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
+          if (it >= geom::Nsamples)
+            continue;
+          int adc = (*_listOfSamples)[ic][it];
+          _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
+        }
+      }
+    } else {
+      // Subtract the pedestal
+      for (auto x = 0; x < geom::nPadx; ++x) {
+        for (auto y = 0; y < geom::nPady; ++y) {
+          for (auto t = 0; t < geom::Nsamples; ++t) {
+            if (_padAmpl[x][y][t] - 250 < 0)
+              _padAmpl[x][y][t] = 0;
+            else
+              _padAmpl[x][y][t] = _padAmpl[x][y][t] - 250;
+          }
+        }
+      }
+    }
+
     _store_event = false;
 
     _sw_partial[0]->Start(false);
@@ -280,8 +329,11 @@ bool AnalysisBase::WriteOutput() {
   _file_out->cd();
 
   auto size = static_cast<int>(_output_vector.size());
-  for (auto i = 0; i < size; ++i)
+  for (auto i = 0; i < size; ++i) {
+    if (!_output_vector[i])
+      std::cerr << "ERROR! AnalysisBase::WriteOutput()  output object pointer is NULL" << std::endl;
     _output_vector[i]->Write();
+  }
 
   _file_out->Close();
 

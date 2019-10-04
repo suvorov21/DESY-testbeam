@@ -80,6 +80,8 @@ int main(int argc, char** argv) {
   auto Nhits_h    = new TH2F("Nhits",   "", geom::nPadx+2, -1, geom::nPadx + 1, geom::nPady+2, -1, geom::nPady+1);
   auto MaxAmpl_h  = new TH2F("MaxAmpl", "", geom::nPadx+2, -1, geom::nPadx + 1, geom::nPady+2, -1, geom::nPady+1);
 
+  auto charge     = new TH1F("charge", "", 4500, 0., 4500);
+
   // read data
   Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
 
@@ -123,12 +125,16 @@ int main(int argc, char** argv) {
         auto maxAmple = 0;
 
         for (auto it = 0; it < geom::Nsamples; ++it) {
+          ///if (it < 100 || it > 150)
+          //  continue;
           if (padAmpl[x][y][it] > maxAmple)
             maxAmple = padAmpl[x][y][it];
         } // end of loop over time
 
         if (maxAmple == 0)
           continue;
+
+        charge->Fill(maxAmple);
 
         Nhits_h->Fill(x, y);
         MaxAmpl_h->Fill(x, y, maxAmple);
@@ -147,6 +153,8 @@ int main(int argc, char** argv) {
   MaxAmpl_h->Write();
   Nhits_h->Write();
   AvAmpl_h->Write();
+
+  charge->Write();
 
   file_out->Close();
 

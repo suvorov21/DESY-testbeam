@@ -38,6 +38,8 @@ def main():
   # end of input definition
   # **********************************************************************************
 
+  temp = "/temp_5/"
+
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
     help='File list with input/output files names',
@@ -46,9 +48,9 @@ def main():
   args = parser.parse_args()
 
   project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../")
-  if os.path.exists(project_path + "/script/temp"):
-    shutil.rmtree(project_path + "/script/temp")
-  os.mkdir(project_path + "/script/temp");
+  if os.path.exists(project_path + "/script/" + temp):
+    shutil.rmtree(project_path + "/script/" + temp)
+  os.mkdir(project_path + "/script/" + temp);
 
   with open(args.f) as fl:
     i = 0
@@ -79,7 +81,7 @@ def main():
 
       temp_file.close()
 
-      file_out = open(project_path + "/script/temp/" + str(i) + ".sh", "w")
+      file_out = open(project_path + "/script/" + temp + str(i) + ".sh", "w")
       i+=1
       command = ""
 
@@ -97,6 +99,8 @@ def main():
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
+        if (not doiter and it > 0):
+          break
 
       # rm temp file list
       command += "rm " + temp_filename
@@ -109,7 +113,7 @@ def main():
 
       file_out.close()
 
-  submit_file = open(project_path + "/script/temp/Submit.sub", "w")
+  submit_file = open(project_path + "/script/" + temp + "/Submit.sub", "w")
 
   submit_file.write("executable              = $(filename)\n")
 
@@ -123,10 +127,10 @@ def main():
 
   submit_file.close()
 
-  os.chdir(project_path + "/script/temp")
+  os.chdir(project_path + "/script/" + temp)
   subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
-  #shutil.rmtree(project_path + "/script/temp")
+  #shutil.rmtree(project_path + "/script/" + temp)
   return 0
 
 

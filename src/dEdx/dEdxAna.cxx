@@ -31,6 +31,14 @@ bool dEdxAna::Initialize() {
   _max_charge_time  = new TH1F("max_charge_time","",511,0,511);
   _max_charge_pos   = new TH1F("max_charge_pos", "", 40, 0., 40.);
 
+  /// TMP
+  _pos_low_charge = new TH1F("low_ch", "Pos low charge", 40, 0., 40.);
+  _pos_hig_charge = new TH1F("high_ch", "Pos high charge", 40, 0., 40.);
+
+  for (auto i = 0; i < 4; ++i) {
+    _charge_per_mult.push_back(new TH1F(Form("charge_per_mult_%i", i), "", 1000, 0., 10000.));
+  }
+
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
@@ -47,6 +55,12 @@ bool dEdxAna::Initialize() {
 
   _output_vector.push_back(_max_charge_time);
   _output_vector.push_back(_max_charge_pos);
+
+  _output_vector.push_back(_pos_low_charge);
+  _output_vector.push_back(_pos_hig_charge);
+
+  for (uint i = 0; i < _charge_per_mult.size(); ++i)
+    _output_vector.push_back(_charge_per_mult[i]);
 
   for (auto i = 0; i < geom::nPadx; ++i) {
     _mult_col[i] = new TH1F(Form("Mult_col_%i", i), "multiplicity", 10, 0., 10.);
@@ -71,7 +85,10 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     }
     if(sel::GetNonZeroCols(itrack).size() != 36) return false;
     if(sel::GetColsMaxSep(itrack)>5) return false;
-    if(sel::GetFitParams(itrack)[0]>1.0e6) return false;
+    if (sel::GetColsMaxGap(itrack) > 0) return false;
+    std::vector<double> fit_v = sel::GetFitParams(itrack);
+    if(fit_v[0]>1.0e6) return false;
+    if (abs(fit_v[2]) > 0.08) return false;
 
     _store_event = true;
 
@@ -79,7 +96,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
     //If survives the selection, use track info:
     _selEvents++;
-    if(_batch == 0) DrawSelection(event,trkID);
+
     if (_test_mode)
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
     std::vector <double> QsegmentS;
@@ -94,6 +111,14 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       }
       if(colQ) QsegmentS.push_back(colQ);
       _un_trunk_cluster->Fill(colQ);
+      if (colQ && colQ < 680)
+        _pos_low_charge->Fill(it_x);
+      else
+        _pos_hig_charge->Fill(it_x);
+
+      if (col.size() != 0 && col.size() <= _charge_per_mult.size())
+        _charge_per_mult[col.size()-1]->Fill(colQ);
+
       _mult->Fill(col.size());
       _mult_col[it_x]->Fill(col.size());
 
@@ -114,12 +139,20 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     std::vector<THit*> hits = itrack->GetHits();
     auto it_max = std::max_element(hits.begin(), hits.end(),
                   [](THit* h1, THit* h2) { return h1->GetQ() < h2->GetQ(); });
-    int MaxCharge       = (it_max == hits.end()) ? 0 : (*it_max)->GetQ();
-    int MaxCharge_pos   = (it_max == hits.end()) ? 0 : (*it_max)->GetCol();
-    int MaxCharge_time  = (it_max == hits.end()) ? 0 : (*it_max)->GetTime();
-    _max_charge_pad->Fill(MaxCharge);
-    _max_charge_pos->Fill(MaxCharge_pos);
-    _max_charge_time->Fill(MaxCharge_time);
+
+    if (it_max != hits.end()) {
+      int MaxCharge       = (*it_max)->GetQ();
+      int MaxCharge_pos   = (*it_max)->GetCol();
+      int MaxCharge_time  = (*it_max)->GetTime();
+      _max_charge_pad->Fill(MaxCharge);
+      _max_charge_pos->Fill(MaxCharge_pos);
+      _max_charge_time->Fill(MaxCharge_time);
+    }
+
+    if(_batch == 0) {
+      DrawCharge();
+      DrawSelection(event,trkID);
+    }
   }
   return true;
 }
@@ -147,6 +180,13 @@ bool dEdxAna::WriteOutput() {
   // file->Close();
 
   // std::cout << "done" << std::endl;
+  return true;
+}
+
+bool dEdxAna::DrawCharge() {
+  TCanvas* c1 = new TCanvas("c1", "c1", 0., 600., 800., 600.);
+  _un_trunk_cluster->Draw();
+  c1->Update();
   return true;
 }
 
