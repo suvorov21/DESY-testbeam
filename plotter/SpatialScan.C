@@ -35,7 +35,7 @@ void SpatialScan() {
   TString peack     = "200";
   TString mag       = "02T";
 
-  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/v14/";
+  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
   vector<pair<TString, Float_t> > file_name_scan;
 
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));

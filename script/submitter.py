@@ -24,7 +24,7 @@ def main():
   input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "nom"
+  outpt_version = "nom_v2"
 
   # espresso     = 20 minutes
   # microcentury = 1 hour
@@ -38,7 +38,7 @@ def main():
   # end of input definition
   # **********************************************************************************
 
-  temp = "/temp_5/"
+  temp = "/temp_2/"
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,

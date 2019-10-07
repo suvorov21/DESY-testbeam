@@ -35,8 +35,8 @@ void SpatialIteration() {
   TCanvas c4("c4", "", 0, 630, 1600, 630);
 
   TFile* file_in[Niter];
-  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/Q2000/";
-  TString file_name = "z_360_275_200_0T_430";
+  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
+  TString file_name = "z_360_275_200_02T_430";
 
   TGraphErrors* resol_vs_iter     = new TGraphErrors();
   TGraphErrors* resol_vs_iter_e   = new TGraphErrors();
