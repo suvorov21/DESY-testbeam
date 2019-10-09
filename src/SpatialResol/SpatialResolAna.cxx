@@ -446,6 +446,12 @@ TF1* SpatialResolAna::GetTrackFitILC(const TTrack* track, const double pos,
     double chi2 = 0;
     float y_pos = 0;
 
+    if (par[3] > 0)
+      _circle_function_up->SetParameters(par[0], par[1], par[2]);
+    else
+      _circle_function_dn->SetParameters(par[0], par[1], par[2]);
+
+
     for (auto col:track->GetCols()) {
       auto it_x = col[0]->GetCol();
       auto x    = geom::x_pos[it_x];
@@ -465,10 +471,8 @@ TF1* SpatialResolAna::GetTrackFitILC(const TTrack* track, const double pos,
       double a_tot = 0.;
 
       if (par[3] > 0) {
-        _circle_function_up->SetParameters(par[0], par[1], par[2]);
         y_pos = _circle_function_up->Eval(x);
       } else {
-        _circle_function_dn->SetParameters(par[0], par[1], par[2]);
         y_pos = _circle_function_dn->Eval(x);
       }
 
@@ -502,6 +506,9 @@ TF1* SpatialResolAna::GetTrackFitILC(const TTrack* track, const double pos,
     return chi2;
   };
 
+  float quality_dn, quality_up;
+  quality_dn = quality_up = 1.e9;
+
   _sw_partial[2]->Stop();
   _sw_partial[3]->Start(false);
 
@@ -529,12 +536,13 @@ TF1* SpatialResolAna::GetTrackFitILC(const TTrack* track, const double pos,
   if (_verbose > 2)
     result_dn.Print(std::cout);
 
-  float quality_dn = result_dn.Chi2() / (track->GetHits().size() - 3);
+  quality_dn = result_dn.Chi2() / (track->GetHits().size() - 3);
 
   // fitting arc up
+  ROOT::Math::Functor fcn_up(chi2Function,4);
   ROOT::Fit::Fitter  fitter_up;
   double pStart_up[4] = {80., 0., pos, 1};
-  fitter_up.SetFCN(fcn, pStart_up, 4, true);
+  fitter_up.SetFCN(fcn_up, pStart_up, 4, true);
   fitter_up.Config().ParSettings(0).SetName("R");
   fitter_up.Config().ParSettings(1).SetName("sin(#alpha)");
   fitter_up.Config().ParSettings(2).SetName("Target");
@@ -552,7 +560,7 @@ TF1* SpatialResolAna::GetTrackFitILC(const TTrack* track, const double pos,
   if (_verbose > 2)
     result_up.Print(std::cout);
 
-  float quality_up = result_up.Chi2() / (track->GetHits().size() - 3);
+  quality_up = result_up.Chi2() / (track->GetHits().size() - 3);
 
   TF1* fit;
   TString func;
@@ -674,9 +682,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _sw_partial[3]->Start(false);
 
     TF1* fit;
-    if (_do_full_track_fit)
+    if (_do_full_track_fit) {
       fit = GetTrackFitILC(track, track_pos[1]);
-    else
+      if (fit)
+        fit = (TF1*)GetTrackFitILC(track, track_pos[1])->Clone();
+      //fit = (TF1*)GetTrackFitILC(track, track_pos[1])->Clone();
+    } else
       fit = GetTrackFitCERN(track_pos, cluster_N);
 
     if (!fit)
@@ -701,7 +712,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         if (!_do_full_track_fit)
           fit1[i] = GetTrackFitCERN(track_pos, cluster_N, i);
         else
-          fit1[i] = GetTrackFitILC(track, track_pos[1], i);
+          fit1[i] = (TF1*)GetTrackFitILC(track, track_pos[1], i)->Clone();
       }
     }
 
@@ -791,8 +802,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
     } // loop over colums
     _sw_partial[4]->Stop();
-    //delete track_gr;
-    //delete track_m;
     for (int i = 0; i < geom::nPadx; ++i)
       if (fit1[i] && _correction) {
         delete fit1[i];
