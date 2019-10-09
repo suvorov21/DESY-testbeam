@@ -84,7 +84,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(itrack).size() << std::endl;
     }
     if(sel::GetNonZeroCols(itrack).size() != 36) return false;
-    if(sel::GetColsMaxSep(itrack)>5) return false;
+    if(sel::GetColsMaxSep(itrack)>8) return false;
     if (sel::GetColsMaxGap(itrack) > 0) return false;
     std::vector<double> fit_v = sel::GetFitParams(itrack);
     if(fit_v[0]>1.0e6) return false;
