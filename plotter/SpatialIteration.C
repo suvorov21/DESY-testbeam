@@ -35,7 +35,7 @@ void SpatialIteration() {
   TCanvas c4("c4", "", 0, 630, 1600, 630);
 
   TFile* file_in[Niter];
-  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
+  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_ILC/";
   TString file_name = "z_360_275_200_02T_430";
 
   TGraphErrors* resol_vs_iter     = new TGraphErrors();
@@ -110,13 +110,13 @@ void SpatialIteration() {
 
   c4.Divide(2);
   c4.cd(1);
-  PRF_fst->GetYaxis()->SetRangeUser(0., 1.);
+  //PRF_fst->GetYaxis()->SetRangeUser(0., 1.);
   PRF_fst->Draw("colz");
-  Fit_fst->Draw("same p");
+  //Fit_fst->Draw("same p");
   c4.cd(2);
-  PRF_lst->GetYaxis()->SetRangeUser(0., 1.);
+  //PRF_lst->GetYaxis()->SetRangeUser(0., 1.);
   PRF_lst->Draw("colz");
-  Fit_lst->Draw("same p");
+  //Fit_lst->Draw("same p");
 
   c4.WaitPrimitive();
 }

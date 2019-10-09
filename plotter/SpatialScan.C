@@ -32,13 +32,13 @@ void SpatialScan() {
   TCanvas c1("c1", "", 0, 0, 800, 630);
   TString volt      = "360";
   TString field     = "275";
-  TString peack     = "200";
+  TString peack     = "412";
   TString mag       = "02T";
 
   TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
   vector<pair<TString, Float_t> > file_name_scan;
 
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
+  /*file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
@@ -46,6 +46,15 @@ void SpatialScan() {
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
   file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
+  TString scan_axis = "Z position [mm]";*/
+
+  file_name_scan.push_back(make_pair(input_prefix + "g_330"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 330));
+  file_name_scan.push_back(make_pair(input_prefix + "g_340"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 340));
+  file_name_scan.push_back(make_pair(input_prefix + "g_350"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 350));
+  file_name_scan.push_back(make_pair(input_prefix + "g_360"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 360));
+  file_name_scan.push_back(make_pair(input_prefix + "g_370"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 370));
+  TString scan_axis = "MM voltage [V]";
+
 
   TGraphErrors* resol_vs_dist     = new TGraphErrors();
   TGraphErrors* resol_vs_dist_e   = new TGraphErrors();
@@ -66,11 +75,15 @@ void SpatialScan() {
   }
 
   c1.cd();
+  c1.SetGridx(1);
+  c1.SetGridy(1);
   resol_vs_dist->Draw("ap>");
   resol_vs_dist_e->Draw("p same");
 
   resol_vs_dist->GetYaxis()->SetRangeUser(0., 500.);
   resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
+  resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
+  resol_vs_dist->GetYaxis()->SetTitle("resolution [#mum]");
   gPad->Modified();
   gPad->Update();
   c1.WaitPrimitive();
