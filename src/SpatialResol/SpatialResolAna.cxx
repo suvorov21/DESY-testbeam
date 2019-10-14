@@ -15,7 +15,8 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   _do_arc_fit(true),
   _do_full_track_fit(false),
   // WARNING
-  _correction(false) {
+  _correction(false),
+  _gaussian_residuals(true) {
     //********************************************************************
 
   if (_iteration == -1) {
@@ -907,21 +908,43 @@ bool SpatialResolAna::WriteOutput() {
 
   TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
   for (auto i = 1; i < geom::nPadx - 1; ++i) {
+
+    Float_t mean, sigma, sigma_ex;
+
     _resol_col_hist[i]->Fit("gaus", "Q");
-    _resol_col_hist_2pad[i]->Fit("gaus", "Q");
-    _resol_col_hist_3pad[i]->Fit("gaus", "Q");
+    mean     = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(1);
 
-    _resol_col_hist_except[i]->Fit("gaus", "Q");
-    _resol_col_hist_2pad_except[i]->Fit("gaus", "Q");
-    _resol_col_hist_3pad_except[i]->Fit("gaus", "Q");
+    if (_gaussian_residuals) {
+      _resol_col_hist_2pad[i]->Fit("gaus", "Q");
+      _resol_col_hist_3pad[i]->Fit("gaus", "Q");
 
-    auto mean     = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(1);
-    auto sigma    = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(2);
-    auto sigma_ex = _resol_col_hist_except[i]->GetFunction("gaus")->GetParameter(2);
+      _resol_col_hist_except[i]->Fit("gaus", "Q");
+      _resol_col_hist_2pad_except[i]->Fit("gaus", "Q");
+      _resol_col_hist_3pad_except[i]->Fit("gaus", "Q");
+
+      sigma    = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(2);
+      sigma_ex = _resol_col_hist_except[i]->GetFunction("gaus")->GetParameter(2);
+    } else {
+      // use FWHM
+      float max   = _resol_col_hist[i]->GetMaximum();
+      float start = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindFirstBinAbove(max/2));
+      float end   = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindLastBinAbove(max/2)) +
+      _resol_col_hist[i]->GetBinWidth(_resol_col_hist[i]->FindLastBinAbove(max/2));
+
+      sigma = 0.5 * (end - start);
+
+      max   = _resol_col_hist_except[i]->GetMaximum();
+      start = _resol_col_hist_except[i]->GetBinLowEdge(_resol_col_hist_except[i]->FindFirstBinAbove(max/2));
+      end   = _resol_col_hist_except[i]->GetBinLowEdge(_resol_col_hist_except[i]->FindLastBinAbove(max/2)) +
+      _resol_col_hist_except[i]->GetBinWidth(_resol_col_hist_except[i]->FindLastBinAbove(max/2));
+
+      sigma_ex = 0.5 * (end - start);
+    }
 
     _residual_sigma_biased->SetBinContent(i+1, sigma);
     _residual_sigma_unbiased->SetBinContent(i+1, sigma_ex);
     _residual_sigma->SetBinContent(i+1, sqrt(sigma * sigma_ex));
+
 
     resol->Fill(sqrt(sigma * sigma_ex));
 

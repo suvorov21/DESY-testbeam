@@ -51,6 +51,9 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to apply correction of spatial resolution (take geometrical mean)
   bool    _correction;
 
+  /// Whether to fit residuals with Gaussian
+  bool _gaussian_residuals;
+
   /// iteration number. Starting from 0
   Int_t   _iteration;
 
