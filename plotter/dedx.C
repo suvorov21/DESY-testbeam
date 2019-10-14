@@ -32,7 +32,7 @@ void dedx() {
   TCanvas c1("c1", "", 0, 0, 800, 630);
   TCanvas c2("c2", "", 800, 0, 800, 630);
   TCanvas c3("c3", "", 0, 630, 800, 630);
-  TCanvas c4("c4", "", 0, 630, 1600, 630);
+  TCanvas c4("c4", "", 800, 630, 800, 630);
 
 
   TString volt      = "360";
@@ -96,9 +96,13 @@ void dedx() {
     auto fst_pad    = (TH1F*)f->Get("fst_pad");
     auto saturation = 100*fst_pad->Integral(360, 1000) / fst_pad->Integral();
 
-    mult_histo.push_back((TH1F*)f->Get("mult")->Clone(Form("Mult_%f", pair.second)));
-    if (max_mult < mult_histo[mult_histo.size()-1]->GetMaximum())
-      max_mult = mult_histo[mult_histo.size()-1]->GetMaximum()
+    TH1F* h = (TH1F*)(TH1F*)f->Get("Mult")->Clone();
+    h->SetTitle(Form("%f V", pair.second));
+    h->SetName(Form("%f_V", pair.second));
+    h->Scale(1/h->Integral());
+    mult_histo.push_back(h);
+    if (max_mult < h->GetMaximum())
+      max_mult = h->GetMaximum();
 
     cout << pair.second << "\t\t" << mean << "\t" << resol << "\t" << resol_e << "\t" << saturation <<  endl;
 
@@ -127,18 +131,22 @@ void dedx() {
   c3.cd();
   resol_final->Draw();
 
+  c4.Clear();
   c4.cd();
   mult_histo[0]->SetMaximum(max_mult*1.1);
   mult_histo[0]->SetLineColor(1);
+
+  mult_histo[0]->Draw("hist");
   for (uint i = 1; i < mult_histo.size(); ++i) {
     mult_histo[i]->SetLineColor(i+1);
-    mult_histo[i]->Draw("same");
+    mult_histo[i]->Draw("same hist");
   }
+  c4.BuildLegend();
 
 
   gPad->Modified();
   gPad->Update();
-  c4.WaitPrimitive();
+  c3.WaitPrimitive();
 
-
+  exit(1);
 }
