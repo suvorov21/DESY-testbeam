@@ -39,9 +39,8 @@ class dEdxAna: public AnalysisBase {
   ///
   std::vector<TH1F*> _charge_per_mult;
 
-  /// TMP
-  TH1F* _pos_low_charge;
-  TH1F* _pos_hig_charge;
+  /// HIT MAPS
+  TH2F* _XZ_leading;
 
   /// Initialise histoes, input files, selections
   bool Initialize();
