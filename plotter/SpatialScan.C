@@ -33,27 +33,44 @@ void SpatialScan() {
   TString volt      = "360";
   TString field     = "275";
   TString peack     = "412";
-  TString mag       = "02T";
+  TString mag       = "0T";
+  TString drift     = "430";
 
   TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
   vector<pair<TString, Float_t> > file_name_scan;
 
-  /*file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_490_iter" + TString::Itoa(Niter, 10) +  ".root", 490));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
-  file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
-  TString scan_axis = "Z position [mm]";*/
+  auto scan_id = 3;
+  TString scan_axis = "";
 
-  file_name_scan.push_back(make_pair(input_prefix + "g_330"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 330));
-  file_name_scan.push_back(make_pair(input_prefix + "g_340"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 340));
-  file_name_scan.push_back(make_pair(input_prefix + "g_350"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 350));
-  file_name_scan.push_back(make_pair(input_prefix + "g_360"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 360));
-  file_name_scan.push_back(make_pair(input_prefix + "g_370"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 370));
-  TString scan_axis = "MM voltage [V]";
+  switch (scan_id) {
+    case 1:
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_490_iter" + TString::Itoa(Niter, 10) +  ".root", 490));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
+      scan_axis = "Z position [mm]";
+      break;
+    case 2:
+      file_name_scan.push_back(make_pair(input_prefix + "g_330"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 330));
+      file_name_scan.push_back(make_pair(input_prefix + "g_340"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 340));
+      file_name_scan.push_back(make_pair(input_prefix + "g_350"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 350));
+      file_name_scan.push_back(make_pair(input_prefix + "g_360"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 360));
+      file_name_scan.push_back(make_pair(input_prefix + "g_370"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 370));
+      scan_axis = "MM voltage [V]";
+      break;
+    case 3:
+      file_name_scan.push_back(make_pair(input_prefix + "p_200_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 200));
+      file_name_scan.push_back(make_pair(input_prefix + "p_412_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 412));
+      file_name_scan.push_back(make_pair(input_prefix + "p_505_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 505));
+      file_name_scan.push_back(make_pair(input_prefix + "p_116_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 116));
+      file_name_scan.push_back(make_pair(input_prefix + "p_610_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 610));
+      scan_axis = "Peaking time [ps]";
+      break;
+  }
 
 
   TGraphErrors* resol_vs_dist     = new TGraphErrors();
@@ -80,13 +97,15 @@ void SpatialScan() {
   resol_vs_dist->Draw("ap>");
   resol_vs_dist_e->Draw("p same");
 
-  resol_vs_dist->GetYaxis()->SetRangeUser(0., 500.);
-  resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
+  resol_vs_dist->GetYaxis()->SetRangeUser(0., 400.);
+  //resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
   resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
   resol_vs_dist->GetYaxis()->SetTitle("resolution [#mum]");
   gPad->Modified();
   gPad->Update();
   c1.WaitPrimitive();
+
+  exit(1);
 
 }
 
