@@ -24,7 +24,8 @@ def main():
   input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "nom_v2"
+  outpt_version = "nom_v3"
+  output_post   = ""
 
   # espresso     = 20 minutes
   # microcentury = 1 hour
@@ -95,7 +96,7 @@ def main():
         else:
           command += " -i " + outpt_prefix+"/"+outpt_version+"/"+first_file_name
 
-        command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file
+        command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file + output_post
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
