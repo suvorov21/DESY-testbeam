@@ -68,6 +68,43 @@ std::vector <double> sel::GetFitParams(const TTrack* track){
   return params;
 }
 
+std::vector <double> sel::GetFitParamsXZ(const TTrack* track){
+  std::vector <double> params;
+
+  TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::Nsamples,0,geom::Nsamples);
+  for(auto col:track->GetCols()) { //if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    auto q_lead = 0;
+    auto x_lead = 0;
+    auto z_lead = 0;
+    for (auto hit:col) if (hit->GetQ()) {
+      if (hit->GetQ() > q_lead) {
+        q_lead = hit->GetQ();
+        x_lead = hit->GetCol();
+        z_lead = hit->GetTime();
+      }
+    }
+
+    if (q_lead)
+      MM->Fill(x_lead, z_lead);
+  }
+
+  MM->Fit("pol1", "Q");
+  TF1* fit = MM->GetFunction("pol1");
+
+  double quality = 1.0e10;
+  if (fit){
+    quality = fit->GetChisquare() / fit->GetNDF();
+    double b = fit->GetParameter(0);
+    double k = fit->GetParameter(1);
+    params.push_back(quality);
+    params.push_back(b);
+    params.push_back(k);
+  }
+
+  delete MM;
+  return params;
+}
+
 //// 3D FITTING:    ---- WARNING ---- UNDER DEVELOPMENT, DO NOT USE IT!
 
 #include <TMath.h>

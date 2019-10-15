@@ -17,6 +17,7 @@ namespace sel
   std::vector <double> GetNonZeroRows(const TTrack*);
   std::vector <double> GetNonZeroCols(const TTrack*);
   std::vector <double> GetFitParams  (const TTrack*);
+  std::vector <double> GetFitParamsXZ(const TTrack*);
   std::vector <double> Get3DFitParams(const TTrack*);
 }
 
