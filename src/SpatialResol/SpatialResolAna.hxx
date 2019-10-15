@@ -108,21 +108,14 @@ class SpatialResolAna: public AnalysisBase {
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
-/*
-  /// Chi2 track scan delta
-  const float   scan_delta    = 0.001;
-  /// Chi2 track scan steps
-  const int     scan_Nsteps   = 100;
-  /// Chi2 track scan step
-  const double  scan_step     = 2. * scan_delta / scan_Nsteps;
-*/
+
   // [units are meters]
   const float prf_min     = -0.027;
   const float prf_max     = 0.027;
   const int   prf_bin     = 180;
 
-  const float resol_min   = -0.008;
-  const float resol_max   = 0.008;
+  const float resol_min   = -0.004;
+  const float resol_max   = 0.004;
   const int   resol_bin   = 200.;
 
   const float fit_bound_left  = -0.015;
