@@ -41,6 +41,7 @@ class dEdxAna: public AnalysisBase {
 
   /// HIT MAPS
   TH2F* _XZ_leading;
+  TH1F* _XZ_bias;
 
   /// Initialise histoes, input files, selections
   bool Initialize();

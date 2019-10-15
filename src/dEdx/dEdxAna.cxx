@@ -32,6 +32,7 @@ bool dEdxAna::Initialize() {
   _max_charge_pos   = new TH1F("max_charge_pos", "", 40, 0., 40.);
 
   _XZ_leading = new TH2F("XZ_leading", "", geom::Nsamples, 0, geom::Nsamples, geom::nPadx, 0, geom::nPadx);
+  _XZ_bias   = new TH1F("XZ_bias", "", 500, -0.05, 0.05);
 
   for (auto i = 0; i < 4; ++i) {
     _charge_per_mult.push_back(new TH1F(Form("charge_per_mult_%i", i), "", 1000, 0., 10000.));
@@ -55,6 +56,7 @@ bool dEdxAna::Initialize() {
   _output_vector.push_back(_max_charge_pos);
 
   _output_vector.push_back(_XZ_leading);
+  _output_vector.push_back(_XZ_bias);
 
   for (uint i = 0; i < _charge_per_mult.size(); ++i)
     _output_vector.push_back(_charge_per_mult[i]);
@@ -89,6 +91,9 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
     _store_event = true;
 
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack);
+    _XZ_bias->Fill(fit_xz[2]*0.0028 * 36.);
+
     //sel::Get3DFitParams(itrack);
 
     //If survives the selection, use track info:
@@ -102,7 +107,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       auto it_x = col[0]->GetCol();
       std::vector <double> Qpads;
       int z_max, x_max, q_max;
-      q_max = 0;
+      z_max = x_max = q_max = 0;
       for(auto h:col){
         colQ+=h->GetQ();
         _hTime->Fill(h->GetTime());
