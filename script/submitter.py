@@ -2,6 +2,7 @@
 
 import argparse
 import subprocess
+import shlex
 import shutil
 import os
 import random
@@ -13,15 +14,16 @@ def main():
   Niter     = 20
   doiter    = True
 
-  GenerateTEventFile  = True
+  GenerateTEventFile  = False
+  submit              = False
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
   bin_name  = "SpatialResol.exe"
   bin_flag  = "-b"
 
-  input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
-  #input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  input_version = "v1"
+  #input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
+  input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
+  input_version = "nom_v3"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
   outpt_version = "nom_v3"
@@ -39,7 +41,7 @@ def main():
   # end of input definition
   # **********************************************************************************
 
-  temp = "/temp_2/"
+  temp = "/temp_0/"
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -56,6 +58,7 @@ def main():
   with open(args.f) as fl:
     i = 0
     # for each input file
+    launcher = open(project_path + "/script/" + temp + "all.sh", "w")
     for line in fl:
       in_file  = line.split()[0]
       ot_file  = line.split()[1]
@@ -65,7 +68,7 @@ def main():
         sys.exit(-1)
 
       # create a file list in case of existing subruns
-      temp_filename = project_path + "/FileLists/temp" + str(round(random.random()*1000)) + ".list"
+      temp_filename = project_path + "/script/" + temp + str(round(random.random()*1000)) + ".list"
       temp_file = open(temp_filename, "w")
       first_file_name = ""
 
@@ -83,7 +86,6 @@ def main():
       temp_file.close()
 
       file_out = open(project_path + "/script/" + temp + str(i) + ".sh", "w")
-      i+=1
       command = ""
 
       # fo each iteration
@@ -100,11 +102,8 @@ def main():
         if (doiter):
            command += "_iter" + str(it)
         command += ".root; "
-        if (not doiter and it > 0):
+        if (not doiter):
           break
-
-      # rm temp file list
-      command += "rm " + temp_filename
 
       file_out.write("#!/bin/bash\n")
       file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
@@ -113,6 +112,12 @@ def main():
       file_out.write(command + "\n")
 
       file_out.close()
+
+      launcher.write("chmod 765 ./" + str(i) + ".sh\n")
+      launcher.write("./" + str(i) + ".sh\n")
+      i+=1
+
+    launcher.close()
 
   submit_file = open(project_path + "/script/" + temp + "/Submit.sub", "w")
 
@@ -129,9 +134,10 @@ def main():
   submit_file.close()
 
   os.chdir(project_path + "/script/" + temp)
-  subprocess.run(["condor_submit",  "Submit.sub"])
+  subprocess.run(["chmod", "765", "./all.sh"])
+  if (submit):
+    subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
-  #shutil.rmtree(project_path + "/script/" + temp)
   return 0
 
 
