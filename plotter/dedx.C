@@ -37,48 +37,65 @@ void dedx() {
 
   TString volt      = "360";
   TString field     = "275";
-  TString peack     = "200";
+  TString peack     = "412";
   TString mag       = "02T";
   TString drift     = "430";
 
-  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
+  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
 
   vector<pair<TString, Float_t> > file_name_scan;
   auto scan_id = 3;
   TString scan_axis = "";
+  TString file_name = input_prefix + "dedx";
 
   switch (scan_id) {
     case 1:
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410_iter" + TString::Itoa(Niter, 10) +  ".root", 410));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_430_iter" + TString::Itoa(Niter, 10) +  ".root", 430));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_450_iter" + TString::Itoa(Niter, 10) +  ".root", 450));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_470_iter" + TString::Itoa(Niter, 10) +  ".root", 470));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_490_iter" + TString::Itoa(Niter, 10) +  ".root", 490));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_510_iter" + TString::Itoa(Niter, 10) +  ".root", 510));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
-      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_410" + "_dedx.root", 410));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_430" + "_dedx.root", 430));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_450" + "_dedx.root", 450));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_470" + "_dedx.root", 470));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_490" + "_dedx.root", 490));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_510" + "_dedx.root", 510));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530" + "_dedx.root", 530));
+      file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550" + "_dedx.root", 550));
       scan_axis = "Z position [mm]";
+      file_name += "_z_" + volt + "_" + field + "_" + peack + "_" + mag;
       break;
     case 2:
-      file_name_scan.push_back(make_pair(input_prefix + "g_330"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 330));
-      file_name_scan.push_back(make_pair(input_prefix + "g_340"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 340));
-      file_name_scan.push_back(make_pair(input_prefix + "g_350"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 350));
-      file_name_scan.push_back(make_pair(input_prefix + "g_360"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 360));
-      file_name_scan.push_back(make_pair(input_prefix + "g_370"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 370));
+      file_name_scan.push_back(make_pair(input_prefix + "g_330"+"_"+peack + "_dedx.root", 330));
+      file_name_scan.push_back(make_pair(input_prefix + "g_340"+"_"+peack + "_dedx.root", 340));
+      file_name_scan.push_back(make_pair(input_prefix + "g_350"+"_"+peack + "_dedx.root", 350));
+      file_name_scan.push_back(make_pair(input_prefix + "g_360"+"_"+peack + "_dedx.root", 360));
+      file_name_scan.push_back(make_pair(input_prefix + "g_370"+"_"+peack + "_dedx.root", 370));
+      file_name += "_g_" + peack;
       scan_axis = "MM voltage [V]";
       break;
     case 3:
-      file_name_scan.push_back(make_pair(input_prefix + "p_200_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 200));
-      file_name_scan.push_back(make_pair(input_prefix + "p_412_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 412));
-      file_name_scan.push_back(make_pair(input_prefix + "p_505_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 505));
-      file_name_scan.push_back(make_pair(input_prefix + "p_116_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 116));
-      file_name_scan.push_back(make_pair(input_prefix + "p_610_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 610));
-      scan_axis = "Peaking time [ps]";
+      file_name_scan.push_back(make_pair(input_prefix + "p_200_" + drift + "_dedx.root", 200));
+      file_name_scan.push_back(make_pair(input_prefix + "p_412_" + drift + "_dedx.root", 412));
+      file_name_scan.push_back(make_pair(input_prefix + "p_505_" + drift + "_dedx.root", 505));
+      file_name_scan.push_back(make_pair(input_prefix + "p_116_" + drift + "_dedx.root", 116));
+      file_name_scan.push_back(make_pair(input_prefix + "p_610_" + drift + "_dedx.root", 610));
+      scan_axis = "Peaking time [ns]";
+      file_name += "_p_" + drift;
+      break;
+    case 4:
+      file_name_scan.push_back(make_pair(input_prefix + "m_5_" + peack + "_dedx.root", 5));
+      file_name_scan.push_back(make_pair(input_prefix + "m_1_" + peack + "_dedx.root", 1));
+      file_name_scan.push_back(make_pair(input_prefix + "m_2_" + peack + "_dedx.root", 2));
+      file_name_scan.push_back(make_pair(input_prefix + "m_3_" + peack + "_dedx.root", 3));
+      file_name_scan.push_back(make_pair(input_prefix + "m_4_" + peack + "_dedx.root", 4));
+      scan_axis = "Momentum [GeV/c]";
+      file_name += "_m_" + peack;
       break;
   }
+  file_name += ".root";
+  auto out_file = new TFile(file_name, "RECREATE");
 
   auto resol_vs_dist     = new TGraphErrors();
+  resol_vs_dist->SetName("resol");
   auto mean_charge       = new TGraphErrors();
+  mean_charge->SetName("charge");
   std::vector<TH1F*>     mult_histo;
   float max_mult = 0;
 
@@ -113,8 +130,8 @@ void dedx() {
     auto saturation = 100*fst_pad->Integral(360, 1000) / fst_pad->Integral();
 
     TH1F* h = (TH1F*)(TH1F*)f->Get("Mult")->Clone();
-    h->SetTitle(Form("%f V", pair.second));
-    h->SetName(Form("%f_V", pair.second));
+    h->SetTitle(Form("%f", pair.second));
+    h->SetName(Form("%f", pair.second));
     h->Scale(1/h->Integral());
     mult_histo.push_back(h);
     if (max_mult < h->GetMaximum())
@@ -136,6 +153,7 @@ void dedx() {
   resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
   resol_vs_dist->GetYaxis()->SetTitle("Resolution [%]");
   resol_vs_dist->Draw("ap");
+  resol_vs_dist->GetYaxis()->SetRangeUser(8., 12.);
 
   c2.cd();
   c2.SetGridx(1);
@@ -143,6 +161,8 @@ void dedx() {
   mean_charge->GetXaxis()->SetTitle(scan_axis);
   mean_charge->GetYaxis()->SetTitle("Charge [c.u.]");
   mean_charge->Draw("ap");
+  if (scan_id != 2)
+    mean_charge->GetYaxis()->SetRangeUser(1200., 1320.);
 
   c3.cd();
   resol_final->Draw();
@@ -162,7 +182,18 @@ void dedx() {
 
   gPad->Modified();
   gPad->Update();
+
+  out_file->cd();
+  resol_vs_dist->Write();
+  mean_charge->Write();
+  for (uint i = 0; i < mult_histo.size(); ++i) {
+    mult_histo[i]->SetName(Form("mult_%i", i));
+    mult_histo[i]->Write();
+  }
+
+  out_file->Close();
+
   c1.WaitPrimitive();
 
-  exit(1);
+  exit(0);
 }

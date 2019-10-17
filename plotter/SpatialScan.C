@@ -6,14 +6,15 @@
 #include "TGraphErrors.h"
 #include "TString.h"
 
+#include "../utils/Geom.hxx"
 #include "../utils/SetT2KStyle.hxx"
 
 using namespace std;
 
 const Int_t Niter = 19;
 
-float GetAverage(TH1F* h, float& RMS);
-float GetAverage(TH1F* h, float& RMS, float& mean_e);
+float GetAverage(TGraphErrors* h, float& RMS);
+float GetAverage(TGraphErrors* h, float& RMS, float& mean_e);
 
 void SpatialScan() {
   Int_t T2KstyleIndex = 3;
@@ -30,17 +31,19 @@ void SpatialScan() {
   gROOT->ForceStyle();
 
   TCanvas c1("c1", "", 0, 0, 800, 630);
+  TCanvas c2("c2", "", 800, 0, 800, 630);
   TString volt      = "360";
   TString field     = "275";
-  TString peack     = "412";
-  TString mag       = "0T";
-  TString drift     = "430";
+  TString peack     = "200";
+  TString mag       = "02T";
+  TString drift     = "530";
 
-  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v2/";
+  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
   vector<pair<TString, Float_t> > file_name_scan;
 
-  auto scan_id = 3;
+  auto scan_id = 4;
   TString scan_axis = "";
+  TString file_name = input_prefix + "SR";
 
   switch (scan_id) {
     case 1:
@@ -53,6 +56,7 @@ void SpatialScan() {
       file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_530_iter" + TString::Itoa(Niter, 10) +  ".root", 530));
       file_name_scan.push_back(make_pair(input_prefix + "z_"+volt+"_"+field+"_"+peack+"_"+mag+"_550_iter" + TString::Itoa(Niter, 10) +  ".root", 550));
       scan_axis = "Z position [mm]";
+      file_name += "_z_" + volt + "_" + field + "_" + peack + "_" + mag;
       break;
     case 2:
       file_name_scan.push_back(make_pair(input_prefix + "g_330"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 330));
@@ -61,6 +65,7 @@ void SpatialScan() {
       file_name_scan.push_back(make_pair(input_prefix + "g_360"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 360));
       file_name_scan.push_back(make_pair(input_prefix + "g_370"+"_"+peack+"_iter" + TString::Itoa(Niter, 10) +  ".root", 370));
       scan_axis = "MM voltage [V]";
+      file_name += "_g_" + peack;
       break;
     case 3:
       file_name_scan.push_back(make_pair(input_prefix + "p_200_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 200));
@@ -68,17 +73,29 @@ void SpatialScan() {
       file_name_scan.push_back(make_pair(input_prefix + "p_505_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 505));
       file_name_scan.push_back(make_pair(input_prefix + "p_116_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 116));
       file_name_scan.push_back(make_pair(input_prefix + "p_610_" + drift + "_iter" + TString::Itoa(Niter, 10) +  ".root", 610));
-      scan_axis = "Peaking time [ps]";
+      scan_axis = "Peaking time [ns]";
+      file_name += "_p_" + drift;
+      break;
+    case 4:
+      file_name_scan.push_back(make_pair(input_prefix + "m_5_" + peack + "_iter" + TString::Itoa(Niter, 10) + ".root", 5));
+      file_name_scan.push_back(make_pair(input_prefix + "m_1_" + peack + "_iter" + TString::Itoa(Niter, 10) + ".root", 1));
+      file_name_scan.push_back(make_pair(input_prefix + "m_2_" + peack + "_iter" + TString::Itoa(Niter, 10) + ".root", 2));
+      file_name_scan.push_back(make_pair(input_prefix + "m_3_" + peack + "_iter" + TString::Itoa(Niter, 10) + ".root", 3));
+      file_name_scan.push_back(make_pair(input_prefix + "m_4_" + peack + "_iter" + TString::Itoa(Niter, 10) + ".root", 4));
+      scan_axis = "Momentum [GeV/c]";
+      file_name += "_m_" + peack;
       break;
   }
-
+  file_name += ".root";
+  auto out_file = new TFile(file_name, "RECREATE");
 
   TGraphErrors* resol_vs_dist     = new TGraphErrors();
+  resol_vs_dist->SetName("resol");
   TGraphErrors* resol_vs_dist_e   = new TGraphErrors();
 
   for (auto pair:file_name_scan) {
     TFile* f = new TFile(pair.first.Data(), "READ");
-    TH1F* resol_final = (TH1F*)f->Get("resol_final");
+    auto resol_final = (TGraphErrors*)f->Get("resol_final");
     resol_final->SetName(Form("resol_final_%f", pair.second));
     float mean, RMS, mean_e;
     mean = GetAverage(resol_final, RMS, mean_e);
@@ -89,7 +106,21 @@ void SpatialScan() {
 
     resol_vs_dist_e->SetPoint(resol_vs_dist_e->GetN(), pair.second, 1.e6*mean);
     resol_vs_dist_e->SetPointError(resol_vs_dist_e->GetN()-1, 0, 1.e6*mean_e);
+/*
+
+    // Other method - sum up residuals and make the average
+    TH1F* residual = (TH1F*)f->Get(Form("resol_histo_%i", 1));
+    for (auto i = 2; i < geom::nPadx-1; ++i)
+      if ((TH1F*)f->Get(Form("resol_histo_%i", i)))
+        residual->Add((TH1F*)f->Get(Form("resol_histo_%i", i)));
+    residual->Fit("gaus");*/
+
   }
+
+
+  resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
+  resol_vs_dist->GetYaxis()->SetTitle("Resolution [#mum]");
+
 
   c1.cd();
   c1.SetGridx(1);
@@ -100,37 +131,40 @@ void SpatialScan() {
   resol_vs_dist->GetYaxis()->SetRangeUser(0., 400.);
   //resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
   resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
-  resol_vs_dist->GetYaxis()->SetTitle("resolution [#mum]");
+  resol_vs_dist->GetYaxis()->SetTitle("Resolution [#mum]");
   gPad->Modified();
   gPad->Update();
-  c1.WaitPrimitive();
+  //c1.WaitPrimitive();
 
-  exit(1);
+  out_file->cd();
+  resol_vs_dist->Write();
+  out_file->Close();
+
+  exit(0);
 
 }
 
-float GetAverage(TH1F* h, float& RMS) {
+float GetAverage(TGraphErrors* h, float& RMS) {
   float mean_e;
   return GetAverage(h, RMS, mean_e);
 }
 
-float GetAverage(TH1F* h, float& RMS, float& mean_e) {
+float GetAverage(TGraphErrors* h, float& RMS, float& mean_e) {
   int N = 0;
   float av = 0;
-  for (int i = 1; i <= h->GetXaxis()->GetNbins(); ++i) {
-    if (!h->GetBinContent(i))
-      continue;
-    ++N;
-    av += h->GetBinContent(i);
+  double x, y;
+  for (int i = 0; i < h->GetN(); ++i) {
+    h->GetPoint(i, x, y);
+    av += y / h->GetN();
   }
-  av /= N;
 
   RMS = 0.;
-  for (int i = 2; i <= h->GetXaxis()->GetNbins() - 1; ++i) {
-    RMS += (h->GetBinContent(i) - av) * (h->GetBinContent(i) - av);
+  for (int i = 0; i < h->GetN(); ++i) {
+    h->GetPoint(i, x, y);
+    RMS += (y - av) * (y - av);
   }
-  RMS = sqrt(RMS/N);
-  mean_e = RMS/sqrt(N);
+  RMS = sqrt(RMS/h->GetN());
+  mean_e = RMS/sqrt(h->GetN());
 
   return av;
 }
