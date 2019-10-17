@@ -54,6 +54,9 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to fit residuals with Gaussian
   bool _gaussian_residuals;
 
+  /// Whether to assign uncertainty to charge
+  bool _charge_uncertainty;
+
   /// iteration number. Starting from 0
   Int_t   _iteration;
 
@@ -84,13 +87,13 @@ class SpatialResolAna: public AnalysisBase {
   TH1F* _resol_col_hist_3pad[geom::nPadx];
   TH1F* _resol_col_hist_3pad_except[geom::nPadx];
 
-  TH1F* _residual_mean;
-  TH1F* _residual_sigma;
+  TGraphErrors* _residual_mean;
+  TGraphErrors* _residual_sigma;
   // TH1F* _residual_sigma_2pad;
   // TH1F* _residual_sigma_3pad;
 
-  TH1F* _residual_sigma_unbiased;
-  TH1F* _residual_sigma_biased;
+  TGraphErrors* _residual_sigma_unbiased;
+  TGraphErrors* _residual_sigma_biased;
 
   /// PRF histoes
   TH2F* _PRF_histo;
@@ -99,6 +102,12 @@ class SpatialResolAna: public AnalysisBase {
   TH2F* _PRF_histo_4pad;
 
   TH2F* _PRF_histo_col[geom::nPadx];
+
+  static const int x_scan_bin = 15;
+  const float x_scan_min = -0.025;
+  const float x_scan_max = 0.005;
+  TAxis* _x_scan_axis;
+  TH1F* _resol_col_x_scan[x_scan_bin];
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
