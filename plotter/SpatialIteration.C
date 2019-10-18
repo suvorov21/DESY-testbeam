@@ -42,7 +42,7 @@ void SpatialIteration() {
 
   TFile* file_in[Niter];
   TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
-  TString file_name = "z_360_275_200_0T_410";
+  TString file_name = "y_420";
 
   TGraphErrors* resol_vs_iter     = new TGraphErrors();
   TGraphErrors* resol_vs_iter_sum = new TGraphErrors();
@@ -86,7 +86,7 @@ void SpatialIteration() {
     TF1* fit = PRF_gr->GetFunction("PRF_function");
     prfQ_vs_iter->SetPoint(prfQ_vs_iter->GetN(), i, fit->GetChisquare() / fit->GetNDF());
 
-    if (i == 1) {
+    if (i == 0) {
       // PRF
       Fit_fst = PRF_gr;
       PRF_fst = (TH2F*)file_in[i]->Get("PRF_histo");
@@ -97,9 +97,9 @@ void SpatialIteration() {
       c5.SetGridy(1);
       resol_final->SetMarkerColor(kBlack);
       resol_final->SetLineColor(kBlack);
-      for (int i=0;i<resol_final->GetN();i++) {
-        resol_final->GetY()[i] *= 1e6;
-        resol_final->GetEY()[i] *= 1e6;
+      for (int dot=0;dot<resol_final->GetN();dot++) {
+        resol_final->GetY()[dot] *= 1e6;
+        resol_final->GetEY()[dot] *= 1e6;
       }
       resol_final->Draw("ap");
       resol_final->GetYaxis()->SetRangeUser(0., 500);
@@ -112,9 +112,9 @@ void SpatialIteration() {
       c7.SetGridy(1);
       mean_final->SetMarkerColor(kBlack);
       mean_final->SetLineColor(kBlack);
-      for (int i=0;i<mean_final->GetN();i++) {
-        mean_final->GetY()[i] *= 1e6;
-        mean_final->GetEY()[i] *= 1e6;
+      for (int dot=0;dot<mean_final->GetN();dot++) {
+        mean_final->GetY()[dot] *= 1e6;
+        mean_final->GetEY()[dot] *= 1e6;
       }
       mean_final->Draw("ap");
       mean_final->GetYaxis()->SetRangeUser(-300., 300);
@@ -131,9 +131,9 @@ void SpatialIteration() {
       c5.cd();
       resol_final->SetMarkerColor(kRed);
       resol_final->SetLineColor(kRed);
-      for (int i=0;i<resol_final->GetN();i++) {
-        resol_final->GetY()[i] *= 1e6;
-        resol_final->GetEY()[i] *= 1e6;
+      for (int dot=0;dot<resol_final->GetN();dot++) {
+        resol_final->GetY()[dot] *= 1e6;
+        resol_final->GetEY()[dot] *= 1e6;
       }
       resol_final->Draw("p same");
 
@@ -141,9 +141,9 @@ void SpatialIteration() {
       c7.cd();
       mean_final->SetMarkerColor(kRed);
       mean_final->SetLineColor(kRed);
-      for (int i=0;i<mean_final->GetN();i++) {
-        mean_final->GetY()[i] *= 1e6;
-        mean_final->GetEY()[i] *= 1e6;
+      for (int dot=0;dot<mean_final->GetN();dot++) {
+        mean_final->GetY()[dot] *= 1e6;
+        mean_final->GetEY()[dot] *= 1e6;
       }
       mean_final->Draw("p same");
 
