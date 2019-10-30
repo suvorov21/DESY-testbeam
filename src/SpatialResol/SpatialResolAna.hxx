@@ -103,9 +103,9 @@ class SpatialResolAna: public AnalysisBase {
 
   TH2F* _PRF_histo_col[geom::nPadx];
 
-  static const int x_scan_bin = 15;
-  const float x_scan_min = -0.025;
-  const float x_scan_max = 0.005;
+  static const int x_scan_bin = 50;
+  const float x_scan_min = -0.035;
+  const float x_scan_max = 0.015;
   TAxis* _x_scan_axis;
   TH1F* _resol_col_x_scan[x_scan_bin];
 
