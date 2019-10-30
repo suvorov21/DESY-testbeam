@@ -32,16 +32,18 @@ void SpatialScan() {
 
   TCanvas c1("c1", "", 0, 0, 800, 630);
   TCanvas c2("c2", "", 800, 0, 800, 630);
+  TCanvas c3("c3", "", 0, 630, 800, 630);
+  TCanvas c4("c4", "", 800, 630, 800, 630);
   TString volt      = "360";
   TString field     = "275";
-  TString peack     = "200";
+  TString peack     = "412";
   TString mag       = "02T";
   TString drift     = "530";
 
   TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
-  vector<pair<TString, Float_t> > file_name_scan;
+  vector<pair<TString, Int_t> > file_name_scan;
 
-  auto scan_id = 4;
+  auto scan_id = 1;
   TString scan_axis = "";
   TString file_name = input_prefix + "SR";
 
@@ -89,23 +91,41 @@ void SpatialScan() {
   file_name += ".root";
   auto out_file = new TFile(file_name, "RECREATE");
 
+  int c_arr[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+  int m_arr[9] = {20, 20, 20,204, 20, 20, 20, 20, 20};
+  int l_arr[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+
   TGraphErrors* resol_vs_dist     = new TGraphErrors();
   resol_vs_dist->SetName("resol");
   TGraphErrors* resol_vs_dist_e   = new TGraphErrors();
+  std::vector<TGraphErrors*> resol_final;
+  std::vector<TGraphErrors*> mean_final;
 
   for (auto pair:file_name_scan) {
     TFile* f = new TFile(pair.first.Data(), "READ");
-    auto resol_final = (TGraphErrors*)f->Get("resol_final");
-    resol_final->SetName(Form("resol_final_%f", pair.second));
+    resol_final.push_back((TGraphErrors*)f->Get("resol_final")->Clone(Form("r_%i", pair.second)));
+    mean_final.push_back((TGraphErrors*)f->Get("mean")->Clone(Form("m_%i", pair.second)));
+
+    // scale to um
+    for (int dot = 0; dot < (*(resol_final.end() - 1))->GetN(); dot++) {
+      (*(resol_final.end() - 1))->GetY()[dot] *= 1e6;
+      (*(resol_final.end() - 1))->GetEY()[dot] *= 1e6;
+    }
+
+    for (int dot = 0; dot < (*(mean_final.end() - 1))->GetN(); dot++) {
+      (*(mean_final.end() - 1))->GetY()[dot] *= 1e6;
+      (*(mean_final.end() - 1))->GetEY()[dot] *= 1e6;
+    }
+
     float mean, RMS, mean_e;
-    mean = GetAverage(resol_final, RMS, mean_e);
-    cout << pair.second << "\t\t" << 1.e6*mean << "\t" << 1.e6*RMS << "\t" << 1.e6*mean_e << endl;
+    mean = GetAverage(*(resol_final.end() - 1), RMS, mean_e);
+    cout << pair.second << "\t\t" << mean << "\t" << RMS << "\t" << mean_e << endl;
 
-    resol_vs_dist->SetPoint(resol_vs_dist->GetN(), pair.second, 1.e6*mean);
-    resol_vs_dist->SetPointError(resol_vs_dist->GetN()-1, 0, 1.e6*RMS);
+    resol_vs_dist->SetPoint(resol_vs_dist->GetN(), pair.second, mean);
+    resol_vs_dist->SetPointError(resol_vs_dist->GetN()-1, 0, RMS);
 
-    resol_vs_dist_e->SetPoint(resol_vs_dist_e->GetN(), pair.second, 1.e6*mean);
-    resol_vs_dist_e->SetPointError(resol_vs_dist_e->GetN()-1, 0, 1.e6*mean_e);
+    resol_vs_dist_e->SetPoint(resol_vs_dist_e->GetN(), pair.second, mean);
+    resol_vs_dist_e->SetPointError(resol_vs_dist_e->GetN()-1, 0, mean_e);
 /*
 
     // Other method - sum up residuals and make the average
@@ -132,9 +152,54 @@ void SpatialScan() {
   //resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
   resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
   resol_vs_dist->GetYaxis()->SetTitle("Resolution [#mum]");
+
+  c2.cd();
+  c2.SetGridx(1);
+  c2.SetGridy(1);
+  resol_final[0]->GetYaxis()->SetTitle("Resolution [#mum]");
+  resol_final[0]->GetXaxis()->SetTitle("Column");
+  resol_final[0]->GetYaxis()->SetRangeUser(100., 300.);
+  resol_final[0]->SetLineColor(c_arr[0]);
+  resol_final[0]->SetLineStyle(l_arr[0]);
+  resol_final[0]->SetMarkerStyle(m_arr[0]);
+  resol_final[0]->SetMarkerColor(c_arr[0]);
+  resol_final[0]->Draw("ap");
+
+  for (uint it = 1; it < resol_final.size(); ++it) {
+    resol_final[it]->SetLineColor(c_arr[it]);
+    resol_final[it]->SetLineStyle(l_arr[it]);
+    resol_final[it]->SetMarkerStyle(m_arr[it]);
+    resol_final[it]->SetMarkerColor(c_arr[it]);
+    resol_final[it]->Draw("p same");
+  }
+  c2.BuildLegend();
+
+  c3.cd();
+  c3.SetGridx(1);
+  c3.SetGridy(1);
+  mean_final[0]->GetYaxis()->SetTitle("Bias [#mum]");
+  mean_final[0]->GetXaxis()->SetTitle("Column");
+  mean_final[0]->GetYaxis()->SetRangeUser(-300., 300.);
+  mean_final[0]->SetLineColor(c_arr[0]);
+  mean_final[0]->SetLineStyle(l_arr[0]);
+  mean_final[0]->SetMarkerStyle(m_arr[0]);
+  mean_final[0]->SetMarkerColor(c_arr[0]);
+  mean_final[0]->Draw("ap");
+
+  for (uint it = 1; it < resol_final.size(); ++it) {
+    mean_final[it]->SetLineColor(c_arr[it]);
+    mean_final[it]->SetLineStyle(l_arr[it]);
+    mean_final[it]->SetMarkerStyle(m_arr[it]);
+    mean_final[it]->SetMarkerColor(c_arr[it]);
+    mean_final[it]->Draw("p same");
+  }
+  c3.BuildLegend();
+
+
   gPad->Modified();
   gPad->Update();
-  //c1.WaitPrimitive();
+  c1.WaitPrimitive();
+
 
   out_file->cd();
   resol_vs_dist->Write();

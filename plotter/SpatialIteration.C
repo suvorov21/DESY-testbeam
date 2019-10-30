@@ -39,10 +39,12 @@ void SpatialIteration() {
   TCanvas c6("c6", "", 1600, 630, 800, 630);
   TCanvas c7("c7", "", 2400, 0, 800, 630);
   TCanvas c8("c8", "", 2400, 630, 800, 630);
+  TCanvas c9("c9", "", 2400, 670, 800, 630);
+
 
   TFile* file_in[Niter];
   TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
-  TString file_name = "y_420";
+  TString file_name = "s_412_02T";
 
   TGraphErrors* resol_vs_iter     = new TGraphErrors();
   TGraphErrors* resol_vs_iter_sum = new TGraphErrors();
@@ -52,6 +54,7 @@ void SpatialIteration() {
   TGraphErrors* prfQ_vs_iter      = new TGraphErrors();
 
   TGraphErrors* mean_vs_x         = new TGraphErrors();
+  TGraphErrors* sigma_vs_x        = new TGraphErrors();
 
   TH2F* PRF_fst, *PRF_lst;
   TGraphErrors* Fit_fst, *Fit_lst;
@@ -150,8 +153,10 @@ void SpatialIteration() {
       c6.cd();
 
       // mean of the residual vs X
-      for (auto j = 0; j < 15; ++j) {
+      for (auto j = 0; j < 50; ++j) {
         TH1F* residual = (TH1F*)file_in[i]->Get(Form("resol_histo_Xscan_%i", j));
+        if (!residual)
+          continue;
         residual->Fit("gaus", "Q");
         TF1* fit_res = residual->GetFunction("gaus");
         if (!fit_res)
@@ -162,8 +167,11 @@ void SpatialIteration() {
         auto mean_e  = fit_res->GetParError(1);
         auto sigma   = fit_res->GetParameter(2);
         auto sigma_e = fit_res->GetParError(2);
-        mean_vs_x->SetPoint(mean_vs_x->GetN(), -0.025+j*(0.005+0.025)/30, 1e6*mean);
+        mean_vs_x->SetPoint(mean_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*mean);
         mean_vs_x->SetPointError(mean_vs_x->GetN()-1, 0, 1e6*mean_e);
+
+        sigma_vs_x->SetPoint(sigma_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*sigma);
+        sigma_vs_x->SetPointError(sigma_vs_x->GetN()-1, 0, 1e6*sigma_e);
       }
 
     }
@@ -230,7 +238,20 @@ void SpatialIteration() {
   c8.cd();
   c8.SetGridy(1);
   c8.SetGridx(1);
+  mean_vs_x->GetXaxis()->SetRangeUser(-0.03, 0.01);
+  mean_vs_x->GetXaxis()->SetTitle("Position [m]");
+  mean_vs_x->GetYaxis()->SetRangeUser(-300., 300);
+  mean_vs_x->GetYaxis()->SetTitle("Bias [#mum]");
   mean_vs_x->Draw("ap");
+
+  c9.cd();
+  c9.SetGridy(1);
+  c9.SetGridx(1);
+  sigma_vs_x->GetXaxis()->SetTitle("Position [m]");
+  sigma_vs_x->GetXaxis()->SetRangeUser(-0.03, 0.01);
+  sigma_vs_x->GetYaxis()->SetTitle("Resolution [#mum]");
+  sigma_vs_x->GetYaxis()->SetRangeUser(0., 400);
+  sigma_vs_x->Draw("ap");
 
   c4.WaitPrimitive();
 
