@@ -16,7 +16,8 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   _do_full_track_fit(false),
   // WARNING
   _correction(false),
-  _gaussian_residuals(true) {
+  _gaussian_residuals(true),
+  _charge_uncertainty(true) {
     //********************************************************************
 
   if (_iteration == -1) {
@@ -64,10 +65,13 @@ bool SpatialResolAna::Initialize() {
 
     _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
     _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
-    auto uncertainty_hist = (TH1F*)_Prev_iter_file->Get("resol_final");
+    auto uncertainty_graph = (TGraphErrors*)_Prev_iter_file->Get("resol_final");
     _uncertainty = 0;
-    for (auto i = 2; i < geom::nPadx; ++i)
-      _uncertainty += uncertainty_hist->GetBinContent(i) / (geom::nPadx - 2);
+    for (auto i = 0; i < uncertainty_graph->GetN(); ++i) {
+      double x, y;
+      uncertainty_graph->GetPoint(i, x, y);
+      _uncertainty += y / uncertainty_graph->GetN();
+    }
 
     // read event list passed reconstruction+selection
     // at the moment skip for the 1 iteration (after 0) files with TEvent
@@ -93,7 +97,7 @@ bool SpatialResolAna::Initialize() {
   } else {
 /*
     _PRF_function = new TF1("PRF_function",
-      " [0] * exp(-4*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
+      " [0] * exp(-4*TMath::Log(2)*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
     _PRF_function->SetParName(0, "Const");
     _PRF_function->SetParName(1, "r");
     _PRF_function->SetParName(2, "w");
@@ -102,7 +106,6 @@ bool SpatialResolAna::Initialize() {
     auto r = 0.5;
     auto s = 0.005;
     _PRF_function->SetParameters(c, r, s);
-    _PRF_function->FixParameter(0, 1.);
 
 */
     _PRF_function  = new TF1("PRF_function", "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)", prf_min, prf_max);
@@ -117,9 +120,8 @@ bool SpatialResolAna::Initialize() {
     double a4 = 6.78962e7;
     double b2 = 3.36748e3;
     double b4 = 6.45311e8;
-
-
     _PRF_function->SetParameters(co, a2, a4, b2, b4);
+
     if (_do_full_track_fit)
       _PRF_function->FixParameter(0, 1.);
 
@@ -165,11 +167,16 @@ bool SpatialResolAna::Initialize() {
     _resol_col_hist_3pad_except[j]  = new TH1F(Form("resol_histo1_3pad_%i", j), "", resol_bin, resol_min, resol_max);
   }
 
-  _residual_sigma_unbiased  = new TH1F("resol", "", geom::nPadx, 0., geom::nPadx);
-  _residual_sigma_biased    = new TH1F("resol1", "", geom::nPadx, 0., geom::nPadx);
-  _residual_sigma           = new TH1F("resol_final", "", geom::nPadx, 0., geom::nPadx);
+  _residual_sigma_unbiased  = new TGraphErrors();
+  _residual_sigma_biased    = new TGraphErrors();
+  _residual_sigma           = new TGraphErrors();
 
-  _residual_mean            = new TH1F("mean", "", geom::nPadx, 0., geom::nPadx);
+  _residual_mean            = new TGraphErrors();
+
+  _residual_sigma_unbiased->SetName("resol_unb");
+  _residual_sigma_biased->SetName("resol_bia");
+  _residual_sigma->SetName("resol_final");
+  _residual_mean->SetName("mean");
 
   _Chi2_track = new TH1F("Chi2_Track", "", 1000, 0., 100.);
   _Cols_used  = new TH1F("cols_used", "", 40, 0., 40.);
@@ -198,6 +205,13 @@ bool SpatialResolAna::Initialize() {
 
   for (auto j = 0; j < geom::nPadx; ++j) {
     _output_vector.push_back(_resol_col_hist[j]);
+    _output_vector.push_back(_resol_col_hist_except[j]);
+  }
+
+  _x_scan_axis = new TAxis(x_scan_bin, x_scan_min, x_scan_max);
+  for (auto i = 0; i < x_scan_bin; ++i) {
+    _resol_col_x_scan[i] = new TH1F(Form("resol_histo_Xscan_%i", i), "", resol_bin, resol_min, resol_max);
+    _output_vector.push_back(_resol_col_x_scan[i]);
   }
 
   for (auto j = 0; j < geom::nPadx; ++j) {
@@ -250,10 +264,12 @@ double SpatialResolAna::GetClusterPosCERN(const std::vector<THit*>& col,
       double a = 1. * q / cluster;
       double center_pad_y = geom::y_pos[it_y];
       double part = (a - _PRF_function->Eval(par[0] - center_pad_y));
-      double c = 1.*cluster;
-      double b = 1.*q;
-      part *= c*c;
-      part /= c*sqrt(b) + b*sqrt(c);
+      if (_charge_uncertainty) {
+        double c = 1.*cluster;
+        double b = 1.*q;
+        part *= c*c;
+        part /= c*sqrt(b) + b*sqrt(c);
+      }
       part *= part;
 
       chi2 += part;
@@ -632,7 +648,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (MissColumn(it_x))
         continue;
 
-      TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy, geom::MM_dy + geom::dy);
+      TH1F* cluster_h = new TH1F("cluster", "", geom::nPady, -1.*geom::MM_dy - geom::dy/2., geom::MM_dy + geom::dy/2.);
 
       // loop over rows
       for (auto pad:col) {
@@ -731,6 +747,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       // fill SR
       _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
       _resol_col_hist_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
+
+      // fill x scan
+      auto bin = _x_scan_axis->FindBin(track_fit_y);
+      if (it_x == 5)
+        if (bin > 0 && bin <= x_scan_bin)
+          _resol_col_x_scan[bin-1]->Fill(track_pos[it_x] - track_fit_y);
 
       if (cluster_N[it_x] == 2) {
         _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
@@ -903,29 +925,36 @@ bool SpatialResolAna::WriteOutput() {
   for (auto i = 1; i < geom::nPadx - 1; ++i) {
 
     Float_t mean, sigma, sigma_ex;
+    Float_t mean_e, sigma_e, sigma_ex_e;
+    mean_e = sigma_e = sigma_ex_e = 0.;
+
+    mean = _resol_col_hist[i]->GetMean();
+    mean_e = _resol_col_hist[i]->GetMeanError();
+    float max   = _resol_col_hist[i]->GetMaximum();
+    float start = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindFirstBinAbove(max/2));
+    float end   = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindLastBinAbove(max/2)) +
+    _resol_col_hist[i]->GetBinWidth(_resol_col_hist[i]->FindLastBinAbove(max/2));
+
+    sigma = 0.5 * (end - start);
 
     if (_gaussian_residuals) {
-      _resol_col_hist[i]->Fit("gaus", "Q");
+      _resol_col_hist[i]->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
       _resol_col_hist_2pad[i]->Fit("gaus", "Q");
       _resol_col_hist_3pad[i]->Fit("gaus", "Q");
 
-      _resol_col_hist_except[i]->Fit("gaus", "Q");
+      _resol_col_hist_except[i]->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
       _resol_col_hist_2pad_except[i]->Fit("gaus", "Q");
       _resol_col_hist_3pad_except[i]->Fit("gaus", "Q");
 
       mean     = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(1);
       sigma    = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(2);
       sigma_ex = _resol_col_hist_except[i]->GetFunction("gaus")->GetParameter(2);
+
+      mean_e      = _resol_col_hist[i]->GetFunction("gaus")->GetParError(1);
+      sigma_e     = _resol_col_hist[i]->GetFunction("gaus")->GetParError(2);
+      sigma_ex_e  = _resol_col_hist_except[i]->GetFunction("gaus")->GetParError(2);
     } else {
       // use FWHM
-      mean = _resol_col_hist[i]->GetMean();
-      float max   = _resol_col_hist[i]->GetMaximum();
-      float start = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindFirstBinAbove(max/2));
-      float end   = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindLastBinAbove(max/2)) +
-      _resol_col_hist[i]->GetBinWidth(_resol_col_hist[i]->FindLastBinAbove(max/2));
-
-      sigma = 0.5 * (end - start);
-
       max   = _resol_col_hist_except[i]->GetMaximum();
       start = _resol_col_hist_except[i]->GetBinLowEdge(_resol_col_hist_except[i]->FindFirstBinAbove(max/2));
       end   = _resol_col_hist_except[i]->GetBinLowEdge(_resol_col_hist_except[i]->FindLastBinAbove(max/2)) +
@@ -934,14 +963,26 @@ bool SpatialResolAna::WriteOutput() {
       sigma_ex = 0.5 * (end - start);
     }
 
-    _residual_sigma_biased->SetBinContent(i+1, sigma);
-    _residual_sigma_unbiased->SetBinContent(i+1, sigma_ex);
-    _residual_sigma->SetBinContent(i+1, sqrt(sigma * sigma_ex));
+    _residual_sigma_biased->SetPoint(_residual_sigma_biased->GetN(), i+1, sigma);
+    _residual_sigma_biased->SetPointError(_residual_sigma_biased->GetN()-1, 0, sigma_e);
 
+    _residual_sigma_unbiased->SetPoint(_residual_sigma_unbiased->GetN(), i+1, sigma_ex);
+    _residual_sigma_unbiased->SetPointError(_residual_sigma_unbiased->GetN()-1, 0, sigma_ex);
 
+    Float_t val, err;
+    val = sqrt(sigma * sigma_ex);
+    if (val)
+      err = 0.5 / val;
+    else err = 0.;
+    err *= sigma_e * sigma_ex + sigma * sigma_ex_e;
+    _residual_sigma->SetPoint(_residual_sigma->GetN(), i+1, val);
+    _residual_sigma->SetPointError(_residual_sigma->GetN()-1, 0, err);
+
+    _residual_mean->SetPoint(_residual_mean->GetN(), i+1, mean);
+    _residual_mean->SetPointError(_residual_mean->GetN()-1, 0, mean_e);
+
+    // print out monitoring function
     resol->Fill(sqrt(sigma * sigma_ex));
-
-    _residual_mean->SetBinContent(i+1, mean);
   }
 
   _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);

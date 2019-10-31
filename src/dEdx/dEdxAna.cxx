@@ -113,7 +113,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
         _hTime->Fill(h->GetTime());
         Qpads.push_back(h->GetQ());
         if (h->GetQ() > q_max) {
-          q_max = colQ;
+          q_max = h->GetQ();
           z_max = h->GetTime();
           x_max = h->GetCol();
         }

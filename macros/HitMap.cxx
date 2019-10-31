@@ -160,6 +160,7 @@ int main(int argc, char** argv) {
 
   // Draw in case of non-batch run
   if (!batch) {
+    MaxAmpl_h->Draw("colz");
     c1->WaitPrimitive();
     exit(1);
   }
