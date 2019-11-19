@@ -17,6 +17,8 @@ compile_gcc:
     paths:
       - ./bin/SpatialResol.exe
       - ./bin/dEdx.exe
+      - ./bin/eventdict.cxx
+      - ./bin/eventdict_rdict.pcm
       - gcc.log
       - obj/*.gcno
 
