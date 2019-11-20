@@ -2,8 +2,8 @@ image: bars21/dev_hep_root:latest
 
 stages:
   - build
-  - analyse
   - test
+  - analyse
 
 compile_gcc:
   stage: build
@@ -17,7 +17,10 @@ compile_gcc:
     paths:
       - ./bin/SpatialResol.exe
       - ./bin/dEdx.exe
+      - ./bin/eventdict.cxx
+      - ./bin/eventdict_rdict.pcm
       - gcc.log
+      - obj/*.gcno
 
 compile_clang:
   stage: build
@@ -81,6 +84,20 @@ cppcheck:
     paths:
       - html/*
 
+coverage:
+  stage: analyse
+  before_script:
+    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+    - yum -y install epel-release
+    - yum -y install lcov
+    - cp obj/*.gc?? src/; cd src
+  script:
+    - lcov -c -d . --output-file coverage.info
+    - genhtml coverage.info --output-directory ../coverage; cd ../
+  artifacts:
+    paths:
+      - coverage/*
+
 # run tests using the binary built before
 SpatialResol_raw_test:
   stage: test
@@ -91,6 +108,9 @@ SpatialResol_raw_test:
     - mv download input.root
   script:
     - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+  artifacts:
+    paths:
+      - obj/*.gcda
 
 dEdx_raw_test:
   stage: test
@@ -101,6 +121,9 @@ dEdx_raw_test:
     - mv download input.root
   script:
     - ./bin/dEdx.exe -b -i input.root -o dEdx_test_iter0.root -v 1
+  artifacts:
+    paths:
+      - obj/*.gcda
 
 dEdx_TEvent_test:
   stage: test
@@ -113,3 +136,6 @@ dEdx_TEvent_test:
   script:
     - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
     - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1
+  artifacts:
+    paths:
+      - obj/*.gcda

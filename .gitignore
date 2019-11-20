@@ -7,3 +7,5 @@ log/*
 *ipynb
 /bin/eventdict.cxx
 /bin/eventdict_rdict.pcm
+*.gcda
+*.gcno

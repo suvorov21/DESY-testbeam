@@ -23,8 +23,8 @@ ifeq ($(TYPE), RELEASE)
 	RLXX += -O3
 else
 	# add degub
-	CXXFLAGS += -g
-	RLXX += -g
+	CXXFLAGS += -g -fprofile-arcs -ftest-coverage
+	RLXX += -g -fprofile-arcs -ftest-coverage
 endif
 
 # for tests
