@@ -14,16 +14,17 @@ def main():
   Niter     = 20
   doiter    = True
 
-  GenerateTEventFile  = False
-  submit              = False
+  GenerateTEventFile  = True
+  submit              = True
+  launch              = False
 
   bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/bin/"
   bin_name  = "SpatialResol.exe"
   bin_flag  = "-b"
 
-  #input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
-  input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  input_version = "nom_v3"
+  input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
+  #input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
+  input_version = "v1"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
   outpt_version = "nom_v3"
@@ -41,7 +42,11 @@ def main():
   # end of input definition
   # **********************************************************************************
 
-  temp = "/temp_0/"
+  if (submit and launch):
+    print("Submit and launch should not be executed together")
+    return 0
+
+  temp = "/temp_1/"
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -58,7 +63,10 @@ def main():
   with open(args.f) as fl:
     i = 0
     # for each input file
-    launcher = open(project_path + "/script/" + temp + "all.sh", "w")
+    if (launch):
+      launcher = open(project_path + "/script/" + temp + "all.sh", "w")
+    else:
+      launcher = open(project_path + "/script/" + temp + "all.sh.bu", "w")
     for line in fl:
       in_file  = line.split()[0]
       ot_file  = line.split()[1]
@@ -134,7 +142,8 @@ def main():
   submit_file.close()
 
   os.chdir(project_path + "/script/" + temp)
-  subprocess.run(["chmod", "765", "./all.sh"])
+  if (launch):
+    subprocess.run(["chmod", "765", "./all.sh"])
   if (submit):
     subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
