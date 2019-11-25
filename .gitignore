@@ -3,6 +3,7 @@
 doc/*
 log/*
 /Doxyfile
+test/*
 
 *ipynb
 /bin/eventdict.cxx
