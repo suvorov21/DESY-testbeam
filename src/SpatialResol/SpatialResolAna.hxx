@@ -108,6 +108,7 @@ class SpatialResolAna: public AnalysisBase {
   const float x_scan_max = 0.015;
   TAxis* _x_scan_axis;
   TH1F* _resol_col_x_scan[x_scan_bin];
+  TH1F* _mult_x_scan[x_scan_bin];
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
