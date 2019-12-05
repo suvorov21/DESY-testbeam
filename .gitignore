@@ -10,3 +10,4 @@ test/*
 /bin/eventdict_rdict.pcm
 *.gcda
 *.gcno
+*.root
