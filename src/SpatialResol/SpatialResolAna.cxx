@@ -209,11 +209,13 @@ bool SpatialResolAna::Initialize() {
   }
 
   _x_scan_axis = new TAxis(x_scan_bin, x_scan_min, x_scan_max);
-  for (auto i = 0; i < x_scan_bin; ++i) {
-    _resol_col_x_scan[i] = new TH1F(Form("resol_histo_Xscan_%i", i), "", resol_bin, resol_min, resol_max);
-    _output_vector.push_back(_resol_col_x_scan[i]);
-    _mult_x_scan[i] = new TH1F(Form("mult_histo_Xscan_%i", i), "multiplicity", 10, 0., 10.);
-    _output_vector.push_back(_mult_x_scan[i]);
+  for (auto j = 0; j < geom::nPadx; ++j) {
+    for (auto i = 0; i < x_scan_bin; ++i) {
+      _resol_col_x_scan[j][i] = new TH1F(Form("resol_histo_Xscan_%i_%i", j, i), "", resol_bin, resol_min, resol_max);
+      _output_vector.push_back(_resol_col_x_scan[j][i]);
+      _mult_x_scan[j][i] = new TH1F(Form("mult_histo_Xscan_%i_%i", j, i), "multiplicity", 10, 0., 10.);
+      _output_vector.push_back(_mult_x_scan[j][i]);
+    }
   }
 
   for (auto j = 0; j < geom::nPadx; ++j) {
@@ -752,11 +754,11 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       // fill x scan
       auto bin = _x_scan_axis->FindBin(track_fit_y);
-      if (it_x == 5)
-        if (bin > 0 && bin <= x_scan_bin) {
-          _resol_col_x_scan[bin-1]->Fill(track_pos[it_x] - track_fit_y);
-          _mult_x_scan[bin-1]->Fill(cluster_N[it_x]);
-        }
+
+      if (bin > 0 && bin <= x_scan_bin) {
+        _resol_col_x_scan[it_x][bin-1]->Fill(track_pos[it_x] - track_fit_y);
+        _mult_x_scan[it_x][bin-1]->Fill(cluster_N[it_x]);
+      }
 
       if (cluster_N[it_x] == 2) {
         _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
