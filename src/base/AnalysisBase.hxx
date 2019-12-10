@@ -34,6 +34,10 @@ class AnalysisBase {
   virtual bool WriteOutput();
   virtual void DrawSelection(const TEvent *event, int trackID);
 
+  /// Call geometry functions
+  float GetYpos(int it_y, bool inverse = false);
+  float GetXpos(int it_x, bool inverse = false);
+
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   /// Print usage
