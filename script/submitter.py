@@ -144,6 +144,7 @@ def main():
   os.chdir(project_path + "/script/" + temp)
   if (launch):
     subprocess.run(["chmod", "765", "./all.sh"])
+    subprocess.run(["/bin/bash", "all.sh"])
   if (submit):
     subprocess.run(["condor_submit",  "Submit.sub"])
   os.chdir(project_path + "/script/")
