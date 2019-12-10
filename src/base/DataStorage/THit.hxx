@@ -11,8 +11,8 @@ class THit : public TObject{
   void SetTime(int time)  {ft = time;}
   void SetQ(int Q)        {fq = Q;}
 
-  int GetRow()    const   {return fr;}
-  int GetCol()    const   {return fc;}
+  int GetRow(bool invert = false)    const;
+  int GetCol(bool invert = false)    const;
   int GetTime()   const   {return ft;}
   int GetQ()      const   {return fq;}
 

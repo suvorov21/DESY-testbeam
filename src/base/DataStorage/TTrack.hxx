@@ -12,8 +12,8 @@ class TTrack : public TObject{
 
   // WARNING memory like with GetHits() observed
   std::vector<THit*> GetHits()                const     {return fhits;}
-  std::vector<std::vector<THit*>> GetCols ()  const     {return fc;}
-  std::vector<std::vector<THit*>> GetRows ()  const     {return fr;}
+  std::vector<std::vector<THit*>> GetCols (bool invert = false) const;
+  std::vector<std::vector<THit*>> GetRows (bool invert = false) const;
 
   TTrack(){;}
   virtual ~TTrack();
