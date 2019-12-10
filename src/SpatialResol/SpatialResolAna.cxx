@@ -222,6 +222,13 @@ bool SpatialResolAna::Initialize() {
   }
 
   for (auto j = 0; j < GetMaxColumn(); ++j) {
+    for (auto i = 0; i < x_scan_bin; ++i) {
+      _resol_col_x_scan_lim_mult[j][i] = new TH1F(Form("resol_histo_Xscan_%i_%i", j, i), "", resol_bin, resol_min, resol_max);
+      _output_vector.push_back(_resol_col_x_scan_lim_mult[j][i]);
+    }
+  }
+
+  for (auto j = 0; j < GetMaxColumn(); ++j) {
     _output_vector.push_back(_PRF_histo_col[j]);
   }
 
@@ -777,6 +784,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (bin > 0 && bin <= x_scan_bin) {
         _resol_col_x_scan[it_x][bin-1]->Fill(track_pos[it_x] - track_fit_y);
         _mult_x_scan[it_x][bin-1]->Fill(cluster_N[it_x]);
+
+        if (cluster_N[it_x] == 3 || cluster_N[it_x] == 4)
+          _resol_col_x_scan_lim_mult[it_x][bin-1]->Fill(track_pos[it_x] - track_fit_y);
       }
 
       if (cluster_N[it_x] == 2) {

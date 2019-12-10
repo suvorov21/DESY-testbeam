@@ -117,6 +117,8 @@ class SpatialResolAna: public AnalysisBase {
   TH1F* _resol_col_x_scan[geom::nPadx][x_scan_bin];
   TH1F* _mult_x_scan[geom::nPadx][x_scan_bin];
 
+  TH1F* _resol_col_x_scan_lim_mult[geom::nPadx][x_scan_bin];
+
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
 
