@@ -46,3 +46,17 @@ void TTrack::AddHit(THit* hit) {
     fr.push_back(temp_v);
   }
 }
+
+std::vector<std::vector<THit*>> TTrack::GetCols (bool invert) const {
+  if (!invert)
+    return fc;
+  else
+    return fr;
+}
+
+std::vector<std::vector<THit*>> TTrack::GetRows (bool invert) const {
+  if (!invert)
+    return fr;
+  else
+    return fc;
+}

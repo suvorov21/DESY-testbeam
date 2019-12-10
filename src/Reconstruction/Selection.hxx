@@ -12,13 +12,13 @@
 
 namespace sel
 {
-  int                  GetColsMaxSep (const TTrack*);
-  int                  GetColsMaxGap (const TTrack*);
-  std::vector <double> GetNonZeroRows(const TTrack*);
-  std::vector <double> GetNonZeroCols(const TTrack*);
-  std::vector <double> GetFitParams  (const TTrack*);
+  int                  GetColsMaxSep (const TTrack*, bool invert = false);
+  int                  GetColsMaxGap (const TTrack*, bool invert = false);
+  std::vector <double> GetNonZeroRows(const TTrack*, bool invert = false);
+  std::vector <double> GetNonZeroCols(const TTrack*, bool invert = false);
+  std::vector <double> GetFitParams  (const TTrack*, bool invert = false);
   std::vector <double> GetFitParamsXZ(const TTrack*);
-  std::vector <double> Get3DFitParams(const TTrack*);
+  std::vector <double> Get3DFitParams(const TTrack*, bool invert = false);
 }
 
 #endif  // SRC_SELECTION_SELECTION_HXX_

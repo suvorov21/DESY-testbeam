@@ -32,6 +32,9 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether the cluster is good for fitting
   bool UseCluster(const std::vector<THit*>& col);
 
+  /// Get the number of used columns
+  Int_t GetMaxColumn();
+
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
@@ -59,6 +62,10 @@ class SpatialResolAna: public AnalysisBase {
 
   /// iteration number. Starting from 0
   Int_t   _iteration;
+
+  /// Whether to invert track analysis logic
+  /// E.g. analyse cosmic tracks
+  bool _invert;
 
   /// Fitting function for track going up
   TF1*    _circle_function_up;
@@ -107,8 +114,8 @@ class SpatialResolAna: public AnalysisBase {
   const float x_scan_min = -0.035;
   const float x_scan_max = 0.015;
   TAxis* _x_scan_axis;
-  TH1F* _resol_col_x_scan[x_scan_bin];
-  TH1F* _mult_x_scan[x_scan_bin];
+  TH1F* _resol_col_x_scan[geom::nPadx][x_scan_bin];
+  TH1F* _mult_x_scan[geom::nPadx][x_scan_bin];
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
