@@ -703,6 +703,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           cluster[it_x], cluster_mean[it_x]);
     } // loop over columns
 
+    if (_verbose > 3)
+      std::cout << "Loop over columns done" << std::endl;
+
     _Cols_used->Fill(Ndots);
 
     _sw_partial[2]->Stop();
@@ -716,6 +719,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       //fit = (TF1*)GetTrackFitILC(track, track_pos[1])->Clone();
     } else
       fit = GetTrackFitCERN(track_pos, cluster_N);
+
+    if (_verbose > 3)
+      std::cout << "Track fit done" << std::endl;
 
     if (!fit)
       continue;
@@ -812,10 +818,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
         if (!cluster[it_x] || !q)
           continue;
-
-        // WARNING
-        //if (q > 2000)
-        //  continue;
 
         double center_pad_y = GetYpos(it_y, _invert);
 

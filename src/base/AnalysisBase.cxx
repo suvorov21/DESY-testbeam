@@ -313,9 +313,9 @@ float AnalysisBase::GetYpos(int it_y, bool invert) {
 }
 
 float AnalysisBase::GetXpos(int it_x, bool invert) {
-  if ((!invert && it_x >= geom::nPady) ||
-      (invert && it_x >= geom::nPadx) || it_x < 0) {
-    std::cerr << "ERROR. AnalysisBase::GetYpos(). Wrong Index " <<  it_x << "\t" << invert << std::endl;
+  if ((!invert && it_x >= geom::nPadx) ||
+      (invert && it_x >= geom::nPady) || it_x < 0) {
+    std::cerr << "ERROR. AnalysisBase::GetXpos(). Wrong Index " <<  it_x << "\t" << invert << std::endl;
     exit(1);
   }
   if (!invert)

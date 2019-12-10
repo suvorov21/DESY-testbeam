@@ -56,11 +56,12 @@ std::vector <double> sel::GetFitParams(const TTrack* track, bool invert){
 
   TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPadx,0,geom::nPadx);
   for(auto h:track->GetHits())
-    if(h->GetQ())
+    if(h->GetQ()) {
       if (!invert)
         MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
       else
         MM->Fill(h->GetRow(),h->GetCol(),h->GetQ());
+    }
 
   MM->Fit("pol1", "Q");
   TF1* fit = MM->GetFunction("pol1");
