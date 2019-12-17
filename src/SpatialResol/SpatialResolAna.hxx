@@ -24,7 +24,7 @@ class SpatialResolAna: public AnalysisBase {
   TF1* GetTrackFitILC(const TTrack* track, const double pos,
                         const int miss_id = -1);
   /// Firthe whole track with independent pads
-  TF1* GetTrackFitSeparatePad(const std::vector<std::vector<std::pair<double, double> > > pos_in_pad,
+  TF1* GetTrackFitSeparatePad(const std::vector<std::vector<std::pair< double, std::pair<double, double> > > > pos_in_pad,
                         const int miss_id = -1);
 
   /// Extract cluster position with CERN method
@@ -35,7 +35,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Fir all the pads independently with PRF
   double GetTrackPosInPad(const std::vector<THit*>& col, const int cluster,
                         const double pos,
-                        std::vector<std::vector<std::pair<double, double> > >& pos_in_pad);
+                        std::vector<std::vector<std::pair< double, std::pair<double, double> > > >& pos_in_pad);
 
   /// Whether to miss the column in the fitter
   bool MissColumn(int it_x);
@@ -123,7 +123,8 @@ class SpatialResolAna: public AnalysisBase {
 
   TH2F* _PRF_histo_col[geom::nPadx];
 
-  TH1F* _Fit_quality_plots[geom::nPadx];
+  TH1F* _Fit_quality_plots[3][geom::nPadx];
+  TAxis* _prf_scale_axis;
 
   static const int x_scan_bin = 50;
   const float x_scan_min = -0.035;

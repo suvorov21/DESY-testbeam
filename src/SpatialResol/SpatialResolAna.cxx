@@ -218,9 +218,13 @@ bool SpatialResolAna::Initialize() {
   }
 
   if (_do_separate_pad_fit) {
+    Double_t arr[4] = {0., .15, .7, 1.01};
+    _prf_scale_axis = new TAxis(3, arr);
     for (auto j = 0; j < GetMaxColumn(); ++j) {
-      _Fit_quality_plots[j] = new TH1F("pad_fit_q", "", 300, 0., 30.);
-      _output_vector.push_back(_Fit_quality_plots[j]);
+      for (auto id=0; id < 3; ++id) {
+        _Fit_quality_plots[id][j] = new TH1F(Form("pad_fit_q_%i_%i", j, id), "", 300, 0., 30.);
+        _output_vector.push_back(_Fit_quality_plots[id][j]);
+      }
     }
   }
 
@@ -272,10 +276,10 @@ bool SpatialResolAna::Initialize() {
 //********************************************************************
 double SpatialResolAna::GetTrackPosInPad(const std::vector<THit*>& col,
     const int cluster, const double pos,
-    std::vector<std::vector<std::pair<double, double> > >& pos_in_pad) {
+    std::vector<std::vector<std::pair< double, std::pair<double, double> > > >& pos_in_pad) {
   //********************************************************************
   if (!_iteration) {
-    pos_in_pad[col[0]->GetCol(_invert)].push_back(std::make_pair(pos, default_error));
+    pos_in_pad[col[0]->GetCol(_invert)].push_back(std::make_pair(0.1, std::make_pair(pos, default_error)));
     return pos;
   }
 
@@ -292,19 +296,21 @@ double SpatialResolAna::GetTrackPosInPad(const std::vector<THit*>& col,
     if (!q)
       continue;
 
-    std::cout << "pad " << "\t" << 1.*q/cluster << "\t" << _PRF_function->Eval(prf_min) << std::endl;
+    if (_verbose > 5)
+      std::cout << "pad " << "\t" << 1.*q/cluster << "\t" << _PRF_function->Eval(prf_min) << std::endl;
 
     double center_pad_y = GetYpos(it_y, _invert);
     if (1.*q/cluster < _PRF_function->Eval(fit_bound_left))
       continue;
 
-    std::cout << q << "\t" << cluster << std::endl;
+    if (_verbose > 5)
+      std::cout << q << "\t" << cluster << std::endl;
 
     if (1.*q/cluster > _PRF_function->GetParameter(0)) {
       track_pos = center_pad_y;
       track_pos_err = 0.003;
     } else {
-      double pos_bias = _PRF_function->GetX(1.*q/cluster, fit_bound_left, 0.);
+      double pos_bias = _PRF_function->GetX(1.*q/cluster, 0., fit_bound_right);
 
       if (pos > center_pad_y)
         track_pos = center_pad_y + pos_bias;
@@ -312,18 +318,26 @@ double SpatialResolAna::GetTrackPosInPad(const std::vector<THit*>& col,
         track_pos = center_pad_y - pos_bias;
 
       track_pos_err = sigma_pedestal / cluster;
-      track_pos_err /= abs(_PRF_function->Derivative(1.*q/cluster));
+      track_pos_err /= abs(_PRF_function->Derivative(pos_bias));
 
-      std::cout << pos_bias << "\t" << track_pos_err << std::endl;
+      if (_verbose > 5)
+        std::cout << "errors\t" << sigma_pedestal / cluster << "\t" << _PRF_function->Derivative(pos_bias) << "\t" << track_pos_err << std::endl;
     }
 
-    std::cout << "\t" << track_pos << "\t" << track_pos_err << std::endl;
+    if (1.*q/cluster > 0.5 && track_pos_err > 0.003)
+      track_pos_err = 0.003;
 
-    pos_in_pad[it_x].push_back(std::make_pair(track_pos, track_pos_err));
+    if (track_pos_err > 0.08)
+      track_pos_err = 0.08;
 
-    sum1 += track_pos / TMath::Power(track_pos_err, -2);
+    if (_verbose > 5)
+      std::cout << "pad pos \t" << track_pos << "\t" << track_pos_err << std::endl;
+
+    pos_in_pad[it_x].push_back(std::make_pair(1.*q/cluster, std::make_pair(track_pos, track_pos_err)));
+
+    sum1 += track_pos * TMath::Power(track_pos_err, -2);
     sum2 += TMath::Power(track_pos_err, -2);
-  }
+  } // loop over pads in cluster
 
   return sum1 / sum2;
 }
@@ -514,7 +528,7 @@ TF1* SpatialResolAna::GetTrackFitCERN(const double* track_pos,
 }
 
 //********************************************************************
-TF1* SpatialResolAna::GetTrackFitSeparatePad(const std::vector<std::vector<std::pair<double, double> > > pos_in_pad,
+TF1* SpatialResolAna::GetTrackFitSeparatePad(const std::vector<std::vector<std::pair< double, std::pair<double, double> > > >pos_in_pad,
   const int miss_id) {
   //********************************************************************
   TGraphErrors* track_gr = new TGraphErrors();
@@ -528,8 +542,8 @@ TF1* SpatialResolAna::GetTrackFitSeparatePad(const std::vector<std::vector<std::
       continue;
 
     for (auto it = pos_in_pad[it_x].begin(); it < pos_in_pad[it_x].end(); ++it) {
-      track_gr->SetPoint(track_gr->GetN(), x, (*it).first);
-      track_gr->SetPointError(track_gr->GetN()-1, 0., (*it).second);
+      track_gr->SetPoint(track_gr->GetN(), x, (*it).second.first);
+      track_gr->SetPointError(track_gr->GetN()-1, 0., (*it).second.second);
     }
   } // loop over x
 
@@ -795,7 +809,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     float charge_max[geom::nPadx];
     double a_peak_fit[geom::nPadx];
 
-    std::vector<std::vector<std::pair<double, double> > > pos_in_pad;
+    std::vector<std::vector<std::pair<double, std::pair<double, double> > > >pos_in_pad;
     pos_in_pad.clear();
     pos_in_pad.resize(GetMaxColumn());
     int Ndots = 0;
@@ -987,10 +1001,16 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       // fill pad accurace
       if (_do_separate_pad_fit) {
+        //std::cout << std::endl;
         for (auto it = pos_in_pad[it_x].begin();
                   it < pos_in_pad[it_x].end();
                   ++it) {
-          _Fit_quality_plots[it_x]->Fill((track_fit_y - (*it).first) / (*it).second);
+          int bin = -1 + _prf_scale_axis->FindBin((*it).first);
+        // TODO make the definition through constants
+          if (bin < 0 || bin > 2)
+            std::cout << "Error bin " << bin << "\t" << (*it).first << std::endl;
+          _Fit_quality_plots[bin][it_x]->Fill(abs(track_fit_y - (*it).second.first) / (*it).second.second);
+          //std::cout << abs(track_fit_y - (*it).first) / (*it).second << "\t" << 1e6*track_fit_y << "\t" << 1e6*(*it).first << "\t" << 1e6*(*it).second << std::endl;
         }
       }
 
