@@ -217,6 +217,9 @@ bool SpatialResolAna::Initialize() {
     _output_vector.push_back(_resol_col_hist_except[j]);
   }
 
+  _uncertainty_vs_prf_gr = new TGraphErrors();
+  _output_vector.push_back(_uncertainty_vs_prf_gr);
+
   if (_do_separate_pad_fit) {
     Double_t arr[4] = {0., .15, .7, 1.01};
     _prf_scale_axis = new TAxis(3, arr);
@@ -236,6 +239,11 @@ bool SpatialResolAna::Initialize() {
       _mult_x_scan[j][i] = new TH1F(Form("mult_histo_Xscan_%i_%i", j, i), "multiplicity", 10, 0., 10.);
       _output_vector.push_back(_mult_x_scan[j][i]);
     }
+  }
+
+  for (auto i = 0; i < prf_error_bins; ++i) {
+    _uncertainty_prf_bins[i] = new TH1F(Form("error_prf_bin_%i", i), "", resol_bin, resol_min, resol_max);
+    _output_vector.push_back(_uncertainty_prf_bins[i]);
   }
 
   for (auto j = 0; j < GetMaxColumn(); ++j) {
@@ -1001,7 +1009,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       // fill pad accurace
       if (_do_separate_pad_fit) {
-        //std::cout << std::endl;
         for (auto it = pos_in_pad[it_x].begin();
                   it < pos_in_pad[it_x].end();
                   ++it) {
@@ -1010,7 +1017,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           if (bin < 0 || bin > 2)
             std::cout << "Error bin " << bin << "\t" << (*it).first << std::endl;
           _Fit_quality_plots[bin][it_x]->Fill(abs(track_fit_y - (*it).second.first) / (*it).second.second);
-          //std::cout << abs(track_fit_y - (*it).first) / (*it).second << "\t" << 1e6*track_fit_y << "\t" << 1e6*(*it).first << "\t" << 1e6*(*it).second << std::endl;
+
+          bin = -1 + _prf_error_axis->FindBin((*it).first);
+          if (bin < 0 || bin > prf_error_bins)
+            std::cout << "Error bin " << bin << "\t" << (*it).first << std::endl;
+
+          _uncertainty_prf_bins[bin]->Fill(track_fit_y - (*it).second.first);
         }
       }
 
@@ -1153,60 +1165,69 @@ bool SpatialResolAna::WriteOutput() {
   TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
   for (auto i = 1; i < GetMaxColumn() - 1; ++i) {
 
+    TH1F* res     = _resol_col_hist[i];
+    TH1F* res_e   =  _resol_col_hist_except[i];
+
     Float_t mean, sigma, sigma_ex;
     Float_t mean_e, sigma_e, sigma_ex_e;
     mean_e = sigma_e = sigma_ex_e = 0.;
 
-    mean = _resol_col_hist[i]->GetMean();
-    mean_e = _resol_col_hist[i]->GetMeanError();
-    float max   = _resol_col_hist[i]->GetMaximum();
-    float start = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindFirstBinAbove(max/2));
-    float end   = _resol_col_hist[i]->GetBinLowEdge(_resol_col_hist[i]->FindLastBinAbove(max/2)) +
-    _resol_col_hist[i]->GetBinWidth(_resol_col_hist[i]->FindLastBinAbove(max/2));
+    mean = res->GetMean();
+    mean_e = res->GetMeanError();
+    float max   = res->GetMaximum();
+    float start = res->GetBinLowEdge(res->FindFirstBinAbove(max/2));
+    float end   = res->GetBinLowEdge(res->FindLastBinAbove(max/2)) +
+    res->GetBinWidth(res->FindLastBinAbove(max/2));
 
     sigma = 0.5 * (end - start);
 
-    if (!_resol_col_hist[i]->Integral()) {
+    if (!res->Integral()) {
       std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Empty residuals" << std::endl;
       exit(1);
     }
 
     if (_gaussian_residuals) {
-      _resol_col_hist[i]->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
+      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
       _resol_col_hist_2pad[i]->Fit("gaus", "Q");
       _resol_col_hist_3pad[i]->Fit("gaus", "Q");
 
-      if (!_resol_col_hist[i]->GetFunction("gaus")) {
+      TF1* func = res->GetFunction("gaus");
+
+      if (!func) {
         std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
         exit(1);
       }
 
-      _resol_col_hist_except[i]->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
+      res_e->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
       _resol_col_hist_2pad_except[i]->Fit("gaus", "Q");
       _resol_col_hist_3pad_except[i]->Fit("gaus", "Q");
 
-      mean     = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(1);
-      sigma    = _resol_col_hist[i]->GetFunction("gaus")->GetParameter(2);
-      sigma_ex = _resol_col_hist_except[i]->GetFunction("gaus")->GetParameter(2);
+      mean     = func->GetParameter(1);
+      sigma    = func->GetParameter(2);
+      sigma_ex =res_e->GetFunction("gaus")->GetParameter(2);
 
-      mean_e      = _resol_col_hist[i]->GetFunction("gaus")->GetParError(1);
-      sigma_e     = _resol_col_hist[i]->GetFunction("gaus")->GetParError(2);
-      sigma_ex_e  = _resol_col_hist_except[i]->GetFunction("gaus")->GetParError(2);
+      mean_e      = func->GetParError(1);
+      sigma_e     = func->GetParError(2);
+      sigma_ex_e  = res_e->GetFunction("gaus")->GetParError(2);
     } else {
       // use FWHM
-      max   = _resol_col_hist_except[i]->GetMaximum();
-      start = _resol_col_hist_except[i]->GetBinLowEdge(_resol_col_hist_except[i]->FindFirstBinAbove(max/2));
-      end   = _resol_col_hist_except[i]->GetBinLowEdge(_resol_col_hist_except[i]->FindLastBinAbove(max/2)) +
-      _resol_col_hist_except[i]->GetBinWidth(_resol_col_hist_except[i]->FindLastBinAbove(max/2));
+      max   = res_e->GetMaximum();
+      start = res_e->GetBinLowEdge(res_e->FindFirstBinAbove(max/2));
+      end   = res_e->GetBinLowEdge(res_e->FindLastBinAbove(max/2)) +
+      res_e->GetBinWidth(res_e->FindLastBinAbove(max/2));
 
       sigma_ex = 0.5 * (end - start);
     }
 
-    _residual_sigma_biased->SetPoint(_residual_sigma_biased->GetN(), i+1, sigma);
-    _residual_sigma_biased->SetPointError(_residual_sigma_biased->GetN()-1, 0, sigma_e);
+    _residual_sigma_biased->SetPoint(_residual_sigma_biased->GetN(),
+                                      i+1, sigma);
+    _residual_sigma_biased->SetPointError(_residual_sigma_biased->GetN()-1,
+                                      0, sigma_e);
 
-    _residual_sigma_unbiased->SetPoint(_residual_sigma_unbiased->GetN(), i+1, sigma_ex);
-    _residual_sigma_unbiased->SetPointError(_residual_sigma_unbiased->GetN()-1, 0, sigma_ex);
+    _residual_sigma_unbiased->SetPoint(_residual_sigma_unbiased->GetN(),
+                                      i+1, sigma_ex);
+    _residual_sigma_unbiased->SetPointError(_residual_sigma_unbiased->GetN()-1,
+                                      0, sigma_ex);
 
     Float_t val, err;
     val = sqrt(sigma * sigma_ex);
@@ -1222,9 +1243,44 @@ bool SpatialResolAna::WriteOutput() {
 
     // print out monitoring function
     resol->Fill(sqrt(sigma * sigma_ex));
-  }
+  } // loop over column
 
   _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+
+  if (_do_separate_pad_fit) {
+    for (auto prf_bin = 0; prf_bin < prf_error_bins; ++prf_bin) {
+      TH1F* res = _uncertainty_prf_bins[prf_bin];
+      Float_t mean, sigma, sigma_e;
+      mean = res->GetMean();
+      float max   = res->GetMaximum();
+      float start = res->GetBinLowEdge(res->FindFirstBinAbove(max/2));
+      float end   = res->GetBinLowEdge(res->FindLastBinAbove(max/2)) +
+      res->GetBinWidth(res->FindLastBinAbove(max/2));
+
+      sigma = 0.5 * (end - start);
+
+      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
+
+      TF1* func = res->GetFunction("gaus");
+
+      if (!func) {
+        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
+        exit(1);
+      }
+
+      mean     = func->GetParameter(1);
+      sigma    = func->GetParameter(2);
+      sigma_e  = func->GetParError(2);
+
+      _uncertainty_vs_prf_gr->SetPoint(_uncertainty_vs_prf_gr->GetN(),
+                              _prf_error_axis->GetBinCenter(prf_bin+1),
+                              sigma);
+      _uncertainty_vs_prf_gr->SetPointError(_uncertainty_vs_prf_gr->GetN()-1,
+                              0.5*_prf_error_axis->GetBinWidth(prf_bin+1),
+                              sigma_e);
+
+    } // loop over prf uncertainty bins
+  } // if (_do_separate_fit)
 
   // Output histoes postprocession done
 

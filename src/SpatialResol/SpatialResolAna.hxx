@@ -123,9 +123,19 @@ class SpatialResolAna: public AnalysisBase {
 
   TH2F* _PRF_histo_col[geom::nPadx];
 
+  /// separate pad fit study
   TH1F* _Fit_quality_plots[3][geom::nPadx];
   TAxis* _prf_scale_axis;
 
+  /// errors vs the PRF value
+  static const int prf_error_bins = 10;
+  Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.};
+  TAxis* _prf_error_axis = new TAxis(prf_error_bins, prf_error_bins_arr);
+  TH1F* _uncertainty_prf_bins[prf_error_bins];
+  TGraphErrors* _uncertainty_vs_prf_gr;
+
+
+  /// x scan data
   static const int x_scan_bin = 50;
   const float x_scan_min = -0.035;
   const float x_scan_max = 0.015;
