@@ -18,14 +18,24 @@ class SpatialResolAna: public AnalysisBase {
   bool ProcessEvent(const TEvent* event);
 
   /// Fit the whole track with CERN method
-  TF1* GetTrackFitCERN(const double* track_pos, const int* mult, const int miss_id = -1);
+  TF1* GetTrackFitCERN(const double* track_pos, const int* mult,
+                        const int miss_id = -1);
   /// Fit the whole track with ILC method
-  TF1* GetTrackFitILC(const TTrack* track, const double pos, const int miss_id = -1);
+  TF1* GetTrackFitILC(const TTrack* track, const double pos,
+                        const int miss_id = -1);
+  /// Firthe whole track with independent pads
+  TF1* GetTrackFitSeparatePad(const std::vector<std::vector<std::pair< double, std::pair<double, double> > > > pos_in_pad,
+                        const int miss_id = -1);
 
   /// Extract cluster position with CERN method
-  double GetClusterPosCERN(const std::vector<THit*>& col, const int cluster, const double pos);
+  double GetClusterPosCERN(const std::vector<THit*>& col, const int cluster,
+                            const double pos);
   /// Extract cluster position with ILC method
   double GetClusterPosILC(const std::vector<THit*>& col, const double pos);
+  /// Fir all the pads independently with PRF
+  double GetTrackPosInPad(const std::vector<THit*>& col, const int cluster,
+                        const double pos,
+                        std::vector<std::vector<std::pair< double, std::pair<double, double> > > >& pos_in_pad);
 
   /// Whether to miss the column in the fitter
   bool MissColumn(int it_x);
@@ -50,6 +60,9 @@ class SpatialResolAna: public AnalysisBase {
   bool    _do_arc_fit;
   /// Whether to use full track fitting
   bool    _do_full_track_fit;
+
+  /// Whether fit all the pads separatly
+  bool _do_separate_pad_fit;
 
   /// Whether to apply correction of spatial resolution (take geometrical mean)
   bool    _correction;
@@ -110,6 +123,19 @@ class SpatialResolAna: public AnalysisBase {
 
   TH2F* _PRF_histo_col[geom::nPadx];
 
+  /// separate pad fit study
+  TH1F* _Fit_quality_plots[3][geom::nPadx];
+  TAxis* _prf_scale_axis;
+
+  /// errors vs the PRF value
+  static const int prf_error_bins = 10;
+  Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.};
+  TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
+  TH1F* _uncertainty_prf_bins[prf_error_bins];
+  TGraphErrors* _uncertainty_vs_prf_gr;
+
+
+  /// x scan data
   static const int x_scan_bin = 50;
   const float x_scan_min = -0.035;
   const float x_scan_max = 0.015;
@@ -128,6 +154,8 @@ class SpatialResolAna: public AnalysisBase {
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
 
+  const float sigma_pedestal = 9;
+
   // [units are meters]
   const float prf_min     = -0.027;
   const float prf_max     = 0.027;
@@ -137,8 +165,8 @@ class SpatialResolAna: public AnalysisBase {
   const float resol_max   = 0.004;
   const int   resol_bin   = 200.;
 
-  const float fit_bound_left  = -0.015;
-  const float fit_bound_right =  0.015;
+  const float fit_bound_left  = -0.025;
+  const float fit_bound_right =  0.025;
 
   const float default_error   = 0.001;
   const float one_pad_error   = 0.002;

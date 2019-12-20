@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>  // getopt on Mac
+#include <getopt.h>
 #include <fstream>   // read file lists
 /** @endcond */
 

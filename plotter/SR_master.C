@@ -35,7 +35,7 @@ void SR_master() {
   c1.SetGridy(1);
   c1.SetGridx(1);
 
-  TString input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
+  TString input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v4/";
   TString file_name     = input_prefix + "/SR.root";
   auto out_file         = new TFile(file_name, "RECREATE");
 
@@ -63,10 +63,10 @@ void SR_master() {
     TString name = scan[0].first(0, 6);
     auto mg_r = new TMultiGraph();
     //auto mg_c = new TMultiGraph();
-    TLegend* l_r = new TLegend(gStyle->GetPadLeftMargin(),
-                          1-gStyle->GetPadTopMargin() - 0.15,
-                          gStyle->GetPadLeftMargin() + 0.3,
-                          1-gStyle->GetPadTopMargin());
+    TLegend* l_r = new TLegend(gStyle->GetPadLeftMargin()+0.1,
+                          1-gStyle->GetPadTopMargin() - 0.25,
+                          gStyle->GetPadLeftMargin() + 0.4,
+                          1-gStyle->GetPadTopMargin()-0.1);
     //TLegend* l_c = new TLegend(gStyle->GetPadLeftMargin(),
     //                      1-gStyle->GetPadTopMargin() - 0.15,
     //                      gStyle->GetPadLeftMargin() + 0.3,
@@ -112,8 +112,10 @@ void SR_master() {
       //mg_c->GetXaxis()->SetTitle(graph_charg->GetXaxis()->GetTitle());
       ++i;
     }
-    mg_r->SetMaximum(1.1*max_y_r);
-    mg_r->SetMinimum(0.9*min_y_r);
+    //mg_r->SetMaximum(1.1*max_y_r);
+    //mg_r->SetMinimum(0.9*min_y_r);
+    mg_r->SetMaximum(400.);
+    mg_r->SetMinimum(0.);
     //mg_c->SetMaximum(1.01*max_y_c);
     //mg_c->SetMinimum(0.99*min_y_c);
     //mg_c->GetXaxis()->ZoomOut(2);
@@ -124,6 +126,8 @@ void SR_master() {
     //mg_c->Write();
 
     c1.cd();
+    c1.SetGridx();
+    c1.SetGridy();
     mg_r->Draw("a");
     l_r->Draw();
     c1.Write("c_resol");

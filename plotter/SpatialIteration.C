@@ -5,13 +5,14 @@
 #include "TCanvas.h"
 #include "TGraphErrors.h"
 #include "TString.h"
+#include "TLine.h"
 
 #include "../utils/Geom.hxx"
 #include "../utils/SetT2KStyle.hxx"
 
 using namespace std;
 
-const Int_t Niter = 14;
+const Int_t Niter = 20;
 
 float GetAverage(TGraphErrors* h, float& RMS);
 float GetAverage(TGraphErrors* h, float& RMS, float& mean_e);
@@ -44,8 +45,10 @@ void SpatialIteration() {
 
 
   TFile* file_in[Niter];
-  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/v7/";
-  TString file_name = "s_412_02T";
+  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v4/";
+  TString file_name = "a_90_360_412";
+
+  int col_x_scan = 4;
 
   TGraphErrors* resol_vs_iter     = new TGraphErrors();
   TGraphErrors* resol_vs_iter_sum = new TGraphErrors();
@@ -123,7 +126,7 @@ void SpatialIteration() {
         mean_final->GetEY()[dot] *= 1e6;
       }
       mean_final->Draw("ap");
-      mean_final->GetYaxis()->SetRangeUser(-300., 300);
+      mean_final->GetYaxis()->SetRangeUser(-500., 500);
       mean_final->GetYaxis()->SetTitle("Bias [#mum]");
       mean_final->GetXaxis()->SetTitle("Column");
       c6.cd();
@@ -157,7 +160,7 @@ void SpatialIteration() {
 
       // mean of the residual vs X
       for (auto j = 0; j < 50; ++j) {
-        TH1F* residual = (TH1F*)file_in[i]->Get(Form("resol_histo_Xscan_%i", j));
+        TH1F* residual = (TH1F*)file_in[i]->Get(Form("resol_histo_Xscan_%i_%i",col_x_scan, j));
         if (!residual)
           continue;
         residual->Fit("gaus", "Q");
@@ -176,7 +179,7 @@ void SpatialIteration() {
         sigma_vs_x->SetPoint(sigma_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*sigma);
         sigma_vs_x->SetPointError(sigma_vs_x->GetN()-1, 0, 1e6*sigma_e);
 
-        TH1F* mult = (TH1F*)file_in[i]->Get(Form("mult_histo_Xscan_%i", j));
+        TH1F* mult = (TH1F*)file_in[i]->Get(Form("mult_histo_Xscan_%i_%i",col_x_scan, j));
         if (!mult)
           continue;
         for (auto binId = 1; binId <= mult->GetNbinsX(); ++binId)
@@ -252,28 +255,43 @@ void SpatialIteration() {
   c8.cd();
   c8.SetGridy(1);
   c8.SetGridx(1);
+  TLine* line_s[5];
+  TLine* line_m[5];
+  TLine* line_l[5];
+  for (auto i = 0; i < 5; ++i) {
+    line_s[i] = new TLine(-0.03+i*0.01, 0., -0.03+i*0.01, 400.);
+    line_l[i] = new TLine(-0.03+i*0.01, 0., -0.03+i*0.01, 10.);
+    line_m[i] = new TLine(-0.03+i*0.01, -300., -0.03+i*0.01, 300.);
+  }
+
   mean_vs_x->GetXaxis()->SetRangeUser(-0.03, 0.01);
   mean_vs_x->GetXaxis()->SetTitle("Position [m]");
   mean_vs_x->GetYaxis()->SetRangeUser(-300., 300);
   mean_vs_x->GetYaxis()->SetTitle("Bias [#mum]");
   mean_vs_x->Draw("ap");
+  for (auto i = 0; i < 5; ++i)
+    line_m[i]->Draw();
   c8.Print(prefix_in + "/mean_vs_x.pdf");
 
   c9.cd();
   c9.SetGridy(1);
   c9.SetGridx(1);
   sigma_vs_x->GetXaxis()->SetTitle("Position [m]");
-  sigma_vs_x->GetXaxis()->SetRangeUser(-0.03, 0.01);
+  sigma_vs_x->GetXaxis()->SetRangeUser(-0.031, 0.011);
   sigma_vs_x->GetYaxis()->SetTitle("Resolution [#mum]");
   sigma_vs_x->GetYaxis()->SetRangeUser(0., 400);
   sigma_vs_x->Draw("ap");
+  for (auto i = 0; i < 5; ++i)
+    line_s[i]->Draw();
   c9.Print(prefix_in + "/sigma_vs_x.pdf");
 
   c10.cd();
   mult_vs_x->GetXaxis()->SetTitle("Position [m]");
   mult_vs_x->GetYaxis()->SetTitle("Multiplicity");
-  mult_vs_x->GetXaxis()->SetRangeUser(-0.03, 0.01);
+  mult_vs_x->GetXaxis()->SetRangeUser(-0.031, 0.011);
   mult_vs_x->Draw("colz");
+  for (auto i = 0; i < 5; ++i)
+    line_l[i]->Draw();
   c10.Print(prefix_in + "/mult_vs_x.pdf");
 
   c4.WaitPrimitive();
