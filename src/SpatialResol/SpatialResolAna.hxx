@@ -130,7 +130,7 @@ class SpatialResolAna: public AnalysisBase {
   /// errors vs the PRF value
   static const int prf_error_bins = 10;
   Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.};
-  TAxis* _prf_error_axis = new TAxis(prf_error_bins, prf_error_bins_arr);
+  TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
   TH1F* _uncertainty_prf_bins[prf_error_bins];
   TGraphErrors* _uncertainty_vs_prf_gr;
 

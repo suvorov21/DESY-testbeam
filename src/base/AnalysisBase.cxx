@@ -21,11 +21,29 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _overwrite(false),
   _app(NULL),
   _useCern(false)
-  {
+{
+
+  // TODO redefine CLI.
+  // now written in an ugly way
+  const struct option longopts[] = {
+    {"input",           no_argument,    0,    'i'},  // 0
+    {"output",          no_argument,    0,    'o'},
+    {"batch",           no_argument,    0,    'b'},
+    {"verbose",         no_argument,    0,    'v'},
+    {"rewrite",         no_argument,    0,    'r'},
+    {"correction",      no_argument,    0,    'c'},
+    {"full_track_fit",    no_argument,  0,     0}, // 6
+    {"separate_pad_fit",  no_argument,  0,     0}, // 7
+    {"linear_fit",        no_argument,  0,     0}, // 8
+    {"help",            no_argument,    0,    'h'},
+    {0,                 0,              0,     0}
+  };
+
+  int index;
 
   // read CLI
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bv:drhst:ca");
+    int c = getopt_long(argc, argv, "i:o:bv:drhst:ca", longopts, &index);
     if (c < 0) break;
     switch (c) {
       case 'i' : _file_in_name     = optarg;       break;

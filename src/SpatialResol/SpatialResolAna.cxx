@@ -14,7 +14,7 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
   _do_arc_fit(true),
   _do_full_track_fit(false),
-  _do_separate_pad_fit(true),
+  _do_separate_pad_fit(false),
   // WARNING
   _correction(false),
   _gaussian_residuals(true),
@@ -24,13 +24,37 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   //********************************************************************
 
   // read CLI
+  const struct option longopts[] = {
+    {"input",           no_argument,    0,    'i'},  // 0
+    {"output",          no_argument,    0,    'o'},
+    {"batch",           no_argument,    0,    'b'},
+    {"verbose",         no_argument,    0,    'v'},
+    {"rewrite",         no_argument,    0,    'r'},
+    {"correction",      no_argument,    0,    'c'},
+    {"full_track_fit",    no_argument,  0,     0}, // 6
+    {"separate_pad_fit",  no_argument,  0,     0}, // 7
+    {"linear_fit",        no_argument,  0,     0}, // 8
+    {"help",            no_argument,    0,    'h'},
+    {0,                 0,              0,     0}
+  };
+
+  int index;
+
   optind = 1;
   for (;;) {
-    int c = getopt(argc, argv, "i:o:bv:drmst:ca");
+    int c = getopt_long(argc, argv, "i:o:bv:drmst:ca", longopts, &index);
     if (c < 0) break;
     switch (c) {
+      case 0 :
+       if (index == 6)
+        _do_full_track_fit = true;
+      if (index == 7)
+        _do_separate_pad_fit = true;
+      if (index == 8)
+        _do_arc_fit = false;
+       break;
       case 't' : _iteration        = atoi(optarg);  break;
-      case 'c' : _correction       = false;         break;
+      case 'c' : _correction       = true;         break;
       case 'a' : _invert           = true;          break;
     }
   }
@@ -212,13 +236,14 @@ bool SpatialResolAna::Initialize() {
   _output_vector.push_back(_pos_reco);
   _output_vector.push_back(_ang_reco);
 
+  _uncertainty_vs_prf_gr = new TGraphErrors();
+  _uncertainty_vs_prf_gr->SetName("uncertainty_vs_prf_gr");
+  _output_vector.push_back(_uncertainty_vs_prf_gr);
+
   for (auto j = 0; j < GetMaxColumn(); ++j) {
     _output_vector.push_back(_resol_col_hist[j]);
     _output_vector.push_back(_resol_col_hist_except[j]);
   }
-
-  _uncertainty_vs_prf_gr = new TGraphErrors();
-  _output_vector.push_back(_uncertainty_vs_prf_gr);
 
   if (_do_separate_pad_fit) {
     Double_t arr[4] = {0., .15, .7, 1.01};
@@ -1015,12 +1040,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           int bin = -1 + _prf_scale_axis->FindBin((*it).first);
         // TODO make the definition through constants
           if (bin < 0 || bin > 2)
-            std::cout << "Error bin " << bin << "\t" << (*it).first << std::endl;
+            std::cout << "Error bin 1" << bin << "\t" << (*it).first << std::endl;
           _Fit_quality_plots[bin][it_x]->Fill(abs(track_fit_y - (*it).second.first) / (*it).second.second);
 
           bin = -1 + _prf_error_axis->FindBin((*it).first);
           if (bin < 0 || bin > prf_error_bins)
-            std::cout << "Error bin " << bin << "\t" << (*it).first << std::endl;
+            std::cout << "Error bin 2" << bin << "\t" << (*it).first << std::endl;
 
           _uncertainty_prf_bins[bin]->Fill(track_fit_y - (*it).second.first);
         }
@@ -1247,7 +1272,7 @@ bool SpatialResolAna::WriteOutput() {
 
   _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
 
-  if (_do_separate_pad_fit) {
+  if (_do_separate_pad_fit && _iteration) {
     for (auto prf_bin = 0; prf_bin < prf_error_bins; ++prf_bin) {
       TH1F* res = _uncertainty_prf_bins[prf_bin];
       Float_t mean, sigma, sigma_e;
