@@ -5,6 +5,7 @@
 //#include "CrossingReconstruction.hxx"
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
+#include "TrackFitter.hxx"
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
@@ -17,44 +18,29 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event);
 
-  /// Fit the whole track with CERN method
-  TF1* GetTrackFitCERN(const double* track_pos, const int* mult,
-                        const int miss_id = -1);
-  /// Fit the whole track with ILC method
-  TF1* GetTrackFitILC(const TTrack* track, const double pos,
-                        const int miss_id = -1);
-  /// Firthe whole track with independent pads
-  TF1* GetTrackFitSeparatePad(const std::vector<std::vector<std::pair< double, std::pair<double, double> > > > pos_in_pad,
-                        const int miss_id = -1);
-
-  /// Extract cluster position with CERN method
-  double GetClusterPosCERN(const std::vector<THit*>& col, const int cluster,
-                            const double pos);
-  /// Extract cluster position with ILC method
-  double GetClusterPosILC(const std::vector<THit*>& col, const double pos);
-  /// Fir all the pads independently with PRF
-  double GetTrackPosInPad(const std::vector<THit*>& col, const int cluster,
-                        const double pos,
-                        std::vector<std::vector<std::pair< double, std::pair<double, double> > > >& pos_in_pad);
-
   /// Whether to miss the column in the fitter
   bool MissColumn(int it_x);
   /// Whether the cluster is good for fitting
-  bool UseCluster(const std::vector<THit*>& col);
-
-  /// Get the number of used columns
-  Int_t GetMaxColumn();
+  //bool UseCluster(const std::vector<THit*>& col);
 
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
+
+  bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
+
+  Double_t GetFWHM(const TH1F* h, Double_t& mean);
+
  private:
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
+
+  /// Fitter class for the track and cluster fitting
+  TrackFitter* _fitter;
 
   /// Whether to use arc function for track fitting
   bool    _do_arc_fit;
@@ -75,15 +61,6 @@ class SpatialResolAna: public AnalysisBase {
 
   /// iteration number. Starting from 0
   Int_t   _iteration;
-
-  /// Whether to invert track analysis logic
-  /// E.g. analyse cosmic tracks
-  bool _invert;
-
-  /// Fitting function for track going up
-  TF1*    _circle_function_up;
-  /// Fitting function for track going down
-  TF1*    _circle_function_dn;
 
   TH1F*   _mom_reco;
   TH1F*   _pos_reco;
@@ -129,10 +106,12 @@ class SpatialResolAna: public AnalysisBase {
 
   /// errors vs the PRF value
   static const int prf_error_bins = 10;
-  Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.};
+  Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
   TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
-  TH1F* _uncertainty_prf_bins[prf_error_bins];
+  TH1F* _uncertainty_prf_bins[prf_error_bins-1];
   TGraphErrors* _uncertainty_vs_prf_gr;
+  TGraphErrors* _uncertainty_vs_prf_gr_prev;
+  TH1F*         _uncertainty_vs_prf_histo;
 
 
   /// x scan data
@@ -142,8 +121,12 @@ class SpatialResolAna: public AnalysisBase {
   TAxis* _x_scan_axis;
   TH1F* _resol_col_x_scan[geom::nPadx][x_scan_bin];
   TH1F* _mult_x_scan[geom::nPadx][x_scan_bin];
+  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
 
   TH1F* _resol_col_x_scan_lim_mult[geom::nPadx][x_scan_bin];
+
+  TH2F* _PRF_histo_xscan[4];
+  TGraphErrors* _PRF_graph_xscan[4];
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
@@ -153,8 +136,6 @@ class SpatialResolAna: public AnalysisBase {
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
-
-  const float sigma_pedestal = 9;
 
   // [units are meters]
   const float prf_min     = -0.027;
@@ -167,9 +148,6 @@ class SpatialResolAna: public AnalysisBase {
 
   const float fit_bound_left  = -0.025;
   const float fit_bound_right =  0.025;
-
-  const float default_error   = 0.001;
-  const float one_pad_error   = 0.002;
 };
 
 #endif  // SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_

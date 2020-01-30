@@ -19,6 +19,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _batch(false),
   _test_mode(false),
   _overwrite(false),
+  _invert(false),
   _app(NULL),
   _useCern(false)
 {
@@ -53,6 +54,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
       case 'd' : _test_mode        = true;         break;
       case 'r' : _overwrite        = true;         break;
       case 'h' : help(argv[0]);                    break;
+      case 'a' : _invert           = true;         break;
       case 's' : _store_event_tree = true; break;
       //case '?' : help(argv[0]);
     }
@@ -316,30 +318,6 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     std::cout << std::endl;
 
   return true;
-}
-
-float AnalysisBase::GetYpos(int it_y, bool invert) {
-  if ((!invert && it_y >= geom::nPady) ||
-      (invert && it_y >= geom::nPadx) || it_y < 0) {
-    std::cerr << "ERROR. AnalysisBase::GetYpos(). Wrong Index " <<  it_y << "\t" << invert << std::endl;
-    exit(1);
-  }
-  if (!invert)
-    return geom::y_pos[it_y];
-  else
-    return geom::x_pos[it_y];
-}
-
-float AnalysisBase::GetXpos(int it_x, bool invert) {
-  if ((!invert && it_x >= geom::nPadx) ||
-      (invert && it_x >= geom::nPady) || it_x < 0) {
-    std::cerr << "ERROR. AnalysisBase::GetXpos(). Wrong Index " <<  it_x << "\t" << invert << std::endl;
-    exit(1);
-  }
-  if (!invert)
-    return geom::x_pos[it_x];
-  else
-    return geom::y_pos[it_x];
 }
 
 bool AnalysisBase::ProcessEvent(const TEvent* event) {

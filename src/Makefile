@@ -32,13 +32,14 @@ ifeq ($(TYPE), TEST)
 	OutPutSuf=exe.test
 endif
 # add include folders
-CXXFLAGS += -I./base/DataStorage/ -I./base/ -I./Reconstruction/ -I../utils/
+CXXFLAGS += -I./base/DataStorage/ -I./base/ -I./Reconstruction/ -I./utils/
 
 BASESRC 		= 	base/
 BASEDATASRC = 	base/DataStorage/
 BASESEL 		=		Reconstruction/
+UTILS 			= 	utils/
 #SRC 				= 	$(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf)))
-SRC 				= 	$(notdir $(wildcard $(BASEDATASRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf)))
+SRC 				= 	$(notdir $(wildcard $(BASEDATASRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESRC)/*.$(SrcSuf))) $(notdir $(wildcard $(BASESEL)/*.$(SrcSuf))) $(notdir $(wildcard $(UTILS)/*.$(SrcSuf)))
 OBJ 				= 	$(OBJDIR)$(DICT).$(ObjSuf) $(addprefix $(OBJDIR)/, $(SRC:.$(SrcSuf)=.$(ObjSuf)))
 
 $(info Beginning of compilation)

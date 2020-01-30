@@ -78,21 +78,26 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
   double alpha = 0.625;
   for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
     TTrack* itrack = event->GetTracks()[trkID];
-    if(_verbose == 2){
-      std::cout << "sel::GetNonZeroCols(event,trkID).size(): " << sel::GetNonZeroCols(itrack).size() << std::endl;
-      std::cout << "sel::GetNonZeroRows(event,trkID).size(): " << sel::GetNonZeroRows(itrack).size() << std::endl;
+    if(_verbose > 1){
+      std::cout << "sel::GetNonZeroCols(event,trkID).size(): ";
+      std::cout << sel::GetNonZeroCols(itrack, _invert).size() << std::endl;
+      std::cout << "sel::GetColsMaxSep(event,trkID).size():  ";
+      std::cout << sel::GetColsMaxSep(itrack, _invert) << std::endl;
+      std::cout << "sel::GetColsMaxGap(event,trkID).size():  ";
+      std::cout << sel::GetColsMaxGap(itrack, _invert) << std::endl;
     }
-    if(sel::GetNonZeroCols(itrack).size() != 36) return false;
-    if(sel::GetColsMaxSep(itrack)>8) return false;
-    if (sel::GetColsMaxGap(itrack) > 0) return false;
-    std::vector<double> fit_v = sel::GetFitParams(itrack);
-    if(fit_v[0]>1.0e6) return false;
-    if (abs(fit_v[2]) > 0.08) return false;
+
+    if (!sel::CrossingTrackSelection(itrack, _invert, _verbose))
+      continue;
 
     _store_event = true;
 
-    std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack);
-    _XZ_bias->Fill(fit_xz[2]*0.0028 * 36.);
+    // cut fir slope in XZ
+    /*if (_invert) {
+      if (abs(fit_xz[2]*0.0028*32) > 0.2) return false;
+      _XZ_bias->Fill(fit_xz[2]*0.0028*32);
+    } else
+      _XZ_bias->Fill(fit_xz[2]*0.0028*geom::GetMaxColumn(_invert));*/
 
     //sel::Get3DFitParams(itrack);
 
@@ -102,9 +107,9 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     if (_test_mode)
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
     std::vector <double> QsegmentS;
-    for(auto col:itrack->GetCols()) if(col.size()){
+    for(auto col:itrack->GetCols(_invert)) if(col.size()){
       int colQ = 0;
-      auto it_x = col[0]->GetCol();
+      auto it_x = col[0]->GetCol(_invert);
       std::vector <double> Qpads;
       int z_max, x_max, q_max;
       z_max = x_max = q_max = 0;
@@ -115,11 +120,13 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
         if (h->GetQ() > q_max) {
           q_max = h->GetQ();
           z_max = h->GetTime();
-          x_max = h->GetCol();
+          x_max = h->GetCol(_invert);
         }
       }
-      if (colQ) _XZ_leading->Fill(z_max, x_max);
-      if (colQ) QsegmentS.push_back(colQ);
+      if (colQ) {
+        _XZ_leading->Fill(z_max, x_max);
+        QsegmentS.push_back(colQ);
+      }
       _un_trunk_cluster->Fill(colQ);
 
       if (col.size() != 0 && col.size() <= _charge_per_mult.size())
