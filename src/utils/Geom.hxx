@@ -2,6 +2,10 @@
 #ifndef Geom_h
 #define Geom_h
 
+/** @cond */
+#include <iostream>
+/** @endcond */
+
 //           31 ___________
 //             |           |
 //             |           |
@@ -40,6 +44,12 @@ namespace geom
 
 
     static const int Nsamples = 511;
+
+    float GetYpos(int it_y, bool invert = false);
+
+    float GetXpos(int it_x, bool invert = false);
+
+    int GetMaxColumn(bool invert = false);
 
     // To represent geometry on canvas
     /*

@@ -22,12 +22,12 @@ def main():
   bin_name  = "SpatialResol.exe"
   bin_flag  = "-b"
 
-  input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
-  #input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  input_version = "v1"
+  #input_prefix  = "/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/"
+  input_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
+  input_version = "nom_v4"
 
   outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-  outpt_version = "nom_v3"
+  outpt_version = "test"
   output_post   = ""
 
   # espresso     = 20 minutes
@@ -46,7 +46,7 @@ def main():
     print("Submit and launch should not be executed together")
     return 0
 
-  temp = "/temp_1/"
+  temp = "/temp_0/"
 
   parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
   parser.add_argument("-f", metavar="f", type=str,
@@ -57,9 +57,19 @@ def main():
 
   project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../")
   if os.path.exists(project_path + "/script/" + temp):
+    print("Rewriting the temp folder ", project_path + "/script/" + temp)
     shutil.rmtree(project_path + "/script/" + temp)
-  os.mkdir(project_path + "/script/" + temp);
+    os.mkdir(project_path + "/script/" + temp);
+  else:
+    print("Creating the temp folder ", project_path + "/script/" + temp)
+    os.mkdir(project_path + "/script/" + temp);
 
+  if not os.path.exists(outpt_prefix + outpt_version):
+    print("Creating the output folder")
+    os.mkdir(outpt_prefix + outpt_version)
+
+
+  print("Creating tasks")
   with open(args.f) as fl:
     i = 0
     # for each input file

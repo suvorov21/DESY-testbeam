@@ -15,8 +15,8 @@
 #include <fstream>  // read file lists
 
 // project
-#include "../utils/SetT2KStyle.hxx"
-#include "../utils/Geom.hxx"
+#include "../src/utils/SetT2KStyle.hxx"
+#include "../src/utils/Geom.hxx"
 
 void help(std::string name);
 

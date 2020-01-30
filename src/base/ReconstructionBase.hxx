@@ -10,8 +10,6 @@
 #include <fstream>   // read file lists
 /** @endcond */
 
-#include "THit.hxx"
-#include "TTrack.hxx"
 #include "TEvent.hxx"
 #include "Geom.hxx"
 

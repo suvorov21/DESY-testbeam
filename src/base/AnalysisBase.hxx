@@ -34,10 +34,6 @@ class AnalysisBase {
   virtual bool WriteOutput();
   virtual void DrawSelection(const TEvent *event, int trackID);
 
-  /// Call geometry functions
-  float GetYpos(int it_y, bool inverse = false);
-  float GetXpos(int it_x, bool inverse = false);
-
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   /// Print usage
@@ -48,8 +44,10 @@ class AnalysisBase {
   void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
-  AnalysisBase(const AnalysisBase& ana){std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
-  bool operator==(const AnalysisBase* ana){std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+  AnalysisBase(const AnalysisBase& ana){(void)ana;
+    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+  bool operator==(const AnalysisBase* ana){(void)ana;
+    std::cerr << "Comparison is depricated" << std::endl; exit(1);}
 
  protected:
 
@@ -89,6 +87,10 @@ class AnalysisBase {
   bool _batch;
   bool _test_mode;
   bool _overwrite;
+
+  /// Whether to invert track analysis logic
+  /// E.g. analyse cosmic tracks
+  bool _invert;
 
   TApplication* _app;
   TStopwatch* _sw_event;
