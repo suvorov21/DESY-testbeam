@@ -211,6 +211,7 @@ double TrackFitter::GetClusterPosCERN(const std::vector<THit*>& col,
 }
 
 // BUG PRF limitation is not implemented in the ILC fitting procedure
+// At the moment consider usage of the Gaus-Lorentzian w/o limitation
 //********************************************************************
 double TrackFitter::GetClusterPosILC(const std::vector<THit*>& col,
   const double pos) {
@@ -418,14 +419,9 @@ TF1* TrackFitter::GetTrackFitILC(const TTrack* track, const double pos,
       auto it_x = col[0]->GetCol(_invert);
       auto x    = geom::GetXpos(it_x, _invert);
 
-      // BUG
-      // ommit first and last
-      /*if (MissColumn(it_x))
+      // TODO this is redefinition of the SpaceResolution::MissColumn()
+      if (it_x == 0 || it_x == geom::GetMaxColumn(_invert)-1)
         continue;
-
-      if (!UseCluster(col))
-        continue;
-      */
 
       if (it_x == miss_id)
         continue;
@@ -472,10 +468,6 @@ TF1* TrackFitter::GetTrackFitILC(const TTrack* track, const double pos,
 
   float quality_dn, quality_up;
   quality_dn = quality_up = 1.e9;
-
-  // BUG
-  //_sw_partial[2]->Stop();
-  //_sw_partial[3]->Start(false);
 
   ROOT::Math::Functor fcn(chi2Function,4);
   ROOT::Fit::Fitter  fitter_dn;

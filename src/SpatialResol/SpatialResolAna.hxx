@@ -59,6 +59,9 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to assign uncertainty to charge
   bool _charge_uncertainty;
 
+  /// Whether to use Gaussian lorentzian PRf fit over polynomial
+  bool _gaus_lorentz_PRF;
+
   /// iteration number. Starting from 0
   Int_t   _iteration;
 

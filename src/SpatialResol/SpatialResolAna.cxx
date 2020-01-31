@@ -16,6 +16,7 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   _correction(false),
   _gaussian_residuals(true),
   _charge_uncertainty(true),
+  _gaus_lorentz_PRF(false),
   _iteration(-1){
   //********************************************************************
 
@@ -30,6 +31,7 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
     {"full_track_fit",    no_argument,  0,     0}, // 6
     {"separate_pad_fit",  no_argument,  0,     0}, // 7
     {"linear_fit",        no_argument,  0,     0}, // 8
+    {"gaus_lorentz",      no_argument,  0,     0}, // 9
     {"help",            no_argument,    0,    'h'},
     {0,                 0,              0,     0}
   };
@@ -42,12 +44,14 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
     if (c < 0) break;
     switch (c) {
       case 0 :
-       if (index == 6)
-        _do_full_track_fit = true;
-      if (index == 7)
-        _do_separate_pad_fit = true;
-      if (index == 8)
-        _do_arc_fit = false;
+        if (index == 6)
+          _do_full_track_fit = true;
+        if (index == 7)
+          _do_separate_pad_fit = true;
+        if (index == 8)
+          _do_arc_fit = false;
+        if (index == 9)
+          _gaus_lorentz_PRF = true;
        break;
       case 't' : _iteration        = atoi(optarg);  break;
       case 'c' : _correction       = true;         break;
@@ -145,34 +149,35 @@ bool SpatialResolAna::Initialize() {
       exit(1);
     }
   } else {
-/*
-    _PRF_function = new TF1("PRF_function",
-      " [0] * exp(-4*TMath::Log(2)*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
-    _PRF_function->SetParName(0, "Const");
-    _PRF_function->SetParName(1, "r");
-    _PRF_function->SetParName(2, "w");
+    if (_gaus_lorentz_PRF) {
+      _PRF_function = new TF1("PRF_function",
+        " [0] * exp(-4*TMath::Log(2)*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
+      _PRF_function->SetParName(0, "Const");
+      _PRF_function->SetParName(1, "r");
+      _PRF_function->SetParName(2, "w");
 
-    auto c = 1.;
-    auto r = 0.5;
-    auto s = 0.005;
-    _PRF_function->SetParameters(c, r, s);
+      auto c = 1.;
+      auto r = 0.5;
+      auto s = 0.005;
+      _PRF_function->SetParameters(c, r, s);
 
-*/
-    _PRF_function  = new TF1("PRF_function",
-      "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)",
-      prf_min, prf_max);
-    _PRF_function->SetParName(0, "Const");
-    _PRF_function->SetParName(1, "a2");
-    _PRF_function->SetParName(2, "a4");
-    _PRF_function->SetParName(3, "b2");
-    _PRF_function->SetParName(4, "b4");
+    } else {
+      _PRF_function  = new TF1("PRF_function",
+        "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)",
+        prf_min, prf_max);
+      _PRF_function->SetParName(0, "Const");
+      _PRF_function->SetParName(1, "a2");
+      _PRF_function->SetParName(2, "a4");
+      _PRF_function->SetParName(3, "b2");
+      _PRF_function->SetParName(4, "b4");
 
-    double co = 1.;
-    double a2 = 2.35167e3;
-    double a4 = 6.78962e7;
-    double b2 = 3.36748e3;
-    double b4 = 6.45311e8;
-    _PRF_function->SetParameters(co, a2, a4, b2, b4);
+      double co = 1.;
+      double a2 = 2.35167e3;
+      double a4 = 6.78962e7;
+      double b2 = 3.36748e3;
+      double b4 = 6.45311e8;
+      _PRF_function->SetParameters(co, a2, a4, b2, b4);
+    }
 
     if (_do_full_track_fit)
       _PRF_function->FixParameter(0, 1.);
@@ -447,10 +452,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (!cluster[it_x] || !charge_max[it_x])
         continue;
 
-      // cluster usage cut. e.g. max charge
-      //if (!UseCluster(col))
-      //  continue;
-
       ++Ndots;
 
       track_pos[it_x] = _fitter->FitCluster(col,
@@ -474,6 +475,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     TF1* fit = NULL;
     fit = _fitter->FitTrack(track_pos, cluster_N, track,
                             track_pos[1], pos_in_pad);
+
+    if (!fit)
+      continue;
+
     // TODO review this mess
     if (fit && _do_full_track_fit)
       fit = (TF1*)fit->Clone();
@@ -481,12 +486,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     double quality = fit->GetChisquare() / fit->GetNDF();
     _Chi2_track->Fill(quality);
 
-
     if (_verbose > 3)
       std::cout << "Track fit done" << std::endl;
-
-    if (!fit)
-      continue;
 
     TString func = fit->GetName();
 
@@ -507,13 +508,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         fit1[i] = _fitter->FitTrack(track_pos, cluster_N, track, track_pos[1],
           pos_in_pad, i);
         // TODO review this mess
-     /*   if (_do_full_track_fit)
-          fit1[i] = (TF1*)GetTrackFitILC(track, track_pos[1], i)->Clone();
-        else if (_do_separate_pad_fit)
-          fit1[i] = GetTrackFitSeparatePad(pos_in_pad, i);
-        else
-          fit1[i] = GetTrackFitCERN(track_pos, cluster_N, i);
-*/
+        if (_do_full_track_fit)
+          fit1[i] = (TF1*)fit1[i]->Clone();
       }
     }
 
@@ -586,7 +582,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       } else
         a_peak_fit[it_x] = 1.*cluster[it_x];
 
-      // fill pad accurace
+      // fill pad accuracy
       if (_do_separate_pad_fit) {
         for (auto it = pos_in_pad[it_x].begin();
                   it < pos_in_pad[it_x].end();
@@ -654,8 +650,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         delete fit1[i];
         fit1[i] = NULL;
       }
-    //  delete track_1[i];
-    //}
+
     delete fit;
 
     if(_test_mode) this->DrawSelectionCan(event,trackId);
