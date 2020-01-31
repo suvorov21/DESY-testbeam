@@ -163,6 +163,8 @@ coverage:
     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 0 -i input/input.root -o Spatial_test_v2_iter0.root -v 0
     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 1 -i input/input.root -o Spatial_test_v2_iter1.root -v 0
     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 2 -i input/input.root -o Spatial_test_v2_iter2.root -v 1
+    - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 0 -i input/input.root -o Spatial_test_v3_iter0.root -v 0
+    - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 1 -i input/input.root -o Spatial_test_v3_iter1.root -v 0
     - ./bin/dEdx.exe -b -i input_vertical.root -o output/dEdx_test_vert_iter0.root -v 1 -a
     - cp obj/*.gc?? src/; cd src
     - lcov --no-external -c -d . --output-file coverage_total.info
