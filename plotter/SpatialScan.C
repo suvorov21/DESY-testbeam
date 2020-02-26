@@ -6,8 +6,8 @@
 #include "TGraphErrors.h"
 #include "TString.h"
 
-#include "../utils/Geom.hxx"
-#include "../utils/SetT2KStyle.hxx"
+#include "../src/utils/Geom.hxx"
+#include "../src/utils/SetT2KStyle.hxx"
 
 using namespace std;
 
@@ -40,10 +40,10 @@ void SpatialScan() {
   TString mag       = "02T";
   TString drift     = "530";
 
-  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v3/";
+  TString input_prefix = "/eos/user/s/ssuvorov/DESY_testbeam/phi_merge/";
   vector<pair<TString, Int_t> > file_name_scan;
 
-  auto scan_id = 1;
+  auto scan_id = 5;
   TString scan_axis = "";
   TString file_name = input_prefix + "SR";
 
@@ -87,6 +87,20 @@ void SpatialScan() {
       scan_axis = "Momentum [GeV/c]";
       file_name += "_m_" + peack;
       break;
+    case 5:
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_00" + "_iter" + TString::Itoa(Niter, 10) + ".root", 0));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_10" + "_iter" + TString::Itoa(Niter, 10) + ".root", 10));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_20" + "_iter" + TString::Itoa(Niter, 10) + ".root", 20));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_30" + "_iter" + TString::Itoa(Niter, 10) + ".root", 30));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_40" + "_iter" + TString::Itoa(Niter, 10) + ".root", 40));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_50" + "_iter" + TString::Itoa(Niter, 10) + ".root", 50));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_60" + "_iter" + TString::Itoa(Niter, 10) + ".root", 60));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_70" + "_iter" + TString::Itoa(Niter, 10) + ".root", 70));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_80" + "_iter" + TString::Itoa(Niter, 10) + ".root", 80));
+      file_name_scan.push_back(make_pair(input_prefix + "phi_" + peack + "_90" + "_iter" + TString::Itoa(Niter, 10) + ".root", 90));
+      scan_axis = "#phi [deg]";
+      file_name += "_phi_" + peack;
+      break;
   }
   file_name += ".root";
   auto out_file = new TFile(file_name, "RECREATE");
@@ -101,10 +115,24 @@ void SpatialScan() {
   std::vector<TGraphErrors*> resol_final;
   std::vector<TGraphErrors*> mean_final;
 
+  TGraphErrors *resol_gr, *mean_gr;
+
   for (auto pair:file_name_scan) {
     TFile* f = new TFile(pair.first.Data(), "READ");
-    resol_final.push_back((TGraphErrors*)f->Get("resol_final")->Clone(Form("r_%i", pair.second)));
-    mean_final.push_back((TGraphErrors*)f->Get("mean")->Clone(Form("m_%i", pair.second)));
+    if (!f)
+      continue;
+
+    resol_gr = (TGraphErrors*)f->Get("resol_final");
+    mean_gr  = (TGraphErrors*)f->Get("mean");
+
+    if (!resol_gr || !mean_gr)
+      continue;
+
+    resol_gr = (TGraphErrors*)resol_gr->Clone(Form("r_%i", pair.second));
+    mean_gr  = (TGraphErrors*)mean_gr->Clone(Form("m_%i", pair.second));
+
+    resol_final.push_back(resol_gr);
+    mean_final.push_back(mean_gr);
 
     // scale to um
     for (int dot = 0; dot < (*(resol_final.end() - 1))->GetN(); dot++) {
@@ -149,6 +177,8 @@ void SpatialScan() {
   resol_vs_dist_e->Draw("p same");
 
   resol_vs_dist->GetYaxis()->SetRangeUser(0., 400.);
+  if (scan_id == 5)
+    resol_vs_dist->GetYaxis()->SetRangeUser(0., 1900.);
   //resol_vs_dist->GetXaxis()->SetRangeUser(400., 600.);
   resol_vs_dist->GetXaxis()->SetTitle(scan_axis);
   resol_vs_dist->GetYaxis()->SetTitle("Resolution [#mum]");

@@ -7,8 +7,8 @@
 #include "TString.h"
 #include "TLine.h"
 
-#include "../utils/Geom.hxx"
-#include "../utils/SetT2KStyle.hxx"
+#include "../src/utils/Geom.hxx"
+#include "../src/utils/SetT2KStyle.hxx"
 
 using namespace std;
 
@@ -45,8 +45,8 @@ void SpatialIteration() {
 
 
   TFile* file_in[Niter];
-  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/nom_v4/";
-  TString file_name = "a_90_360_412";
+  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/";
+  TString file_name = "y_200";
 
   int col_x_scan = 4;
 
@@ -206,7 +206,7 @@ void SpatialIteration() {
   c1.SetGridy(1);
   resol_vs_iter->GetXaxis()->SetRangeUser(-1., Niter + 1);
   resol_vs_iter->GetXaxis()->SetTitle("Iteration");
-  resol_vs_iter->GetYaxis()->SetRangeUser(-0., 500);
+  resol_vs_iter->GetYaxis()->SetRangeUser(-0., 1500);
   resol_vs_iter->GetYaxis()->SetTitle("Resolution [#mum]");
   resol_vs_iter->Draw("ap >");
   resol_vs_iter_e->Draw("p same");
