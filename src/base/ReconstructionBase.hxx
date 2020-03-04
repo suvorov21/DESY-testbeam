@@ -6,11 +6,10 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>  // getopt on Mac
+#include <getopt.h>
 #include <fstream>   // read file lists
 /** @endcond */
 
-#include "THit.hxx"
-#include "TTrack.hxx"
 #include "TEvent.hxx"
 #include "Geom.hxx"
 

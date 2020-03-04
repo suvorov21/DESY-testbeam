@@ -14,8 +14,8 @@
 #include <fstream>  // read file lists
 
 // project
-#include "../utils/SetT2KStyle.hxx"
-#include "../utils/Geom.hxx"
+#include "../src/utils/SetT2KStyle.hxx"
+#include "../src/utils/Geom.hxx"
 
 void help(std::string name);
 
@@ -160,6 +160,7 @@ int main(int argc, char** argv) {
 
   // Draw in case of non-batch run
   if (!batch) {
+    MaxAmpl_h->Draw("colz");
     c1->WaitPrimitive();
     exit(1);
   }

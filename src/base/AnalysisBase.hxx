@@ -44,8 +44,10 @@ class AnalysisBase {
   void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
-  AnalysisBase(const AnalysisBase& ana){std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
-  bool operator==(const AnalysisBase* ana){std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+  AnalysisBase(const AnalysisBase& ana){(void)ana;
+    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+  bool operator==(const AnalysisBase* ana){(void)ana;
+    std::cerr << "Comparison is depricated" << std::endl; exit(1);}
 
  protected:
 
@@ -85,6 +87,10 @@ class AnalysisBase {
   bool _batch;
   bool _test_mode;
   bool _overwrite;
+
+  /// Whether to invert track analysis logic
+  /// E.g. analyse cosmic tracks
+  bool _invert;
 
   TApplication* _app;
   TStopwatch* _sw_event;

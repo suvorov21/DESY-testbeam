@@ -5,6 +5,7 @@
 //#include "CrossingReconstruction.hxx"
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
+#include "TrackFitter.hxx"
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
@@ -17,47 +18,52 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event);
 
-  /// Fit the whole track with CERN method
-  TF1* GetTrackFitCERN(const double* track_pos, const int* mult, const int miss_id = -1);
-  /// Fit the whole track with ILC method
-  TF1* GetTrackFitILC(const TTrack* track, const double pos, const int miss_id = -1);
-
-  /// Extract cluster position with CERN method
-  double GetClusterPosCERN(const std::vector<THit*> col, const int cluster, const double pos);
-  /// Extract cluster position with ILC method
-  double GetClusterPosILC(const std::vector<THit*> col, const double pos);
-
   /// Whether to miss the column in the fitter
   bool MissColumn(int it_x);
   /// Whether the cluster is good for fitting
-  bool UseCluster(const std::vector<THit*> col);
+  //bool UseCluster(const std::vector<THit*>& col);
 
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
+
+  bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
+
+  Double_t GetFWHM(const TH1F* h, Double_t& mean);
+
  private:
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
 
+  /// Fitter class for the track and cluster fitting
+  TrackFitter* _fitter;
+
   /// Whether to use arc function for track fitting
   bool    _do_arc_fit;
   /// Whether to use full track fitting
   bool    _do_full_track_fit;
 
+  /// Whether fit all the pads separatly
+  bool _do_separate_pad_fit;
+
   /// Whether to apply correction of spatial resolution (take geometrical mean)
   bool    _correction;
 
+  /// Whether to fit residuals with Gaussian
+  bool _gaussian_residuals;
+
+  /// Whether to assign uncertainty to charge
+  bool _charge_uncertainty;
+
+  /// Whether to use Gaussian lorentzian PRf fit over polynomial
+  bool _gaus_lorentz_PRF;
+
   /// iteration number. Starting from 0
   Int_t   _iteration;
-
-  /// Fitting function for track going up
-  TF1*    _circle_function_up;
-  /// Fitting function for track going down
-  TF1*    _circle_function_dn;
 
   TH1F*   _mom_reco;
   TH1F*   _pos_reco;
@@ -81,13 +87,13 @@ class SpatialResolAna: public AnalysisBase {
   TH1F* _resol_col_hist_3pad[geom::nPadx];
   TH1F* _resol_col_hist_3pad_except[geom::nPadx];
 
-  TH1F* _residual_mean;
-  TH1F* _residual_sigma;
+  TGraphErrors* _residual_mean;
+  TGraphErrors* _residual_sigma;
   // TH1F* _residual_sigma_2pad;
   // TH1F* _residual_sigma_3pad;
 
-  TH1F* _residual_sigma_unbiased;
-  TH1F* _residual_sigma_biased;
+  TGraphErrors* _residual_sigma_unbiased;
+  TGraphErrors* _residual_sigma_biased;
 
   /// PRF histoes
   TH2F* _PRF_histo;
@@ -97,6 +103,34 @@ class SpatialResolAna: public AnalysisBase {
 
   TH2F* _PRF_histo_col[geom::nPadx];
 
+  /// separate pad fit study
+  TH1F* _Fit_quality_plots[3][geom::nPadx];
+  TAxis* _prf_scale_axis;
+
+  /// errors vs the PRF value
+  static const int prf_error_bins = 10;
+  Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
+  TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
+  TH1F* _uncertainty_prf_bins[prf_error_bins-1];
+  TGraphErrors* _uncertainty_vs_prf_gr;
+  TGraphErrors* _uncertainty_vs_prf_gr_prev;
+  TH1F*         _uncertainty_vs_prf_histo;
+
+
+  /// x scan data
+  static const int x_scan_bin = 50;
+  const float x_scan_min = -0.035;
+  const float x_scan_max = 0.015;
+  TAxis* _x_scan_axis;
+  TH1F* _resol_col_x_scan[geom::nPadx][x_scan_bin];
+  TH1F* _mult_x_scan[geom::nPadx][x_scan_bin];
+  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
+
+  TH1F* _resol_col_x_scan_lim_mult[geom::nPadx][x_scan_bin];
+
+  TH2F* _PRF_histo_xscan[4];
+  TGraphErrors* _PRF_graph_xscan[4];
+
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
 
@@ -105,28 +139,18 @@ class SpatialResolAna: public AnalysisBase {
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
-/*
-  /// Chi2 track scan delta
-  const float   scan_delta    = 0.001;
-  /// Chi2 track scan steps
-  const int     scan_Nsteps   = 100;
-  /// Chi2 track scan step
-  const double  scan_step     = 2. * scan_delta / scan_Nsteps;
-*/
+
   // [units are meters]
   const float prf_min     = -0.027;
   const float prf_max     = 0.027;
   const int   prf_bin     = 180;
 
-  const float resol_min   = -0.008;
-  const float resol_max   = 0.008;
+  const float resol_min   = -0.004;
+  const float resol_max   = 0.004;
   const int   resol_bin   = 200.;
 
-  const float fit_bound_left  = -0.015;
-  const float fit_bound_right =  0.015;
-
-  const float default_error   = 0.001;
-  const float one_pad_error   = 0.002;
+  const float fit_bound_left  = -0.025;
+  const float fit_bound_right =  0.025;
 };
 
 #endif  // SRC_SPATIALRESOL_SPATIALRESOLANA_HXX_

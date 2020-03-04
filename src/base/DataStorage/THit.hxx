@@ -1,7 +1,9 @@
 #ifndef SRC_CLASS_THIT_HXX_
 #define SRC_CLASS_THIT_HXX_
 
+/** @cond */
 #include "TROOT.h"
+/** @endcond */
 
 /// Class for storing information about each reconstructed hit. Store row, column, charge and time
 class THit : public TObject{
@@ -11,8 +13,8 @@ class THit : public TObject{
   void SetTime(int time)  {ft = time;}
   void SetQ(int Q)        {fq = Q;}
 
-  int GetRow()    const   {return fr;}
-  int GetCol()    const   {return fc;}
+  int GetRow(bool invert = false)    const;
+  int GetCol(bool invert = false)    const;
   int GetTime()   const   {return ft;}
   int GetQ()      const   {return fq;}
 

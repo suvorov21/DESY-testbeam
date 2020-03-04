@@ -71,6 +71,12 @@ SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
 ## Data structure
 The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
 
+In order to speedup the analysis we implemented a feature to save the TEvent class itself. It means that the reconstruction and selection could be run once and the events that passed the selection would be saved in the TEvent format. In order to do this, run the executable with flag "-c"
+```bash
+./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root -c
+```
+The output_path/input_file.root will be created that could be later used as an input. The analysis package will recognise automatically which format is used for the input file.
+
 ## Script submission
 To submit script at the LXPLUS please use the script/submitter.py. It creates list of tasks and submit them to condor system. At the beginning of the file you can specify the input and output paths, versions, number of iterations (if any), job flavor and log folder. As an input you need list of input/output files: two columns separated with at least one space. Run the submitter as following:
 ```bash

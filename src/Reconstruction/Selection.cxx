@@ -3,29 +3,60 @@
 
 #include "Selection.hxx"
 
-int sel::GetColsMaxSep(const TTrack* track){
+bool sel::CrossingTrackSelection( const TTrack* track,
+                                  bool invert,
+                                  int verbose) {
+
+  if(sel::GetNonZeroCols(track, invert).size() !=
+    (uint)geom::GetMaxColumn(invert)) return false;
+  if(sel::GetColsMaxSep(track, invert)>8) return false;
+  if (sel::GetColsMaxGap(track, invert) > 0) return false;
+
+  std::vector<double> fit_v = sel::GetFitParams(track, invert);
+  std::vector<double> fit_xz = sel::GetFitParamsXZ(track, invert);
+
+  if(fit_v[0]>1.0e6) return false;
+
+  if (abs(fit_v[2]) > sel::horizontal_cut) return false;
+
+  if (invert)
+    if (abs(fit_xz[2] * sel::v_drift_est) > 0.625) return false;
+
+
+  if (verbose > 1)
+    std::cout << "selected" << std::endl;
+
+  return true;
+}
+
+
+
+int sel::GetColsMaxSep(const TTrack* track, bool invert){
   int maxsep = 0;
-  for(auto col:track->GetCols()) if(col.size()){
-    std::sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetRow() < hit2->GetRow();});
-    int diff = (*(col.end()-1))->GetRow() - (*col.begin())->GetRow();
+  for(auto col:track->GetCols(invert)) if(col.size()){
+    std::sort(col.begin(), col.end(), [&](THit* hit1, THit* hit2){return hit1->GetRow(invert) < hit2->GetRow(invert);});
+    int diff = (*(col.end()-1))->GetRow(invert) - (*col.begin())->GetRow(invert);
     if (diff > maxsep) maxsep = diff;
   }
   return maxsep+1;
 }
 
-int sel::GetColsMaxGap(const TTrack* track){
+int sel::GetColsMaxGap(const TTrack* track, bool invert){
   int maxgap  = 0;
-  for(auto col:track->GetCols()) if(col.size()){
-    std::sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetRow() < hit2->GetRow();});
+  for(auto col:track->GetCols(invert)) if(col.size()){
+    std::sort(col.begin(), col.end(), [&](THit* hit1, THit* hit2){return hit1->GetRow(invert) < hit2->GetRow(invert);});
     for (uint padID = 1; padID < col.size(); ++padID) {
-      if (col[padID]->GetRow() - col[padID-1]->GetRow()-1 > maxgap)
-        maxgap = col[padID]->GetRow() - col[padID-1]->GetRow()-1;
+      if (col[padID]->GetRow(invert) - col[padID-1]->GetRow(invert)-1 > maxgap)
+        maxgap = col[padID]->GetRow(invert) - col[padID-1]->GetRow(invert)-1;
     }
   }
   return maxgap;
 }
 
-std::vector <double> sel::GetNonZeroRows(const TTrack* track){
+std::vector <double> sel::GetNonZeroRows(const TTrack* track, bool invert){
+  if (invert)
+    return GetNonZeroCols(track, false);
+
   std::vector <double> rows;
   for(auto row:track->GetRows()) if(row.size()){
     int rowQ = 0;
@@ -35,7 +66,10 @@ std::vector <double> sel::GetNonZeroRows(const TTrack* track){
   return rows;
 }
 
-std::vector <double> sel::GetNonZeroCols(const TTrack* track){
+std::vector <double> sel::GetNonZeroCols(const TTrack* track, bool invert){
+  if (invert)
+    return GetNonZeroRows(track, false);
+
   std::vector <double> cols;
   for(auto col:track->GetCols()) if(col.size()){
     int colQ = 0;
@@ -45,11 +79,60 @@ std::vector <double> sel::GetNonZeroCols(const TTrack* track){
   return cols;
 }
 
-std::vector <double> sel::GetFitParams(const TTrack* track){
+std::vector <double> sel::GetFitParams(const TTrack* track, bool invert){
   std::vector <double> params;
 
-  TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  for(auto h:track->GetHits()) if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::nPadx,0,geom::nPadx);
+  for(auto h:track->GetHits())
+    if(h->GetQ()) {
+      if (!invert)
+        MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+      else
+        MM->Fill(h->GetRow(),h->GetCol(),h->GetQ());
+    }
+
+  MM->Fit("pol1", "Q");
+  TF1* fit = MM->GetFunction("pol1");
+
+  double quality = 1.0e10;
+  if (fit){
+    quality = fit->GetChisquare() / fit->GetNDF();
+    double b = fit->GetParameter(0);
+    double k = fit->GetParameter(1);
+    params.push_back(quality);
+    params.push_back(b);
+    params.push_back(k);
+  }
+
+  delete MM;
+  return params;
+}
+
+std::vector <double> sel::GetFitParamsXZ(const TTrack* track, bool invert){
+  std::vector <double> params;
+
+  TH2F    *MM      = new TH2F("MM","MM",geom::nPadx,0,geom::nPadx,geom::Nsamples,0,geom::Nsamples);
+  for(auto col:track->GetCols(invert)) { //if(h->GetQ()) MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    auto q_lead = 0;
+    auto x_lead = 0;
+    auto y_lead = 0;
+    auto z_lead = 0;
+    for (auto hit:col) if (hit->GetQ()) {
+      if (hit->GetQ() > q_lead) {
+        q_lead = hit->GetQ();
+        x_lead = hit->GetCol();
+        y_lead = hit->GetRow();
+        z_lead = hit->GetTime();
+      }
+    }
+
+    if (q_lead) {
+      if (!invert)
+        MM->Fill(x_lead, z_lead);
+      else
+        MM->Fill(y_lead, z_lead);
+    }
+  }
 
   MM->Fit("pol1", "Q");
   TF1* fit = MM->GetFunction("pol1");
@@ -143,8 +226,9 @@ struct SumDistance2 {
 
 };
 
-std::vector<double> sel::Get3DFitParams(const TTrack* track)
+std::vector<double> sel::Get3DFitParams(const TTrack* track, bool invert)
 {
+  (void)invert;
   gStyle->SetOptStat(0);
   gStyle->SetOptFit();
 
