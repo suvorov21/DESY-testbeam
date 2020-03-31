@@ -130,7 +130,7 @@ dEdx_raw_test:
   script:
     - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
     - cd test/; make dEdx_test;
-    - ./dEdx_test.exe ../dEdx_test_iter0.root;
+    - ./dEdx_test.exe ../dEdx_test.root;
   artifacts:
     paths:
       # - obj/*.gcda
@@ -147,7 +147,7 @@ dEdx_TEvent_test:
     - ./build/dEdx.exe -b -i input/input.root -o output/dEdx_test.root -v 1 -s
     - ./build/dEdx.exe -b -i output/input.root -o output/dEdx_test_v2.root -v 1
     - cd test/; make dEdx_test;
-    - ./dEdx_test.exe ../dEdx_test_v2.root;
+    - ./dEdx_test.exe ../output/dEdx_test_v2.root;
   artifacts:
     paths:
       # - obj/*.gcda
