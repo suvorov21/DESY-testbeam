@@ -28,11 +28,13 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
     {"verbose",         no_argument,    0,    'v'},
     {"rewrite",         no_argument,    0,    'r'},
     {"correction",      no_argument,    0,    'c'},
-    {"full_track_fit",    no_argument,  0,     0}, // 6
-    {"separate_pad_fit",  no_argument,  0,     0}, // 7
-    {"linear_fit",        no_argument,  0,     0}, // 8
+    {"full_track_fit",    no_argument,  0,     0},  // 6
+    {"separate_pad_fit",  no_argument,  0,     0},  // 7
+    {"linear_fit",        no_argument,  0,     0},  // 8
     {"gaus_lorentz",      no_argument,  0,     0}, // 9
     {"help",            no_argument,    0,    'h'},
+    {"start",           required_argument,    0,     0},  // 11
+    {"end",             required_argument,    0,     0},  // 12
     {0,                 0,              0,     0}
   };
 
@@ -52,7 +54,7 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
           _do_arc_fit = false;
         if (index == 9)
           _gaus_lorentz_PRF = true;
-       break;
+        break;
       case 't' : _iteration        = atoi(optarg);  break;
       case 'c' : _correction       = true;         break;
     }

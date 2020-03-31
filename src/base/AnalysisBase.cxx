@@ -9,6 +9,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _file_out_name(""),
   _event_list_file_name(""),
   _event(NULL),
+  _start_ID(-1),
+  _end_ID(-1),
   _store_event_tree(false),
   _work_with_event_file(false),
   _file_in(NULL),
@@ -26,6 +28,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // TODO redefine CLI.
   // now written in an ugly way
+  // prevent copy-past between the daughter-parent classes
   const struct option longopts[] = {
     {"input",           no_argument,    0,    'i'},  // 0
     {"output",          no_argument,    0,    'o'},
@@ -33,10 +36,13 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     {"verbose",         no_argument,    0,    'v'},
     {"rewrite",         no_argument,    0,    'r'},
     {"correction",      no_argument,    0,    'c'},
-    {"full_track_fit",    no_argument,  0,     0}, // 6
-    {"separate_pad_fit",  no_argument,  0,     0}, // 7
-    {"linear_fit",        no_argument,  0,     0}, // 8
+    {"full_track_fit",    no_argument,  0,     0},  // 6
+    {"separate_pad_fit",  no_argument,  0,     0},  // 7
+    {"linear_fit",        no_argument,  0,     0},  // 8
+    {"gaus_lorentz",      no_argument,  0,     0}, // 9
     {"help",            no_argument,    0,    'h'},
+    {"start",           required_argument,    0,     0},  // 11
+    {"end",             required_argument,    0,     0},  // 12
     {0,                 0,              0,     0}
   };
 
@@ -47,6 +53,10 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     int c = getopt_long(argc, argv, "i:o:bv:drhst:ca", longopts, &index);
     if (c < 0) break;
     switch (c) {
+      case 0  :
+        if (index == 11) _start_ID         =  atoi(optarg);
+        if (index == 12) _end_ID           =  atoi(optarg);
+        break;
       case 'i' : _file_in_name     = optarg;       break;
       case 'o' : _file_out_name    = optarg;       break;
       case 'b' : _batch            = true;         break;
@@ -234,6 +244,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (_test_mode)
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
 
+  if (_start_ID < 0)
+    _start_ID = 0;
+  if (_end_ID > 0)
+    N_events = _end_ID;
+
   _sw_event = new TStopwatch();
 
   _sw_partial[0] = new TStopwatch();
@@ -249,7 +264,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _sw_event->Start(0);
   }
 
-  for (auto eventID = 0; eventID < N_events; ++eventID) {
+  for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
     if (_verbose > 1)
       std::cout << "Event " << eventID << std::endl;
 
