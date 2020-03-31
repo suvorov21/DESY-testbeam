@@ -57,6 +57,8 @@ class AnalysisBase {
   TString _event_list_file_name;
   std::vector<Int_t> _EventList;
   bool    _store_event;
+  int     _start_ID;
+  int     _end_ID;
 
   TEvent* _event;
   bool    _store_event_tree;

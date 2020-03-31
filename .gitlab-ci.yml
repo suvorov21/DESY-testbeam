@@ -11,16 +11,17 @@ compile_gcc:
     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
     - gcc -v > ../gcc.log 2>&1
   script:
-    - cd src
-    - make all 2>&1 | tee ../gcc.log
+    - mkdir build; cd build
+    - cmake ../src
+    - make 2>&1 | tee ../gcc.log
   artifacts:
     paths:
-      - ./bin/SpatialResol.exe
-      - ./bin/dEdx.exe
-      - ./bin/eventdict.cxx
-      - ./bin/eventdict_rdict.pcm
+      - ./build/SpatialResol.exe
+      - ./build/dEdx.exe
+      # - ./bin/eventdict.cxx
+      # - ./bin/eventdict_rdict.pcm
       - gcc.log
-      - obj/*.gcno
+      # - obj/*.gcno
 
 compile_clang:
   stage: build
@@ -31,8 +32,9 @@ compile_clang:
     - export CXX=clang++
     - clang -v > ../clang.log 2>&1
   script:
-    - cd src
-    - make all >> ../clang.log 2>&1
+    - mkdir build; cd build
+    - cmake ../src
+    - make 2>&1 | tee ../clang.log
   artifacts:
     paths:
       - clang.log
@@ -93,11 +95,13 @@ SpatialResol_raw_test:
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
-    - ./bin/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./bin/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - cd test/; make SR_test;
+    - ./SR_test.exe ../Spatial_test_iter0.root; ./SR_test.exe ../Spatial_test_iter1.root;
   artifacts:
     paths:
-      - obj/*.gcda
+      # - obj/*.gcda
 
 SpatialResol_pad_test:
   stage: test
@@ -107,12 +111,14 @@ SpatialResol_pad_test:
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
-    - ./bin/SpatialResol.exe --separate_pad_fit -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./bin/SpatialResol.exe --separate_pad_fit -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
-    - ./bin/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
+    - ./build/SpatialResol.exe --separate_pad_fit -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+    - ./build/SpatialResol.exe --separate_pad_fit -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
+    - cd test/; make SR_test;
+    - ./SR_test.exe ../Spatial_test_iter2.root;
   artifacts:
     paths:
-      - obj/*.gcda
+      # - obj/*.gcda
 
 dEdx_raw_test:
   stage: test
@@ -122,10 +128,12 @@ dEdx_raw_test:
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
-    - ./bin/dEdx.exe -b -i input.root -o dEdx_test_iter0.root -v 1
+    - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
+    - cd test/; make dEdx_test;
+    - ./dEdx_test.exe ../dEdx_test.root;
   artifacts:
     paths:
-      - obj/*.gcda
+      # - obj/*.gcda
 
 dEdx_TEvent_test:
   stage: test
@@ -136,41 +144,43 @@ dEdx_TEvent_test:
     - mkdir input; mkdir output;
     - mv download input/input.root
   script:
-    - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
-    - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1
+    - ./build/dEdx.exe -b -i input/input.root -o output/dEdx_test.root -v 1 -s
+    - ./build/dEdx.exe -b -i output/input.root -o output/dEdx_test_v2.root -v 1
+    - cd test/; make dEdx_test;
+    - ./dEdx_test.exe ../output/dEdx_test_v2.root;
   artifacts:
     paths:
-      - obj/*.gcda
+      # - obj/*.gcda
 
-coverage:
-  stage: analyse
-  when: manual
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - yum -y install epel-release
-    - yum -y install lcov
-    - mkdir input; mkdir output;
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input/input.root
-    - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
-    - mv download input_vertical.root
-  script:
-    #- cd src;lcov --no-external --capture --initial --directory . --output-file coverage_base.info; cd ../;
-    - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
-    - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 0
-    - ./bin/SpatialResol.exe -b -t 0 -i output/input.root -o Spatial_test_iter0.root -v 1
-    - ./bin/SpatialResol.exe -b -t 1 -i output/input.root -o Spatial_test_iter1.root -v 0
-    - ./bin/SpatialResol.exe --separate_pad_fit -b -t 0 -i input/input.root -o Spatial_test_v2_iter0.root -v 0
-    - ./bin/SpatialResol.exe --separate_pad_fit -b -t 1 -i input/input.root -o Spatial_test_v2_iter1.root -v 0
-    - ./bin/SpatialResol.exe --separate_pad_fit -b -t 2 -i input/input.root -o Spatial_test_v2_iter2.root -v 1
-    - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 0 -i input/input.root -o Spatial_test_v3_iter0.root -v 0
-    - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 1 -i input/input.root -o Spatial_test_v3_iter1.root -v 0
-    - ./bin/dEdx.exe -b -i input_vertical.root -o output/dEdx_test_vert_iter0.root -v 1 -a
-    - cp obj/*.gc?? src/; cd src
-    - lcov --no-external -c -d . --output-file coverage_total.info
-    #- lcov --add-tracefile coverage_base.info --add-tracefile coverage.info --output-file coverage_total.info
-    - lcov --remove coverage_total.info '*/bin/*' '/usr/local/*' '7' '7/*' -o coverage_filtered.info
-    - genhtml coverage_filtered.info --output-directory ../coverage; cd ../
-  artifacts:
-    paths:
-      - coverage/*
+# coverage:
+#   stage: analyse
+#   when: manual
+#   before_script:
+#     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
+#     - yum -y install epel-release
+#     - yum -y install lcov
+#     - mkdir input; mkdir output;
+#     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+#     - mv download input/input.root
+#     - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
+#     - mv download input_vertical.root
+#   script:
+#     #- cd src;lcov --no-external --capture --initial --directory . --output-file coverage_base.info; cd ../;
+#     - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
+#     - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 0
+#     - ./bin/SpatialResol.exe -b -t 0 -i output/input.root -o Spatial_test_iter0.root -v 1
+#     - ./bin/SpatialResol.exe -b -t 1 -i output/input.root -o Spatial_test_iter1.root -v 0
+#     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 0 -i input/input.root -o Spatial_test_v2_iter0.root -v 0
+#     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 1 -i input/input.root -o Spatial_test_v2_iter1.root -v 0
+#     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 2 -i input/input.root -o Spatial_test_v2_iter2.root -v 1
+#     - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 0 -i input/input.root -o Spatial_test_v3_iter0.root -v 0
+#     - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 1 -i input/input.root -o Spatial_test_v3_iter1.root -v 0
+#     - ./bin/dEdx.exe -b -i input_vertical.root -o output/dEdx_test_vert_iter0.root -v 1 -a
+#     - cp obj/*.gc?? src/; cd src
+#     - lcov --no-external -c -d . --output-file coverage_total.info
+#     #- lcov --add-tracefile coverage_base.info --add-tracefile coverage.info --output-file coverage_total.info
+#     - lcov --remove coverage_total.info '*/bin/*' '/usr/local/*' '7' '7/*' -o coverage_filtered.info
+#     - genhtml coverage_filtered.info --output-directory ../coverage; cd ../
+#   artifacts:
+#     paths:
+#       - coverage/*
