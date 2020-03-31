@@ -6,6 +6,8 @@
 #include "TGraphErrors.h"
 #include "TString.h"
 #include "TLine.h"
+#include "TMultiGraph.h"
+#include "TLegend.h"
 
 #include "../src/utils/Geom.hxx"
 #include "../src/utils/SetT2KStyle.hxx"
@@ -45,8 +47,9 @@ void SpatialIteration() {
 
 
   TFile* file_in[Niter];
-  TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/";
-  TString file_name = "y_200";
+  // TString prefix_in = "/eos/user/s/ssuvorov/DESY_testbeam/v8/";
+  TString prefix_in = "~/DATA/";
+  TString file_name = "s_200_430_02T";
 
   int col_x_scan = 4;
 
@@ -62,10 +65,19 @@ void SpatialIteration() {
 
   TH2F* mult_vs_x                 = new TH2F("mult_vs_x", "", 50, -0.035, 0.015, 10, 0., 10.);
 
-  TH2F* PRF_fst, *PRF_lst;
+  TH2F* PRF_fst=NULL, *PRF_lst=NULL;
   TGraphErrors* Fit_fst, *Fit_lst;
 
-  for (auto i = 0; i < Niter; ++i) {
+  TLine* line_s[5];
+  TLine* line_m[5];
+  TLine* line_l[5];
+  for (auto i = 0; i < 5; ++i) {
+    line_s[i] = new TLine(-0.03+i*0.01, 0., -0.03+i*0.01, 400.);
+    line_l[i] = new TLine(-0.03+i*0.01, 0., -0.03+i*0.01, 10.);
+    line_m[i] = new TLine(-0.03+i*0.01, -300., -0.03+i*0.01, 300.);
+  }
+
+  for (auto i = Niter-1; i < Niter; ++i) {
     c6.cd();
     TString temp_name = prefix_in + file_name + "_iter" + TString::Itoa(i, 10) + ".root";
     file_in[i] = new TFile(temp_name, "READ");
@@ -159,32 +171,133 @@ void SpatialIteration() {
       c6.cd();
 
       // mean of the residual vs X
-      for (auto j = 0; j < 50; ++j) {
-        TH1F* residual = (TH1F*)file_in[i]->Get(Form("resol_histo_Xscan_%i_%i",col_x_scan, j));
-        if (!residual)
-          continue;
-        residual->Fit("gaus", "Q");
-        TF1* fit_res = residual->GetFunction("gaus");
-        if (!fit_res)
-          continue;
-        if (fit_res->GetChisquare() / fit_res->GetNDF() > 50.)
-          continue;
-        auto mean    = fit_res->GetParameter(1);
-        auto mean_e  = fit_res->GetParError(1);
-        auto sigma   = fit_res->GetParameter(2);
-        auto sigma_e = fit_res->GetParError(2);
-        mean_vs_x->SetPoint(mean_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*mean);
-        mean_vs_x->SetPointError(mean_vs_x->GetN()-1, 0, 1e6*mean_e);
+      auto file_tmp = new TFile("x_scan.root", "RECREATE");
+      TGraphErrors* gr_s[geom::nPadx];
+      TGraphErrors* gr_m[geom::nPadx];
 
-        sigma_vs_x->SetPoint(sigma_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*sigma);
-        sigma_vs_x->SetPointError(sigma_vs_x->GetN()-1, 0, 1e6*sigma_e);
+      // canvas definition
+      TCanvas* c_resl_j = new TCanvas("resol_joint", "Joint resolution", 800, 600);
+      TCanvas* c_bias_j = new TCanvas("mean_joint", "Joint biases", 800, 600);
 
-        TH1F* mult = (TH1F*)file_in[i]->Get(Form("mult_histo_Xscan_%i_%i",col_x_scan, j));
-        if (!mult)
-          continue;
-        for (auto binId = 1; binId <= mult->GetNbinsX(); ++binId)
-          mult_vs_x->SetBinContent(j+1, binId, mult->GetBinContent(binId));
-      } // loop over x scan
+      TCanvas* c_res_long = new TCanvas("res_long", "Resolution", 1800*4, 1200*9);
+      c_res_long->Divide(4, 9);
+      TCanvas* c_bia_long = new TCanvas("bias_long", "Bias", 1800*4, 1200*9);
+      c_bia_long->Divide(4, 9);
+
+      TMultiGraph* mrg_resl = new TMultiGraph();
+      TMultiGraph* mrg_bias = new TMultiGraph();
+
+      for (auto colID = 1; colID < geom::nPadx-1; ++colID) {
+        c4.cd();
+        gr_s[colID-1] = new TGraphErrors();
+        gr_s[colID-1]->SetName(Form("resol_col_%i", colID+1));
+        gr_s[colID-1]->SetTitle(Form("resol_col_%i", colID+1));
+
+        gr_m[colID-1] = new TGraphErrors();
+        gr_m[colID-1]->SetName(Form("bias_col_%i", colID+1));
+        gr_m[colID-1]->SetTitle(Form("bias_col_%i", colID+1));
+
+        for (auto j = 0; j < 50; ++j) {
+          TH1F* residual = (TH1F*)file_in[i]->Get(Form("resol_histo_Xscan_%i_%i",colID, j));
+          if (!residual)
+            continue;
+          residual->Fit("gaus", "Q");
+          TF1* fit_res = residual->GetFunction("gaus");
+          if (!fit_res)
+            continue;
+
+          if (fit_res->GetChisquare() / fit_res->GetNDF() > 50.)
+            continue;
+          auto mean    = fit_res->GetParameter(1);
+          auto mean_e  = fit_res->GetParError(1);
+          auto sigma   = fit_res->GetParameter(2);
+          auto sigma_e = fit_res->GetParError(2);
+          // mean_vs_x->SetPoint(mean_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*mean);
+          // mean_vs_x->SetPointError(mean_vs_x->GetN()-1, 0, 1e6*mean_e);
+
+          // sigma_vs_x->SetPoint(sigma_vs_x->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*sigma);
+          // sigma_vs_x->SetPointError(sigma_vs_x->GetN()-1, 0, 1e6*sigma_e);
+
+          gr_s[colID-1]->SetPoint(gr_s[colID-1]->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*sigma);
+          gr_s[colID-1]->SetPointError(gr_s[colID-1]->GetN()-1, 0, 1e6*sigma_e);
+
+          gr_m[colID-1]->SetPoint(gr_m[colID-1]->GetN(), -0.035+j*(0.015+0.035)/50, 1e6*mean);
+          gr_m[colID-1]->SetPointError(gr_m[colID-1]->GetN()-1, 0, 1e6*mean_e);
+
+
+
+          // TH1F* mult = (TH1F*)file_in[i]->Get(Form("mult_histo_Xscan_%i_%i",col_x_scan, j));
+          // if (!mult)
+          //   continue;
+          // for (auto binId = 1; binId <= mult->GetNbinsX(); ++binId)
+          //   mult_vs_x->SetBinContent(j+1, binId, mult->GetBinContent(binId));
+        } // loop over x scan
+
+
+        Int_t color = colID+1;
+        if (color == 10)
+          color = 40;
+        if (color == 19)
+          color = 49;
+        if (color == 18)
+          color = 46;
+        gr_m[colID-1]->SetMarkerColor(color);
+        gr_s[colID-1]->SetMarkerColor(color);
+        gr_m[colID-1]->SetLineColor(color);
+        gr_s[colID-1]->SetLineColor(color);
+
+        mrg_resl->Add(gr_s[colID-1], "p");
+        mrg_bias->Add(gr_m[colID-1], "p");
+
+        c_res_long->cd(colID);
+        gPad->SetGrid();
+        gr_s[colID-1]->GetYaxis()->SetRangeUser(0., 400.);
+        gr_s[colID-1]->GetYaxis()->SetTitle("Resolution [#mum]");
+        gr_s[colID-1]->GetXaxis()->SetTitle("X [m]");
+        gr_s[colID-1]->Draw("ap");
+        c_res_long->Modified();
+        c_res_long->Update();
+        c4.cd();
+
+        c_bia_long->cd(colID);
+        gPad->SetGrid();
+        gr_m[colID-1]->GetYaxis()->SetRangeUser(-300., 300.);
+        gr_m[colID-1]->GetYaxis()->SetTitle("Bias [#mum]");
+        gr_m[colID-1]->GetXaxis()->SetTitle("X [m]");
+        gr_m[colID-1]->Draw("ap");
+        c_bia_long->Modified();
+        c_bia_long->Update();
+        c4.cd();
+
+        gr_s[colID-1]->Write();
+        gr_m[colID-1]->Write();
+      }
+      c_bia_long->Write();
+      c_bia_long->Print("bias_long.pdf");
+      c_res_long->Write();
+      c_res_long->Print("resol_long.pdf");
+
+      c_resl_j->cd();
+      mrg_resl->GetYaxis()->SetTitle("Resolution [#mum]");
+      mrg_resl->GetXaxis()->SetTitle("X [m]");
+      mrg_resl->SetMaximum(400.);
+      mrg_resl->SetMinimum(0.);
+      mrg_resl->Draw("ap");
+      for (auto l_id = 0; l_id < 5; ++l_id)
+        line_s[l_id]->Draw();
+      c_resl_j->Write();
+
+      c_bias_j->cd();
+      mrg_bias->GetYaxis()->SetTitle("Bias [#mum]");
+      mrg_bias->GetXaxis()->SetTitle("X [m]");
+      mrg_bias->SetMaximum(300.);
+      mrg_bias->SetMinimum(-300.);
+      mrg_bias->Draw("ap");
+      for (auto l_id = 0; l_id < 5; ++l_id)
+        line_m[l_id]->Draw();
+      c_bias_j->Write();
+
+      file_tmp->Close();
 
     }
 
@@ -230,16 +343,18 @@ void SpatialIteration() {
   gStyle->SetOptFit(1);
   gStyle->SetOptStat(0);
 
-  c4.Divide(2);
-  c4.cd(1);
-  PRF_fst->GetYaxis()->SetRangeUser(0., 1.);
-  PRF_fst->Draw("colz");
-  //Fit_fst->Draw("same p");
-  c4.cd(2);
-  PRF_lst->GetYaxis()->SetRangeUser(0., 1.);
-  PRF_lst->Draw("colz");
-  c4.Print(prefix_in + "/PRF.pdf");
-  //Fit_lst->Draw("same p");
+  if (PRF_fst && PRF_lst) {
+    c4.Divide(2);
+    c4.cd(1);
+    PRF_fst->GetYaxis()->SetRangeUser(0., 1.);
+    PRF_fst->Draw("colz");
+    //Fit_fst->Draw("same p");
+    c4.cd(2);
+    PRF_lst->GetYaxis()->SetRangeUser(0., 1.);
+    PRF_lst->Draw("colz");
+    c4.Print(prefix_in + "/PRF.pdf");
+    //Fit_lst->Draw("same p");
+  }
 
   c6.cd();
   c6.SetGridx(1);
@@ -255,15 +370,6 @@ void SpatialIteration() {
   c8.cd();
   c8.SetGridy(1);
   c8.SetGridx(1);
-  TLine* line_s[5];
-  TLine* line_m[5];
-  TLine* line_l[5];
-  for (auto i = 0; i < 5; ++i) {
-    line_s[i] = new TLine(-0.03+i*0.01, 0., -0.03+i*0.01, 400.);
-    line_l[i] = new TLine(-0.03+i*0.01, 0., -0.03+i*0.01, 10.);
-    line_m[i] = new TLine(-0.03+i*0.01, -300., -0.03+i*0.01, 300.);
-  }
-
   mean_vs_x->GetXaxis()->SetRangeUser(-0.03, 0.01);
   mean_vs_x->GetXaxis()->SetTitle("Position [m]");
   mean_vs_x->GetYaxis()->SetRangeUser(-300., 300);
@@ -294,7 +400,7 @@ void SpatialIteration() {
     line_l[i]->Draw();
   c10.Print(prefix_in + "/mult_vs_x.pdf");
 
-  c4.WaitPrimitive();
+  // c4.WaitPrimitive();
 
   exit(0);
 }

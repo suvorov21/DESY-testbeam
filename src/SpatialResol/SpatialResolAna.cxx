@@ -424,10 +424,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       TH1F* cluster_h;
       if (!_invert)
         cluster_h = new TH1F("cluster", "", geom::nPady,
-          -1.*geom::MM_dy - geom::dy/2., geom::MM_dy + geom::dy/2.);
+          -1.*geom::nPady*geom::dy/2., 1.*geom::nPady*geom::dy/2.);
       else
         cluster_h = new TH1F("cluster", "", geom::nPadx,
-          -1.*geom::MM_dx - geom::dx/2., geom::MM_dx + geom::dx/2.);
+          -1*geom::nPadx*geom::dx/2., 1.*geom::nPadx*geom::dx/2.);
 
       // loop over rows
       for (auto pad:col) {
