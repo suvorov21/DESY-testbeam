@@ -21,7 +21,7 @@ The output will be stored as bin/YourMacro.exe
 ## Running
 The macros can read both single root file and list of root files. To run the macros call
 ```bash
-./bin/YourMcro.exe -i input_file -o output_path
+./bin/YourMacro.exe -i input_file -o output_path
 ```
 The ROOT help could be called with -h flag. The macro help will be called with flag '-m'.
 The common view is the following
@@ -47,26 +47,31 @@ The scheme of the package for the particular case of the spatial resolution anal
 ![Tool structure](doc/html/_spatial_resol_ana_8cxx__incl.png)
 
 ## Compilation
-From the src/ folder you need to call
+For the compilation you need to create the build folder
 ```bash
-make all
+mkdir build
+cd build
 ```
-You can specify the particular analysis you want to build (e.g. `make SpatialResol`).
-
-By default the compilation is processing with debug flag `-g`. If you want to remove the debug flag and switch on optimisation `-O3` use command `make all TYPE=RELEASE`.
+Then you need to configure the build and run the compilation
+```bash
+cmake ../src
+make
+```
 
 ## The road map to start your analysis:
 1. Create your analysis class inheriting from AnalysisBase. Optionally you can put it in your separate folder.
-2. Add it in the Makefile for compilation. e.g.
-```make
-SpatialResol: $(OBJ) $(OBJDIR)/SpatialResolAna.o
-  $(CXX) $^ $(OutPutOpt) $(BINDIR)/$@.$(OutPutSuf) $(RLXX)
-  @echo "Compilation done"
+2. Add it in the CmakeList.txt for compilation. e.g.
+```cmake
+add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
+target_link_libraries(SpatialResol.exe TEvent TBase)
 ```
 3. Define histograms you are interested in (inside YourAnalysis::Initialize()). Add them into _output_vector. They will be written into the output file automatically.
 4. Choose the reconstruction you need with calling the appropriate constructor for _reconstruction (e.g. DBSCANReconstruction()).
 5. Define the YourAnalysis::ProcessEvent() function. This function will be called for each event passed the reconstruction. Apply any cuts you need, fill your histograms for each event with all the information you are interested in.
 6. Enjoy the output!
+
+## Plotters
+All the macroses for the result plotting are put in plotters/ folder
 
 ## Data structure
 The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
@@ -83,9 +88,8 @@ To submit script at the LXPLUS please use the script/submitter.py. It creates li
 python3 submitter.py -f ../FileLists/gain.list
 ```
 
-
 # Geometry
-The geometry information is stored in utils/Geom.hxx. The coordinate system and the pad size are the following:
+The geometry information is stored in src/utils/Geom.hxx. The coordinate system and the pad size are the following:
 ```
 Micromegas:
 

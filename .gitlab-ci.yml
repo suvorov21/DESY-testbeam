@@ -97,6 +97,8 @@ SpatialResol_raw_test:
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - cd test/; make SR_test;
+    - ./SR_test.exe ../Spatial_test_iter0.root; ./SR_test.exe ../Spatial_test_iter1.root;
   artifacts:
     paths:
       # - obj/*.gcda
@@ -112,6 +114,8 @@ SpatialResol_pad_test:
     - ./build/SpatialResol.exe --separate_pad_fit -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe --separate_pad_fit -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
     - ./build/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
+    - cd test/; make SR_test;
+    - ./SR_test.exe ../Spatial_test_iter2.root;
   artifacts:
     paths:
       # - obj/*.gcda
@@ -124,7 +128,9 @@ dEdx_raw_test:
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
-    - ./build/dEdx.exe -b -i input.root -o dEdx_test_iter0.root -v 1
+    - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
+    - cd test/; make dEdx_test;
+    - ./dEdx_test.exe ../dEdx_test_iter0.root;
   artifacts:
     paths:
       # - obj/*.gcda
@@ -138,8 +144,10 @@ dEdx_TEvent_test:
     - mkdir input; mkdir output;
     - mv download input/input.root
   script:
-    - ./build/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
-    - ./build/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 1
+    - ./build/dEdx.exe -b -i input/input.root -o output/dEdx_test.root -v 1 -s
+    - ./build/dEdx.exe -b -i output/input.root -o output/dEdx_test_v2.root -v 1
+    - cd test/; make dEdx_test;
+    - ./dEdx_test.exe ../dEdx_test_v2.root;
   artifacts:
     paths:
       # - obj/*.gcda
