@@ -58,6 +58,11 @@ cmake ../src
 make
 ```
 
+Then the code can be run with e.g.
+```bash
+./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root
+```
+
 ## The road map to start your analysis:
 1. Create your analysis class inheriting from AnalysisBase. Optionally you can put it in your separate folder.
 2. Add it in the CmakeList.txt for compilation. e.g.
@@ -78,7 +83,7 @@ The raw input for the analysis is 3D array (x, y, t). During the reconstruction 
 
 In order to speedup the analysis we implemented a feature to save the TEvent class itself. It means that the reconstruction and selection could be run once and the events that passed the selection would be saved in the TEvent format. In order to do this, run the executable with flag "-c"
 ```bash
-./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root -c
+./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root -s
 ```
 The output_path/input_file.root will be created that could be later used as an input. The analysis package will recognise automatically which format is used for the input file.
 

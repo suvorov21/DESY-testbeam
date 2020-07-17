@@ -1,97 +1,32 @@
-image: bars21/dev_hep_root:latest
+image: rootproject/root:6.20.06-centos7
 
 stages:
+  # build with
   - build
+  # test run with basic analysis
   - test
-  - analyse
+  # doxygen
+  # - analyse
 
 compile_gcc:
   stage: build
   before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v > ../gcc.log 2>&1
   script:
     - mkdir build; cd build
-    - cmake ../src
-    - make 2>&1 | tee ../gcc.log
+    - gcc -v > ../gcc.log
+    - cmake3 ../src
+    - make 2>&1 | tee -a ../gcc.log
   artifacts:
     paths:
       - ./build/SpatialResol.exe
       - ./build/dEdx.exe
-      # - ./bin/eventdict.cxx
-      # - ./bin/eventdict_rdict.pcm
       - gcc.log
-      # - obj/*.gcno
-
-compile_clang:
-  stage: build
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - yum -y install gcc-c++
-    - yum -y install clang
-    - export CXX=clang++
-    - clang -v > ../clang.log 2>&1
-  script:
-    - mkdir build; cd build
-    - cmake ../src
-    - make 2>&1 | tee ../clang.log
-  artifacts:
-    paths:
-      - clang.log
-
-# run GCC warning test
-gcc_warning:
-  stage: analyse
-  allow_failure: true
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-  script:
-    - cat gcc.log | grep "warning:"        > gcc_warning.log || echo "ok"
-    - COUNT_WAR=$(wc -l < gcc_warning.log )
-    - echo "Total warnings $COUNT_WAR"
-    - if [ $COUNT_WAR -gt 0 ]; then exit 1; fi
-  artifacts:
-    paths:
-      - gcc_warning.log
-
-# run clang warning test
-clang_warning:
-  stage: analyse
-  allow_failure: true
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - echo -e "\e[31mClang test\e[0m"
-  script:
-    - cat clang.log | grep "warning:"        > clang_warning.log || echo "ok"
-    - COUNT_WAR=$(wc -l < clang_warning.log )
-    - echo "Total warnings $COUNT_WAR"
-    - if [ $COUNT_WAR -gt 0 ]; then exit 1; fi
-  artifacts:
-    paths:
-      - clang_warning.log
-
-cppcheck:
-  stage: analyse
-  before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
-    - cppcheck --version
-    - pip3 install pygments
-    - wget https://github.com/danmar/cppcheck/archive/1.88.tar.gz
-    - tar -xf 1.88.tar.gz
-  script:
-    - cppcheck src/*/*.cxx --enable=all --language=c++ --inline-suppr --xml 2>err.xml
-    - cppcheck-1.88/htmlreport/cppcheck-htmlreport --file=err.xml  --report-dir=html --source-dir=.
-  artifacts:
-    paths:
-      - html/*
 
 # run tests using the binary built before
 SpatialResol_raw_test:
   stage: test
   before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
+    - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
@@ -99,15 +34,11 @@ SpatialResol_raw_test:
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
     - cd test/; make SR_test;
     - ./SR_test.exe ../Spatial_test_iter0.root; ./SR_test.exe ../Spatial_test_iter1.root;
-  artifacts:
-    paths:
-      # - obj/*.gcda
 
 SpatialResol_pad_test:
   stage: test
   before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
+    - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
@@ -116,30 +47,22 @@ SpatialResol_pad_test:
     - ./build/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
     - cd test/; make SR_test;
     - ./SR_test.exe ../Spatial_test_iter2.root;
-  artifacts:
-    paths:
-      # - obj/*.gcda
 
 dEdx_raw_test:
   stage: test
   before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
+    - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
     - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
     - cd test/; make dEdx_test;
     - ./dEdx_test.exe ../dEdx_test.root;
-  artifacts:
-    paths:
-      # - obj/*.gcda
 
 dEdx_TEvent_test:
   stage: test
   before_script:
-    - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-    - gcc -v
+    - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mkdir input; mkdir output;
     - mv download input/input.root
@@ -148,39 +71,10 @@ dEdx_TEvent_test:
     - ./build/dEdx.exe -b -i output/input.root -o output/dEdx_test_v2.root -v 1
     - cd test/; make dEdx_test;
     - ./dEdx_test.exe ../output/dEdx_test_v2.root;
-  artifacts:
-    paths:
-      # - obj/*.gcda
 
-# coverage:
+# docs:
 #   stage: analyse
 #   when: manual
+#   image: hrektts/docker-doxygen
 #   before_script:
-#     - source $COMMON_INSTALL_PREFIX/usr/setup.sh
-#     - yum -y install epel-release
-#     - yum -y install lcov
-#     - mkdir input; mkdir output;
-#     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-#     - mv download input/input.root
-#     - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
-#     - mv download input_vertical.root
-#   script:
-#     #- cd src;lcov --no-external --capture --initial --directory . --output-file coverage_base.info; cd ../;
-#     - ./bin/dEdx.exe -b -i input/input.root -o output/dEdx_test_iter0.root -v 1 -s
-#     - ./bin/dEdx.exe -b -i output/input.root -o output/dEdx_test_iter0_v2.root -v 0
-#     - ./bin/SpatialResol.exe -b -t 0 -i output/input.root -o Spatial_test_iter0.root -v 1
-#     - ./bin/SpatialResol.exe -b -t 1 -i output/input.root -o Spatial_test_iter1.root -v 0
-#     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 0 -i input/input.root -o Spatial_test_v2_iter0.root -v 0
-#     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 1 -i input/input.root -o Spatial_test_v2_iter1.root -v 0
-#     - ./bin/SpatialResol.exe --separate_pad_fit -b -t 2 -i input/input.root -o Spatial_test_v2_iter2.root -v 1
-#     - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 0 -i input/input.root -o Spatial_test_v3_iter0.root -v 0
-#     - ./bin/SpatialResol.exe --gaus_lorentz --full_track_fit -b -t 1 -i input/input.root -o Spatial_test_v3_iter1.root -v 0
-#     - ./bin/dEdx.exe -b -i input_vertical.root -o output/dEdx_test_vert_iter0.root -v 1 -a
-#     - cp obj/*.gc?? src/; cd src
-#     - lcov --no-external -c -d . --output-file coverage_total.info
-#     #- lcov --add-tracefile coverage_base.info --add-tracefile coverage.info --output-file coverage_total.info
-#     - lcov --remove coverage_total.info '*/bin/*' '/usr/local/*' '7' '7/*' -o coverage_filtered.info
-#     - genhtml coverage_filtered.info --output-directory ../coverage; cd ../
-#   artifacts:
-#     paths:
-#       - coverage/*
+
