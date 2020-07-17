@@ -41,6 +41,6 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  std::cout << "SR_test::main(): test passed" << std::endl;
+  std::cout << "dEdx_test::main(): test passed" << std::endl;
   return 0;
 }
