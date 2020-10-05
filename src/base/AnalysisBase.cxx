@@ -62,10 +62,19 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
       case 'b' : _batch            = true;         break;
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
-      case 'r' : _overwrite        = true;         break;
+      case 'r' :
+        _overwrite        = true;
+        std::cout << "Output will be overwritten" << std::endl;
+        break;
       case 'h' : help(argv[0]);                    break;
-      case 'a' : _invert           = true;         break;
-      case 's' : _store_event_tree = true; break;
+      case 'a' :
+        _invert           = true;
+        std::cout << "Inverted geometry is used" << std::endl;
+        break;
+      case 's' :
+        _store_event_tree = true;
+        std::cout << "Tree with TEvents will be written" << std::endl;
+        break;
       //case '?' : help(argv[0]);
     }
   }
