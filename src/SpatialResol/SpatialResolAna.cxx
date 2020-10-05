@@ -333,11 +333,13 @@ bool SpatialResolAna::Initialize() {
   _passed_events.clear();
 
   std::cout << "done" << std::endl;
-  std::cout << "\t PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula();
-  std::cout << "  with ";
-  for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
-    std::cout << "  " << _PRF_function->GetParameter(i) << ",";
-  std::cout << std::endl;
+  if (_verbose > 1) {
+    std::cout << "\t PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula();
+    std::cout << "  with ";
+    for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
+      std::cout << "  " << _PRF_function->GetParameter(i) << ",";
+    std::cout << std::endl;
+  }
 
   // Initilise selection
   _reconstruction = new DBSCANReconstruction();
