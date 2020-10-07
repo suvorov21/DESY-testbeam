@@ -11,6 +11,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _event(NULL),
   _start_ID(-1),
   _end_ID(-1),
+  _selected(0),
   _store_event_tree(false),
   _work_with_event_file(false),
   _file_in(NULL),
@@ -273,11 +274,14 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _sw_event->Start(0);
   }
 
+  int denimonator = 100;
+  if (N_events < 100)
+    denimonator = N_events;
   for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
     if (_verbose > 1)
       std::cout << "Event " << eventID << std::endl;
 
-    if (_verbose == 1 && (eventID%(N_events/100)) == 0)
+    if (_verbose == 1 && (eventID%(N_events/denimonator)) == 0)
       this->CL_progress_dump(eventID, N_events);
 
     _chain->GetEntry(EventList[eventID]);
@@ -329,8 +333,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     ProcessEvent(_event);
     _sw_partial[1]->Stop();
 
-    if (_store_event_tree && _store_event)
-      _event_tree->Fill();
+    if (_store_event) {
+      ++_selected;
+      if (_store_event_tree)
+        _event_tree->Fill();
+    }
 
     if (!_store_event_tree && !_work_with_event_file) {
       delete _event;
@@ -498,7 +505,8 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  std::cout << "\t Memory  " <<  real << "\t" << virt;
+  // std::cout << "\t Memory  " <<  real << "\t" << virt;
+  std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed CPU " << CPUtime << " ms/event";
     std::cout << "\t EET real " << m << ":";
