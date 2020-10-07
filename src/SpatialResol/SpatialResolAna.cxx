@@ -218,6 +218,12 @@ bool SpatialResolAna::Initialize() {
   _PRF_graph = new TGraphErrors();
   _PRF_graph->SetName("PRF_graph");
 
+
+  _resol_total = new TH1F("resol_total",
+     "", resol_bin, resol_min, resol_max);
+
+  _output_vector.push_back(_resol_total);
+
   for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
     _resol_col_hist[j]  = new TH1F(Form("resol_histo_%i", j),
      "", resol_bin, resol_min, resol_max);
@@ -275,9 +281,11 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_gr->SetName("uncertainty_vs_prf_gr");
   _output_vector.push_back(_uncertainty_vs_prf_gr);
 
+  auto dir_resol = _file_out->mkdir("resol_column");
+  _output_vector.push_back(dir_resol);
   for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
-    _output_vector.push_back(_resol_col_hist[j]);
-    _output_vector.push_back(_resol_col_hist_except[j]);
+    dir_resol->Append(_resol_col_hist[j]);
+    dir_resol->Append(_resol_col_hist_except[j]);
   }
 
   if (_do_separate_pad_fit) {
@@ -292,22 +300,19 @@ bool SpatialResolAna::Initialize() {
     }
   }
 
+  auto dir_x_scan = _file_out->mkdir("x_scan");
+  _output_vector.push_back(dir_x_scan);
+
   _x_scan_axis = new TAxis(x_scan_bin, x_scan_min, x_scan_max);
   for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
     for (auto i = 0; i < x_scan_bin; ++i) {
       _resol_col_x_scan[j][i] = new TH1F(Form("resol_histo_Xscan_%i_%i", j, i),
        "", resol_bin, resol_min, resol_max);
-      _output_vector.push_back(_resol_col_x_scan[j][i]);
+      dir_x_scan->Append(_resol_col_x_scan[j][i]);
       _mult_x_scan[j][i] = new TH1F(Form("mult_histo_Xscan_%i_%i", j, i),
        "multiplicity", 10, 0., 10.);
-      _output_vector.push_back(_mult_x_scan[j][i]);
+      dir_x_scan->Append(_mult_x_scan[j][i]);
     }
-  }
-
-  for (auto i = 0; i < prf_error_bins-1; ++i) {
-    _uncertainty_prf_bins[i] = new TH1F(Form("error_prf_bin_%i", i),
-      "", resol_bin, resol_min, resol_max);
-    _output_vector.push_back(_uncertainty_prf_bins[i]);
   }
 
   for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
@@ -315,20 +320,26 @@ bool SpatialResolAna::Initialize() {
       _resol_col_x_scan_lim_mult[j][i] =
         new TH1F(Form("resol_histo_Xscan_%i_%i", j, i), "",
         resol_bin, resol_min, resol_max);
-      _output_vector.push_back(_resol_col_x_scan_lim_mult[j][i]);
+      dir_x_scan->Append(_resol_col_x_scan_lim_mult[j][i]);
     }
   }
 
-  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
-    _output_vector.push_back(_PRF_histo_col[j]);
-  }
-  for (auto j = 0; j < 4; ++j) {
-    _output_vector.push_back(_PRF_histo_xscan[j]);
+  for (auto i = 0; i < prf_error_bins-1; ++i) {
+    _uncertainty_prf_bins[i] = new TH1F(Form("error_prf_bin_%i", i),
+      "", resol_bin, resol_min, resol_max);
+    // _output_vector.push_back(_uncertainty_prf_bins[i]);
   }
 
-  for (auto j = 0; j < 4; ++j) {
-    _output_vector.push_back(_PRF_graph_xscan[j]);
-  }
+  // for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+  //   _output_vector.push_back(_PRF_histo_col[j]);
+  // }
+  // for (auto j = 0; j < 4; ++j) {
+  //   _output_vector.push_back(_PRF_histo_xscan[j]);
+  // }
+
+  // for (auto j = 0; j < 4; ++j) {
+  //   _output_vector.push_back(_PRF_graph_xscan[j]);
+  // }
 
   _passed_events.clear();
 
@@ -731,6 +742,10 @@ bool SpatialResolAna::WriteOutput() {
     ProfilePRF(_PRF_histo_xscan[i], _PRF_graph_xscan[i]);
 
   TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
+
+  for (auto i = 0; i <= geom::GetMaxColumn(_invert) - 1; ++i)
+      _resol_total->Add(_resol_col_hist[i]);
+
   for (auto i = 1; i < geom::GetMaxColumn(_invert) - 1; ++i) {
 
     TH1F* res     = _resol_col_hist[i];
@@ -747,15 +762,17 @@ bool SpatialResolAna::WriteOutput() {
     }
 
     if (_gaussian_residuals) {
-      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
+      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
       _resol_col_hist_2pad[i]->Fit("gaus", "Q");
       _resol_col_hist_3pad[i]->Fit("gaus", "Q");
+
+
 
       TF1* func = res->GetFunction("gaus");
 
       if (!func) {
         std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
-        exit(1);
+        continue;
       }
 
       res_e->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
@@ -837,14 +854,17 @@ bool SpatialResolAna::WriteOutput() {
   // Output histoes postprocession done
 
   std::cout << "done" << std::endl;
-  std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
-  for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
-    std::cout << "  " << _PRF_function->GetParameter(i) << ",";
-  std::cout << "  Chi2/NDF " << _PRF_graph->GetFunction("PRF_function")->GetChisquare()
-            << "/" << _PRF_graph->GetFunction("PRF_function")->GetNDF() << std::endl;
-  std::cout << std::endl;
 
-  std::cout << "Resol\t" << 1.e6*resol->GetMean() << " um" << "\tRMS\t" << 1.e6*resol->GetRMS() << " um" << std::endl;
+  if (_PRF_graph->GetFunction("PRF_function")) {
+    std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
+    for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
+      std::cout << "  " << _PRF_function->GetParameter(i) << ",";
+    std::cout << "  Chi2/NDF " << _PRF_graph->GetFunction("PRF_function")->GetChisquare()
+              << "/" << _PRF_graph->GetFunction("PRF_function")->GetNDF() << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "Resol\t" << 1.e6*resol->GetMean() << " um" << "\tRMS\t" << 1.e6*resol->GetRMS() << " um" << std::endl;
+  }
 
   // Write objects
   AnalysisBase::WriteOutput();
