@@ -20,7 +20,7 @@ bool sel::CrossingTrackSelection( const TTrack* track,
   if (abs(fit_v[2]) > sel::horizontal_cut) return false;
 
   if (invert)
-    if (abs(fit_xz[2] * sel::v_drift_est) > 0.625) return false;
+    if (abs(fit_xz[2] * sel::v_drift_est) > sel::vertical_cut) return false;
 
 
   if (verbose > 1)

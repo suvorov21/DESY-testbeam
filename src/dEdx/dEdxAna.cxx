@@ -34,6 +34,8 @@ bool dEdxAna::Initialize() {
   _XZ_leading = new TH2F("XZ_leading", "", geom::Nsamples, 0, geom::Nsamples, geom::nPadx, 0, geom::nPadx);
   _XZ_bias   = new TH1F("XZ_bias", "", 500, -0.05, 0.05);
 
+  _angle = new TH2F("angle", "YZ angle vs XY angle", 150, 0., 1.5, 150, 0., 1.5);
+
   for (auto i = 0; i < 4; ++i) {
     _charge_per_mult.push_back(new TH1F(Form("charge_per_mult_%i", i), "", 1000, 0., 10000.));
   }
@@ -41,6 +43,8 @@ bool dEdxAna::Initialize() {
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
   _output_vector.push_back(_mult);
+
+  _output_vector.push_back(_angle);
 
   _output_vector.push_back(_mult_graph);
   _output_vector.push_back(_mult_graph_err);
@@ -87,8 +91,14 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       std::cout << sel::GetColsMaxGap(itrack, _invert) << std::endl;
     }
 
-    if (!sel::CrossingTrackSelection(itrack, _invert, _verbose))
-      continue;
+    // if (!sel::CrossingTrackSelection(itrack, _invert, _verbose))
+    //   continue;
+    std::vector<double> fit_v = sel::GetFitParams(itrack, _invert);
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack, _invert);
+
+    if(fit_v[0]>1.0e6) return false;
+
+    _angle->Fill(abs(fit_v[2]), abs(fit_xz[2] * sel::v_drift_est));
 
     _store_event = true;
 

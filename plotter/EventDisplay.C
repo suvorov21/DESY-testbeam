@@ -22,7 +22,7 @@
 class MyMainFrame : public TGMainFrame {
 
 public:
-  MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h);
+  MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h, TString name);
   virtual ~MyMainFrame();
   void     CloseWindow();
 
@@ -58,11 +58,11 @@ protected:
 };
 
 //______________________________________________________________________________
-MyMainFrame::MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h) :
+MyMainFrame::MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h, TString name) :
 TGMainFrame(p, w, h)
 {
   // read file
-  f = new TFile("/Users/suvorov/DATA/DESY_TestBeam/phi_50.root", "READ");
+  f = new TFile(name, "READ");
   t = (TTree*)f->Get("tree");
   t->SetBranchAddress("PadAmpl", padAmpl);
   MM = new TH2F("h", "", 38, -1., 37., 34, -1., 33.);
@@ -226,9 +226,10 @@ void MyMainFrame::CloseWindow()
 }
 
 //------------------------------------------------------------------------------
-void EventDisplay()
+void EventDisplay(TString name="")
 {
    // Main function (entry point)
+  // TString name = "haha";
 
- new MyMainFrame(gClient->GetRoot(), 1000, 1000);
+ new MyMainFrame(gClient->GetRoot(), 1000, 1000, name);
 }

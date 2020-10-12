@@ -78,6 +78,8 @@ class SpatialResolAna: public AnalysisBase {
   TH1F* _Cols_used;
 
   /// Residuals X_track - X_fit histoes
+  TH1F* _resol_total;
+
   TH1F* _resol_col_hist[geom::nPadx];
   TH1F* _resol_col_hist_except[geom::nPadx];
 

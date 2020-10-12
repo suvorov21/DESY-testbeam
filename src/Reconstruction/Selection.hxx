@@ -24,8 +24,8 @@ namespace sel
 
   // 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin
   static const float v_drift_est    = 0.28;
-  static const float horizontal_cut = 0.1;
-  static const float vertical_cut   = 0.2;
+  static const float horizontal_cut = 0.3;
+  static const float vertical_cut   = 0.3;
 }
 
 #endif  // SRC_SELECTION_SELECTION_HXX_

@@ -36,6 +36,9 @@ class dEdxAna: public AnalysisBase {
   TH1F* _max_charge_pos;
   TH1F* _max_charge_time;
 
+  /// Angular histo
+  TH2F* _angle;
+
   ///
   std::vector<TH1F*> _charge_per_mult;
 

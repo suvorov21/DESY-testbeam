@@ -4,6 +4,7 @@
 /** @cond */
 #include "TString.h"
 #include "TFile.h"
+#include "TDirectory.h"
 #include "TChain.h"
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -59,6 +60,7 @@ class AnalysisBase {
   bool    _store_event;
   int     _start_ID;
   int     _end_ID;
+  int     _selected;
 
   TEvent* _event;
   bool    _store_event_tree;
