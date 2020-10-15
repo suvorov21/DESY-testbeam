@@ -179,9 +179,17 @@ bool AnalysisBase::Initialize() {
     _tgeom->SetBranchAddress("iPad", &_iPadT );*/
 
 
-  } else if (!_work_with_event_file)
+  } else if (!_work_with_event_file) {
     _chain->SetBranchAddress("PadAmpl", _padAmpl);
-  else
+    TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
+    if ((branch_name.Contains("[510]") && geom::Nsamples != 510) ||
+        (branch_name.Contains("[511]") && geom::Nsamples != 511)) {
+      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+      std::cerr << "Time binning is inconsistent." << std::endl;
+      std::cerr << "File branch is " << branch_name << " while " << geom::Nsamples << " is read" << std::endl;
+      exit(1);
+    }
+  } else
     _chain->SetBranchAddress("Event", &_event);
 
   // setup the T2K style
