@@ -5,9 +5,10 @@ log/*
 /Doxyfile
 build/*
 
-*ipynb
 /bin/eventdict.cxx
 /bin/eventdict_rdict.pcm
 *.gcda
 *.gcno
 *.root
+*.ipynb_checkpoints
+*.pdf

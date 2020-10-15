@@ -330,9 +330,11 @@ bool SpatialResolAna::Initialize() {
     // _output_vector.push_back(_uncertainty_prf_bins[i]);
   }
 
-  // for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
-  //   _output_vector.push_back(_PRF_histo_col[j]);
-  // }
+  auto dir_prf = _file_out->mkdir("prf_column");
+  _output_vector.push_back(dir_prf);
+  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+    dir_prf->Append(_PRF_histo_col[j]);
+  }
   // for (auto j = 0; j < 4; ++j) {
   //   _output_vector.push_back(_PRF_histo_xscan[j]);
   // }
