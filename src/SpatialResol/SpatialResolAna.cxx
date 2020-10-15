@@ -94,6 +94,7 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_gr_prev = NULL;
   _uncertainty_vs_prf_histo   = NULL;
 
+  // load information from previous iteration
   if (_iteration) {
     TString prev_file_name = _file_out_name;
     prev_file_name   = prev_file_name(0, prev_file_name.Index("iter"));
@@ -104,6 +105,12 @@ bool SpatialResolAna::Initialize() {
     _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
     _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
     auto uncertainty_graph = (TGraphErrors*)_Prev_iter_file->Get("resol_final");
+    if (!_PRF_function || !uncertainty_graph) {
+      std::cerr << "ERROR. SpatialResolAna::Initialize().";
+      std::cout << "PRF function or resolution is not specified" << std::endl;
+      std::cerr << "Search in " << prev_file_name << std::endl;
+      exit(1);
+    }
     _uncertainty = 0;
     for (auto i = 0; i < uncertainty_graph->GetN(); ++i) {
       double x, y;
@@ -143,47 +150,14 @@ bool SpatialResolAna::Initialize() {
       }
       this->SetEventList(vec);
     }
-
-    if (!_PRF_function) {
-      std::cerr << "ERROR. SpatialResolAna::Initialize().";
-      std::cout << "PRF function is not specified" << std::endl;
-      std::cerr << "Search in " << prev_file_name << std::endl;
-      exit(1);
-    }
   } else {
-    if (_gaus_lorentz_PRF) {
-      _PRF_function = new TF1("PRF_function",
-        " [0] * exp(-4*TMath::Log(2)*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )", prf_min, prf_max);
-      _PRF_function->SetParName(0, "Const");
-      _PRF_function->SetParName(1, "r");
-      _PRF_function->SetParName(2, "w");
-
-      auto c = 1.;
-      auto r = 0.5;
-      auto s = 0.005;
-      _PRF_function->SetParameters(c, r, s);
-
-    } else {
-      _PRF_function  = new TF1("PRF_function",
-        "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)",
-        prf_min, prf_max);
-      _PRF_function->SetParName(0, "Const");
-      _PRF_function->SetParName(1, "a2");
-      _PRF_function->SetParName(2, "a4");
-      _PRF_function->SetParName(3, "b2");
-      _PRF_function->SetParName(4, "b4");
-
-      double co = 1.;
-      double a2 = 2.35167e3;
-      double a4 = 6.78962e7;
-      double b2 = 3.36748e3;
-      double b4 = 6.45311e8;
-      _PRF_function->SetParameters(co, a2, a4, b2, b4);
-    }
+    _PRF_function = InitializePRF("PRF_function");
+    _PRF_function_2pad = InitializePRF("PRF_function_2pad");
+    _PRF_function_3pad = InitializePRF("PRF_function_2pad");
+    _PRF_function_4pad = InitializePRF("PRF_function_2pad");
 
     if (_do_full_track_fit)
       _PRF_function->FixParameter(0, 1.);
-
   }
 
   _qulity_ratio   = new TH1F("quality_ratio",
@@ -197,12 +171,39 @@ bool SpatialResolAna::Initialize() {
 
   // Initialise histoes and graphs
   _PRF_histo = new TH2F("PRF_histo","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+
+  // Initialize graph for PRF profiling
+  _PRF_graph = new TGraphErrors();
+  _PRF_graph->SetName("PRF_graph");
+  _PRF_graph_2pad = new TGraphErrors();
+  _PRF_graph_2pad->SetName("PRF_graph_2pad");
+  _PRF_graph_3pad = new TGraphErrors();
+  _PRF_graph_3pad->SetName("PRF_graph_3pad");
+  _PRF_graph_4pad = new TGraphErrors();
+  _PRF_graph_4pad->SetName("PRF_graph_4pad");
+
+  // PRF for different multiplicities
+  auto dir_prf_mult = _file_out->mkdir("prf_mult");
+  _output_vector.push_back(dir_prf_mult);
+
   _PRF_histo_2pad = new TH2F("PRF_histo_2pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
   _PRF_histo_3pad = new TH2F("PRF_histo_3pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
   _PRF_histo_4pad = new TH2F("PRF_histo_4pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
+
+  dir_prf_mult->Append(_PRF_histo_2pad);
+  dir_prf_mult->Append(_PRF_histo_3pad);
+  dir_prf_mult->Append(_PRF_histo_4pad);
+
+  dir_prf_mult->Append(_PRF_function_2pad);
+  dir_prf_mult->Append(_PRF_function_3pad);
+  dir_prf_mult->Append(_PRF_function_4pad);
+
+  dir_prf_mult->Append(_PRF_graph_2pad);
+  dir_prf_mult->Append(_PRF_graph_3pad);
+  dir_prf_mult->Append(_PRF_graph_4pad);
 
   for (auto i = 0; i < geom::GetMaxColumn(_invert); ++i)
     _PRF_histo_col[i] = new TH2F(Form("PRF_histo_col_%i", i),
@@ -214,10 +215,6 @@ bool SpatialResolAna::Initialize() {
     _PRF_graph_xscan[i] = new TGraphErrors();
     _PRF_graph_xscan[i]->SetName(Form("PRF_graph_pad_%i", i));
   }
-
-  _PRF_graph = new TGraphErrors();
-  _PRF_graph->SetName("PRF_graph");
-
 
   _resol_total = new TH1F("resol_total",
      "", resol_bin, resol_min, resol_max);
@@ -258,9 +255,6 @@ bool SpatialResolAna::Initialize() {
   // schedule the output for writing
   _output_vector.push_back(_PRF_function);
   _output_vector.push_back(_PRF_histo);
-  _output_vector.push_back(_PRF_histo_2pad);
-  _output_vector.push_back(_PRF_histo_3pad);
-  _output_vector.push_back(_PRF_histo_4pad);
   _output_vector.push_back(_PRF_graph);
 
   _output_vector.push_back(_residual_sigma);
@@ -739,6 +733,14 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "Postprocessing histoes for writing.......";
 
   ProfilePRF(_PRF_histo, _PRF_graph);
+  ProfilePRF(_PRF_histo_2pad, _PRF_graph_2pad);
+  ProfilePRF(_PRF_histo_3pad, _PRF_graph_3pad);
+  ProfilePRF(_PRF_histo_4pad, _PRF_graph_4pad);
+
+  _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+  _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
+  _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
+  _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
 
   for (auto i = 0; i < 5; ++i)
     ProfilePRF(_PRF_histo_xscan[i], _PRF_graph_xscan[i]);
@@ -818,8 +820,6 @@ bool SpatialResolAna::WriteOutput() {
     // print out monitoring function
     resol->Fill(sqrt(sigma * sigma_ex));
   } // loop over column
-
-  _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
 
   if (_do_separate_pad_fit && _iteration) {
     for (auto prf_bin = 0; prf_bin < prf_error_bins-1; ++prf_bin) {
@@ -937,6 +937,43 @@ Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
   h->GetBinWidth(h->FindLastBinAbove(max/2));
 
   return end - start;
+}
+
+TF1* SpatialResolAna::InitializePRF(const TString name) {
+  TF1* func;
+  if (_gaus_lorentz_PRF) {
+    func = new TF1(name,
+      "[0] * exp(-4*TMath::Log(2)*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )",
+      prf_min, prf_max);
+    func->SetParName(0, "Const");
+    func->SetParName(1, "r");
+    func->SetParName(2, "w");
+
+    auto c = 1.;
+    auto r = 0.5;
+    auto s = 0.005;
+    func->SetParameters(c, r, s);
+
+    return func;
+  }
+
+  func  = new TF1(name,
+    "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)",
+    prf_min, prf_max);
+  func->SetParName(0, "Const");
+  func->SetParName(1, "a2");
+  func->SetParName(2, "a4");
+  func->SetParName(3, "b2");
+  func->SetParName(4, "b4");
+
+  double co = 1.;
+  double a2 = 2.35167e3;
+  double a4 = 6.78962e7;
+  double b2 = 3.36748e3;
+  double b4 = 6.45311e8;
+  func->SetParameters(co, a2, a4, b2, b4);
+
+  return func;
 }
 
 int main(int argc, char** argv) {

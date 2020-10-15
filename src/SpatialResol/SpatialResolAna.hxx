@@ -31,27 +31,46 @@ class SpatialResolAna: public AnalysisBase {
 
   bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
 
+  TF1* InitializePRF(const TString name);
+
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
 
  private:
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
+
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
+  /// PRF histoes
+  TH2F* _PRF_histo;
+  // PRF profiling graphs
+  TGraphErrors* _PRF_graph;
+
+  TF1*    _PRF_function_2pad;
+  TF1*    _PRF_function_3pad;
+  TF1*    _PRF_function_4pad;
+
+  TH2F* _PRF_histo_2pad;
+  TH2F* _PRF_histo_3pad;
+  TH2F* _PRF_histo_4pad;
+
+  TGraphErrors* _PRF_graph_2pad;
+  TGraphErrors* _PRF_graph_3pad;
+  TGraphErrors* _PRF_graph_4pad;
 
   /// Fitter class for the track and cluster fitting
   TrackFitter* _fitter;
 
   /// Whether to use arc function for track fitting
-  bool    _do_arc_fit;
+  bool _do_arc_fit;
   /// Whether to use full track fitting
-  bool    _do_full_track_fit;
+  bool _do_full_track_fit;
 
   /// Whether fit all the pads separatly
   bool _do_separate_pad_fit;
 
   /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool    _correction;
+  bool _correction;
 
   /// Whether to fit residuals with Gaussian
   bool _gaussian_residuals;
@@ -97,12 +116,6 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _residual_sigma_unbiased;
   TGraphErrors* _residual_sigma_biased;
 
-  /// PRF histoes
-  TH2F* _PRF_histo;
-  TH2F* _PRF_histo_2pad;
-  TH2F* _PRF_histo_3pad;
-  TH2F* _PRF_histo_4pad;
-
   TH2F* _PRF_histo_col[geom::nPadx];
 
   /// separate pad fit study
@@ -135,9 +148,6 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
-
-  // PRF profiling graphs
-  TGraphErrors* _PRF_graph;
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;
