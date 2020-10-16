@@ -153,8 +153,8 @@ bool SpatialResolAna::Initialize() {
   } else {
     _PRF_function = InitializePRF("PRF_function");
     _PRF_function_2pad = InitializePRF("PRF_function_2pad");
-    _PRF_function_3pad = InitializePRF("PRF_function_2pad");
-    _PRF_function_4pad = InitializePRF("PRF_function_2pad");
+    _PRF_function_3pad = InitializePRF("PRF_function_3pad");
+    _PRF_function_4pad = InitializePRF("PRF_function_4pad");
 
     if (_do_full_track_fit)
       _PRF_function->FixParameter(0, 1.);
