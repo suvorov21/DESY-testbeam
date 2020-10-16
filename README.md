@@ -4,7 +4,7 @@ The package for the DESY beam test data analysis. There are two general method t
 1. macros
 2. so-called HighLLevel tool (recommended and supported)
 
-# Working with macros
+# Working with macros (**DEPRECATED**)
 You could run the analysis with a simple macros (like at CERN analysis). You could find the macros template under macros/TutorialMacro.cxx
 
 ## Compilation
