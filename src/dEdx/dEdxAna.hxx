@@ -39,6 +39,13 @@ class dEdxAna: public AnalysisBase {
   /// Angular histo
   TH2F* _angle;
 
+  /// Time difference between leading and subleading pads
+  TH1F* _delta_t_fst;
+  TH1F* _delta_t_scd;
+
+  /// Time difference wrt angle in YZ
+  TH2F* _delta_t_angle;
+
   ///
   std::vector<TH1F*> _charge_per_mult;
 

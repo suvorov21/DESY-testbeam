@@ -28,6 +28,9 @@ bool dEdxAna::Initialize() {
   _trd_pad_charge = new TH1F("trd_pad", "", 1000, 0., 10000);
   _fth_pad_charge = new TH1F("fth_pad", "", 1000, 0., 10000);
 
+  _delta_t_fst = new TH1F("delta_t_fst", "", 300, -150., 150.);
+  _delta_t_scd = new TH1F("delta_t_scd", "", 300, -150., 150.);
+
   _max_charge_time  = new TH1F("max_charge_time","",511,0,511);
   _max_charge_pos   = new TH1F("max_charge_pos", "", 40, 0., 40.);
 
@@ -35,6 +38,8 @@ bool dEdxAna::Initialize() {
   _XZ_bias   = new TH1F("XZ_bias", "", 500, -0.05, 0.05);
 
   _angle = new TH2F("angle", "YZ angle vs XY angle", 150, 0., 1.5, 150, 0., 1.5);
+
+  _delta_t_angle = new TH2F("dt_angle", "", 300, -150., 150., 150, 0., 1.5);
 
   for (auto i = 0; i < 4; ++i) {
     _charge_per_mult.push_back(new TH1F(Form("charge_per_mult_%i", i), "", 1000, 0., 10000.));
@@ -45,6 +50,10 @@ bool dEdxAna::Initialize() {
   _output_vector.push_back(_mult);
 
   _output_vector.push_back(_angle);
+
+  _output_vector.push_back(_delta_t_fst);
+  _output_vector.push_back(_delta_t_scd);
+  _output_vector.push_back(_delta_t_angle);
 
   _output_vector.push_back(_mult_graph);
   _output_vector.push_back(_mult_graph_err);
@@ -93,21 +102,20 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
     if (!sel::CrossingTrackSelection(itrack, _invert, _verbose))
       continue;
-    // std::vector<double> fit_v = sel::GetFitParams(itrack, _invert);
-    // std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack, _invert);
+    std::vector<double> fit_v = sel::GetFitParams(itrack, _invert);
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack, _invert);
 
     // if(fit_v[0]>1.0e6) return false;
 
-    // _angle->Fill(abs(fit_v[2]), abs(fit_xz[2] * sel::v_drift_est));
+    _angle->Fill(abs(fit_v[2]), abs(fit_xz[2] * sel::v_drift_est));
 
     _store_event = true;
 
-    // cut fir slope in XZ
-    /*if (_invert) {
-      if (abs(fit_xz[2]*0.0028*32) > 0.2) return false;
-      _XZ_bias->Fill(fit_xz[2]*0.0028*32);
-    } else
-      _XZ_bias->Fill(fit_xz[2]*0.0028*geom::GetMaxColumn(_invert));*/
+    // cut f0r slope in XZ
+    // if (_invert) {
+    //   _XZ_bias->Fill(fit_xz[2]*0.0028*32);
+    // } else
+    //   _XZ_bias->Fill(fit_xz[2]*0.0028*geom::GetMaxColumn(_invert));
 
     //sel::Get3DFitParams(itrack);
 
@@ -120,13 +128,13 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     for(auto col:itrack->GetCols(_invert)) if(col.size()){
       int colQ = 0;
       auto it_x = col[0]->GetCol(_invert);
-      std::vector <double> Qpads;
+      std::vector <std::pair<int, double> > Qpads;
       int z_max, x_max, q_max;
       z_max = x_max = q_max = 0;
       for(auto h:col){
         colQ+=h->GetQ();
         _hTime->Fill(h->GetTime());
-        Qpads.push_back(h->GetQ());
+        Qpads.push_back(std::make_pair(h->GetTime(), h->GetQ()));
         if (h->GetQ() > q_max) {
           q_max = h->GetQ();
           z_max = h->GetTime();
@@ -145,11 +153,24 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       _mult->Fill(col.size());
       _mult_col[it_x]->Fill(col.size());
 
-      sort(Qpads.begin(), Qpads.end(), [](double x1, double x2){return x1 > x2;});
-      if (Qpads.size() > 0) _fst_pad_charge->Fill(Qpads[0]);
-      if (Qpads.size() > 1) _scd_pad_charge->Fill(Qpads[1]);
-      if (Qpads.size() > 2) _trd_pad_charge->Fill(Qpads[2]);
-      if (Qpads.size() > 3) _fth_pad_charge->Fill(Qpads[3]);
+      sort(Qpads.begin(), Qpads.end(), [](std::pair<int, double> x1,
+                                          std::pair<int, double> x2) {
+                                            return x1.second > x2.second;
+                                          });
+
+      if (Qpads.size() > 0) _fst_pad_charge->Fill(Qpads[0].second);
+      if (Qpads.size() > 1) {
+        _scd_pad_charge->Fill(Qpads[1].second);
+        _delta_t_fst->Fill(Qpads[1].first - Qpads[0].first);
+        _delta_t_angle->Fill(Qpads[1].first - Qpads[0].first,
+                             abs(fit_xz[2] * sel::v_drift_est)
+                             );
+      }
+      if (Qpads.size() > 2) {
+        _trd_pad_charge->Fill(Qpads[2].second);
+        _delta_t_scd->Fill(Qpads[2].first - Qpads[0].first);
+      }
+      if (Qpads.size() > 3) _fth_pad_charge->Fill(Qpads[3].second);
     } // loop over column
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
@@ -172,10 +193,10 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       _max_charge_time->Fill(MaxCharge_time);
     }
 
-    if(_batch == 0) {
-      DrawCharge();
-      DrawSelection(event,trkID);
-    }
+    // if(_batch == 0) {
+    //   DrawCharge();
+    //   DrawSelection(event,trkID);
+    // }
   }
   return true;
 }
@@ -191,18 +212,6 @@ bool dEdxAna::WriteOutput() {
   }
   std::cout << "done" << std::endl;
   AnalysisBase::WriteOutput();
-
-  // std::cout << "selEvents: " << _selEvents << std::endl;
-  // std::cout << "Write dedx output........................";
-
-  // if (!_file_out)
-  //   return true;
-
-  // auto file = new TFile(_file_out_name.Data(), "UPDATE");
-  // // write
-  // file->Close();
-
-  // std::cout << "done" << std::endl;
   return true;
 }
 
