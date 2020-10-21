@@ -17,9 +17,10 @@ class dEdxAna: public AnalysisBase {
   /**
    * Trees declaration
    */
+  /// Tree with entry per cluster
+  TTree* _cluster_tree;
 
-  /// Tree to store all the analysis output
-  TTree* _ev_tree;
+  /// event Id
   int _event_id;
 
   /// trancated dE/dx
@@ -28,9 +29,6 @@ class dEdxAna: public AnalysisBase {
   float _angle_xy;
   /// amgle wrt MM plane
   float _angle_yz;
-
-  /// Tree with entry per cluster
-  TTree* _cluster_tree;
 
   /// number of pads in cluster
   int _multiplicity;

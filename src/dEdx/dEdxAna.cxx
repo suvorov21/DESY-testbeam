@@ -13,22 +13,16 @@ bool dEdxAna::Initialize() {
    * Tree declaration
    */
 
-  /// tree with entry per event
-  _ev_tree = new TTree("event_tree", "event_tree");
-  _ev_tree->Branch("event_id",       &_event_id);
-  _ev_tree->Branch("dEdx_trunc",     &_dedx_truncated);
-  _ev_tree->Branch("angle_xy",       &_angle_xy);
-  _ev_tree->Branch("angle_yz",       &_angle_yz);
-
-
   /// tree with entry per cluster
   _cluster_tree = new TTree("cluster_tree", "cluster_tree");
   _cluster_tree->Branch("event_id",    &_event_id);
   _cluster_tree->Branch("mult",        &_multiplicity);
+  _cluster_tree->Branch("dEdx_trunc",  &_dedx_truncated);
+  _cluster_tree->Branch("angle_xy",    &_angle_xy);
+  _cluster_tree->Branch("angle_yz",    &_angle_yz);
   _cluster_tree->Branch("charge",      &_charge,    "_charge[10]/I");
   _cluster_tree->Branch("time",        &_time,      "_time[10]/I");
 
-  _output_vector.push_back(_ev_tree);
   _output_vector.push_back(_cluster_tree);
 
 
@@ -115,13 +109,10 @@ bool dEdxAna::Initialize() {
 }
 
 bool dEdxAna::ProcessEvent(const TEvent *event) {
-  int id = event->GetID();
-  int n_digits = TMath::Log(id);
-  // 2147483647
-  _event_id = event->GetID() * TMath::Power(10, 8-n_digits);
 
   for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
-    _event_id += 1;
+    // add first digit with a track number
+    _event_id = event->GetID() + (trkID+1) * 1e8;
     TTrack* itrack = event->GetTracks()[trkID];
     if(_verbose > 1){
       std::cout << "sel::GetNonZeroCols(event,trkID).size(): ";
@@ -232,7 +223,6 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     //   DrawCharge();
     //   DrawSelection(event,trkID);
     // }
-    _ev_tree->Fill();
   } // loop over tracks
   return true;
 }
