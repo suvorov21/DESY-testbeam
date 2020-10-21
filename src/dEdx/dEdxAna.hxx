@@ -5,12 +5,43 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
+const double alpha = 0.625;
+
 
 /// Spatial resolution analysis
 class dEdxAna: public AnalysisBase {
  public:
   dEdxAna(int argc, char** argv);
   virtual ~dEdxAna() {;}
+
+  /**
+   * Trees declaration
+   */
+
+  /// Tree to store all the analysis output
+  TTree* _ev_tree;
+  int _event_id;
+
+  /// trancated dE/dx
+  float _dedx_truncated;
+  /// angle in MM plane
+  float _angle_xy;
+  /// amgle wrt MM plane
+  float _angle_yz;
+
+  /// Tree with entry per cluster
+  TTree* _cluster_tree;
+
+  /// number of pads in cluster
+  int _multiplicity;
+  /// sorted charge array
+  int _charge[10];
+  /// time array sorted with charge
+  int _time[10];
+
+  /**
+   * Histogramms and graphs declaration
+   */
 
   TH1F* _hdEdx;
   TH1F* _hTime;

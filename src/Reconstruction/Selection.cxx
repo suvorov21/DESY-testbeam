@@ -152,7 +152,7 @@ std::vector <double> sel::GetFitParamsXZ(const TTrack* track, bool invert){
 }
 
 //// 3D FITTING:    ---- WARNING ---- UNDER DEVELOPMENT, DO NOT USE IT!
-
+/*
 #include <TMath.h>
 #include <TGraph2D.h>
 #include <TRandom2.h>
@@ -319,5 +319,5 @@ std::vector<double> sel::Get3DFitParams(const TTrack* track, bool invert)
   return p_result;
 }
 
-
+*/
 

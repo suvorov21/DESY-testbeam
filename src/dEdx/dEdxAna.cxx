@@ -9,6 +9,33 @@ dEdxAna::dEdxAna(int argc, char** argv): AnalysisBase(argc, argv) {
 bool dEdxAna::Initialize() {
   AnalysisBase::Initialize();
 
+  /**
+   * Tree declaration
+   */
+
+  /// tree with entry per event
+  _ev_tree = new TTree("event_tree", "event_tree");
+  _ev_tree->Branch("event_id",       &_event_id);
+  _ev_tree->Branch("dEdx_trunc",     &_dedx_truncated);
+  _ev_tree->Branch("angle_xy",       &_angle_xy);
+  _ev_tree->Branch("angle_yz",       &_angle_yz);
+
+
+  /// tree with entry per cluster
+  _cluster_tree = new TTree("cluster_tree", "cluster_tree");
+  _cluster_tree->Branch("event_id",    &_event_id);
+  _cluster_tree->Branch("mult",        &_multiplicity);
+  _cluster_tree->Branch("charge",      &_charge,    "_charge[10]/I");
+  _cluster_tree->Branch("time",        &_time,      "_time[10]/I");
+
+  _output_vector.push_back(_ev_tree);
+  _output_vector.push_back(_cluster_tree);
+
+
+  /**
+   * Histogram declaration
+   */
+
   _hdEdx  = new TH1F("dEdx","",300,0,5000);
   _hTime  = new TH1F("tDist","",511,0,511);
   _mult   = new TH1F("Mult", "multiplicity", 10, 0., 10.);
@@ -88,8 +115,13 @@ bool dEdxAna::Initialize() {
 }
 
 bool dEdxAna::ProcessEvent(const TEvent *event) {
-  double alpha = 0.625;
+  int id = event->GetID();
+  int n_digits = TMath::Log(id);
+  // 2147483647
+  _event_id = event->GetID() * TMath::Power(10, 8-n_digits);
+
   for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
+    _event_id += 1;
     TTrack* itrack = event->GetTracks()[trkID];
     if(_verbose > 1){
       std::cout << "sel::GetNonZeroCols(event,trkID).size(): ";
@@ -105,21 +137,13 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     std::vector<double> fit_v = sel::GetFitParams(itrack, _invert);
     std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack, _invert);
 
-    // if(fit_v[0]>1.0e6) return false;
-
     _angle->Fill(abs(fit_v[2]), abs(fit_xz[2] * sel::v_drift_est));
+    _angle_xy = fit_v[2];
+    _angle_yz = fit_xz[2] * sel::v_drift_est;
 
     _store_event = true;
 
-    // cut f0r slope in XZ
-    // if (_invert) {
-    //   _XZ_bias->Fill(fit_xz[2]*0.0028*32);
-    // } else
-    //   _XZ_bias->Fill(fit_xz[2]*0.0028*geom::GetMaxColumn(_invert));
-
-    //sel::Get3DFitParams(itrack);
-
-    //If survives the selection, use track info:
+    // if survives the selection, use track info:
     _selEvents++;
 
     if (_test_mode)
@@ -128,7 +152,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     for(auto col:itrack->GetCols(_invert)) if(col.size()){
       int colQ = 0;
       auto it_x = col[0]->GetCol(_invert);
-      std::vector <std::pair<int, double> > Qpads;
+      std::vector <std::pair<int, int> > Qpads;
       int z_max, x_max, q_max;
       z_max = x_max = q_max = 0;
       for(auto h:col){
@@ -153,8 +177,8 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       _mult->Fill(col.size());
       _mult_col[it_x]->Fill(col.size());
 
-      sort(Qpads.begin(), Qpads.end(), [](std::pair<int, double> x1,
-                                          std::pair<int, double> x2) {
+      sort(Qpads.begin(), Qpads.end(), [](std::pair<int, int> x1,
+                                          std::pair<int, int> x2) {
                                             return x1.second > x2.second;
                                           });
 
@@ -171,13 +195,24 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
         _delta_t_scd->Fill(Qpads[2].first - Qpads[0].first);
       }
       if (Qpads.size() > 3) _fth_pad_charge->Fill(Qpads[3].second);
+
+      Qpads.resize(10, std::make_pair(0, 0));
+      for (auto padID = 0; padID < 10; ++padID) {
+        _charge[padID] += Qpads[padID].second;
+        _time[padID] += Qpads[padID].first;
+      }
+
+      _multiplicity = col.size();
+      _cluster_tree->Fill();
     } // loop over column
+
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
     Int_t i_max = round(alpha * QsegmentS.size());
     for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
     double dEdx= totQ / (alpha * QsegmentS.size());
     _hdEdx->Fill(dEdx);
+    _dedx_truncated = dEdx;
 
     // look for max charge in the pad in the event
     std::vector<THit*> hits = itrack->GetHits();
@@ -197,7 +232,8 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     //   DrawCharge();
     //   DrawSelection(event,trkID);
     // }
-  }
+    _ev_tree->Fill();
+  } // loop over tracks
   return true;
 }
 
