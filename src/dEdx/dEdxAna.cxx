@@ -198,8 +198,8 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
       Qpads.resize(10, std::make_pair(0, 0));
       for (auto padID = 0; padID < 10; ++padID) {
-        _charge[padID] += Qpads[padID].second;
-        _time[padID] += Qpads[padID].first;
+        _charge[padID] = Qpads[padID].second;
+        _time[padID] = Qpads[padID].first;
       }
 
       _multiplicity = col.size();
