@@ -53,6 +53,33 @@ class dEdxAna: public AnalysisBase {
   TH2F* _XZ_leading;
   TH1F* _XZ_bias;
 
+  ////TTree 
+  TTree *outtree;
+  Int_t ev;
+  Float_t dEdx;
+  Float_t angle_xy;
+  Float_t angle_yz;
+  Int_t npoints;
+
+  Float_t delta_t_fst[geom::nPadx];
+  Float_t delta_t_scd[geom::nPadx];
+  Int_t multiplicity[geom::nPadx];
+  Float_t charge[geom::nPadx];
+  Float_t maxcharge_frac[geom::nPadx];
+  Float_t maxcharge_time[geom::nPadx];
+  Float_t fst_pad_charge[geom::nPadx];
+  Float_t scd_pad_charge[geom::nPadx];
+  Float_t trd_pad_charge[geom::nPadx];
+  Float_t fth_pad_charge[geom::nPadx];
+  Float_t fst_pad_time[geom::nPadx];
+  Float_t scd_pad_time[geom::nPadx];
+  Float_t trd_pad_time[geom::nPadx];
+  Float_t fth_pad_time[geom::nPadx];
+
+
+  
+
+
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event

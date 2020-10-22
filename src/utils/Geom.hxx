@@ -70,7 +70,7 @@ namespace geom
     */
 
 
-    static const int Nsamples = 511;
+    static const int Nsamples = 510;
 
     float GetYpos(int it_y, bool invert = false);
 
