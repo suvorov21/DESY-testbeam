@@ -13,18 +13,41 @@ bool dEdxAna::Initialize() {
    * Tree declaration
    */
 
-  /// tree with entry per cluster
-  _cluster_tree = new TTree("cluster_tree", "cluster_tree");
-  _cluster_tree->Branch("event_id",    &_event_id);
-  _cluster_tree->Branch("mult",        &_multiplicity);
-  _cluster_tree->Branch("dEdx_trunc",  &_dedx_truncated);
-  _cluster_tree->Branch("angle_xy",    &_angle_xy);
-  _cluster_tree->Branch("angle_yz",    &_angle_yz);
-  _cluster_tree->Branch("charge",      &_charge,    "_charge[10]/I");
-  _cluster_tree->Branch("time",        &_time,      "_time[10]/I");
+  //Initialize tree
+  outtree = new TTree("outtree","outtree");
+  outtree->Branch("ev",         &_ev,         "ev/I");
+  outtree->Branch("dEdx",       &_dEdx,       "dEdx/F");
+  outtree->Branch("npoints",    &_npoints,    "npoints/I");
+  outtree->Branch("angle_xy",   &_angle_xy,   "_angle_xy/F");
+  outtree->Branch("angle_yz",   &_angle_yz,   "_angle_yz/F");
 
-  _output_vector.push_back(_cluster_tree);
+  outtree->Branch("multiplicity",
+                  &_multiplicity,
+                  TString::Format("multiplicity[%i]/I", geom::nPadx)
+                  );
+  outtree->Branch("charge",
+                  &_charge,
+                  TString::Format("_charge[%i]/F", geom::nPadx)
+                  );
+  outtree->Branch("maxcharge_frac",
+                  &_maxcharge_frac,
+                  TString::Format("_maxcharge_frac[%i]/F", geom::nPadx)
+                  );
+  outtree->Branch("maxcharge_time",
+                  &_maxcharge_time,
+                  TString::Format("_maxcharge_time[%i]/F", geom::nPadx)
+                  );
 
+  outtree->Branch("pad_charge",
+                  &_pad_charge,
+                  TString::Format("_pad_charge[10][%i]/F", geom::nPadx)
+                  );
+  outtree->Branch("pad_time",
+                  &_pad_time,
+                  TString::Format("_pad_time[10][%i]/F", geom::nPadx)
+                  );
+
+  _output_vector.push_back(outtree);
 
   /**
    * Histogram declaration
@@ -112,7 +135,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
   for(int trkID=0; trkID<(int)event->GetTracks().size(); trkID++){
     // add first digit with a track number
-    _event_id = event->GetID() + (trkID+1) * 1e8;
+    _ev = event->GetID() + (trkID+1) * 1e8;
     TTrack* itrack = event->GetTracks()[trkID];
     if(_verbose > 1){
       std::cout << "sel::GetNonZeroCols(event,trkID).size(): ";
@@ -156,6 +179,11 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
           x_max = h->GetCol(_invert);
         }
       }
+
+      _maxcharge_frac[it_x] = (float) q_max/colQ;
+      _maxcharge_time[it_x] = z_max;
+      _charge[it_x] = colQ;
+
       if (colQ) {
         _XZ_leading->Fill(z_max, x_max);
         QsegmentS.push_back(colQ);
@@ -168,42 +196,35 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       _mult->Fill(col.size());
       _mult_col[it_x]->Fill(col.size());
 
-      sort(Qpads.begin(), Qpads.end(), [](std::pair<int, int> x1,
-                                          std::pair<int, int> x2) {
+      _multiplicity[it_x] = col.size();
+
+      sort(Qpads.begin(), Qpads.end(), [](std::pair<int, double> x1,
+                                          std::pair<int, double> x2) {
                                             return x1.second > x2.second;
                                           });
 
-      if (Qpads.size() > 0) _fst_pad_charge->Fill(Qpads[0].second);
-      if (Qpads.size() > 1) {
-        _scd_pad_charge->Fill(Qpads[1].second);
-        _delta_t_fst->Fill(Qpads[1].first - Qpads[0].first);
-        _delta_t_angle->Fill(Qpads[1].first - Qpads[0].first,
-                             abs(fit_xz[2] * sel::v_drift_est)
-                             );
+      for (uint pad_id = 0; pad_id < 10; pad_id++) {
+        if (pad_id < Qpads.size()) {
+          _pad_time[pad_id][it_x] = Qpads[pad_id].first;
+          _pad_charge[pad_id][it_x] = Qpads[pad_id].second;
+        } else {
+          _pad_time[pad_id][it_x] = -9999;
+          _pad_charge[pad_id][it_x] = -9999;
+        }
       }
-      if (Qpads.size() > 2) {
-        _trd_pad_charge->Fill(Qpads[2].second);
-        _delta_t_scd->Fill(Qpads[2].first - Qpads[0].first);
-      }
-      if (Qpads.size() > 3) _fth_pad_charge->Fill(Qpads[3].second);
-
-      Qpads.resize(10, std::make_pair(0, 0));
-      for (auto padID = 0; padID < 10; ++padID) {
-        _charge[padID] = Qpads[padID].second;
-        _time[padID] = Qpads[padID].first;
-      }
-
-      _multiplicity = col.size();
-      _cluster_tree->Fill();
     } // loop over column
 
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
     Int_t i_max = round(alpha * QsegmentS.size());
     for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
-    double dEdx= totQ / (alpha * QsegmentS.size());
-    _hdEdx->Fill(dEdx);
-    _dedx_truncated = dEdx;
+    float CT= totQ / (alpha * QsegmentS.size());
+    _hdEdx->Fill(CT);
+
+    _npoints = QsegmentS.size();
+    _dEdx = CT;
+
+    outtree->Fill();
 
     // look for max charge in the pad in the event
     std::vector<THit*> hits = itrack->GetHits();

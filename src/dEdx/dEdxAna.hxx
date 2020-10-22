@@ -17,25 +17,21 @@ class dEdxAna: public AnalysisBase {
   /**
    * Trees declaration
    */
-  /// Tree with entry per cluster
-  TTree* _cluster_tree;
+  /// Tree with entry per event
+  TTree *outtree;
+  Int_t _ev;
+  Float_t _dEdx;
+  Float_t _angle_xy;
+  Float_t _angle_yz;
+  Int_t _npoints;
 
-  /// event Id
-  int _event_id;
+  Int_t _multiplicity[geom::nPadx];
+  Float_t _charge[geom::nPadx];
+  Float_t _maxcharge_frac[geom::nPadx];
+  Float_t _maxcharge_time[geom::nPadx];
 
-  /// trancated dE/dx
-  float _dedx_truncated;
-  /// angle in MM plane
-  float _angle_xy;
-  /// amgle wrt MM plane
-  float _angle_yz;
-
-  /// number of pads in cluster
-  int _multiplicity;
-  /// sorted charge array
-  int _charge[10];
-  /// time array sorted with charge
-  int _time[10];
+  Float_t _pad_charge[10][geom::nPadx];
+  Float_t _pad_time[10][geom::nPadx];
 
   /**
    * Histogramms and graphs declaration
@@ -81,6 +77,7 @@ class dEdxAna: public AnalysisBase {
   /// HIT MAPS
   TH2F* _XZ_leading;
   TH1F* _XZ_bias;
+
 
   /// Initialise histoes, input files, selections
   bool Initialize();
