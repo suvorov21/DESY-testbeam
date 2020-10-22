@@ -13,7 +13,7 @@ compile_gcc:
   before_script:
   script:
     # a VERY dirty fix to keep test passing
-    - sed -i '73s/.*/static const int Nsamples = 511;/' utils/Geom.hxx
+    - sed -i '73s/.*/static const int Nsamples = 511;/' /builds/t2k-beamtest/desy_testbeam/utils/Geom.hxx
     - mkdir build; cd build
     - gcc -v > ../gcc.log
     - cmake3 ../src
