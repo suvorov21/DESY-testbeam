@@ -175,8 +175,6 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
         }
       }
 
-      std::cout<<col.size()<<" "<<Qpads.size()<<std::endl;
-
       maxcharge_frac[it_x] = (float) q_max/colQ;
       maxcharge_time[it_x] = z_max;
       charge[it_x] = colQ;
