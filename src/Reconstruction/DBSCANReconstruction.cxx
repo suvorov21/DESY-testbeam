@@ -103,16 +103,35 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
     for(int j=0; j<geom::nPady; j++){
       int Q = 0;
       int t = 0;
+      std::vector<std::pair<int, int>> WF_v;
+      int first = 0;
+      int last = -9999;
       for(int k=0; k<geom::Nsamples; k++){
-        if(!padAmpl[i][j][k]) continue;
+        if(padAmpl[i][j][k] <= 0) continue;
+        if (!first)
+          first = k;
+        last = k;
+        WF_v.push_back(std::make_pair(k, padAmpl[i][j][k]));
         if(padAmpl[i][j][k]>Q) {Q = padAmpl[i][j][k]; t=k;}
       }
+
+      int first_HM = 0;
+      int last_HM = -9999;
+      for (auto pad:WF_v) {
+        if (!first_HM && pad.second > Q/2)
+          first_HM = pad.first;
+        if (pad.second > Q/2)
+          last_HM = pad.first;
+      }
+
       if(Q){
         Node node;
         node.x  = i;
         node.y  = j;
         node.t  = t;
         node.q  = Q;
+        node.w = last - first;
+        node.whm = last_HM - first_HM;
         node.id = nodes.size();
         nodes.push_back(node);
       }
@@ -209,7 +228,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
     tracks.push_back(track);
     for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
-      THit *hit = new THit(n.x,n.y,n.t,n.q);
+      THit *hit = new THit(n.x,n.y,n.t,n.q,n.w,n.whm);
       usedHits[i] = 1;
       if(n.c == (int)trkID){
         track->AddHit(hit);
@@ -220,7 +239,7 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<Clust
   // stored unselected hits
   for (uint i = 0; i<nodes.size(); i++){
     Node n = nodes[i];
-    if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q));
+    if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q,n.w,n.whm));
   }
 
 

@@ -25,9 +25,13 @@ bool dEdxAna::Initialize() {
                   &_multiplicity,
                   TString::Format("multiplicity[%i]/I", geom::nPadx)
                   );
+  outtree->Branch("mult_rob",
+                  &_multiplicity_robust,
+                  TString::Format("multiplicity_robust[%i]/I", geom::nPadx)
+                  );
   outtree->Branch("charge",
                   &_charge,
-                  TString::Format("_charge[%i]/F", geom::nPadx)
+                  TString::Format("_charge[%i]/I", geom::nPadx)
                   );
   outtree->Branch("maxcharge_frac",
                   &_maxcharge_frac,
@@ -35,16 +39,35 @@ bool dEdxAna::Initialize() {
                   );
   outtree->Branch("maxcharge_time",
                   &_maxcharge_time,
-                  TString::Format("_maxcharge_time[%i]/F", geom::nPadx)
+                  TString::Format("_maxcharge_time[%i]/I", geom::nPadx)
                   );
 
   outtree->Branch("pad_charge",
                   &_pad_charge,
-                  TString::Format("_pad_charge[10][%i]/F", geom::nPadx)
+                  TString::Format("_pad_charge[10][%i]/I", geom::nPadx)
                   );
   outtree->Branch("pad_time",
                   &_pad_time,
-                  TString::Format("_pad_time[10][%i]/F", geom::nPadx)
+                  TString::Format("_pad_time[10][%i]/I", geom::nPadx)
+                  );
+
+  outtree->Branch("wf_width",
+                  &_wf_width,
+                  TString::Format("_wf_width[10][%i]/I", geom::nPadx)
+                  );
+
+  outtree->Branch("wf_fwhm",
+                  &_wf_fwhm,
+                  TString::Format("_wf_fwhm[10][%i]/I", geom::nPadx)
+                  );
+
+  outtree->Branch("pad_x",
+                  &_pad_x,
+                  TString::Format("_pad_x[10][%i]/I", geom::nPadx)
+                  );
+  outtree->Branch("pad_y",
+                  &_pad_y,
+                  TString::Format("_pad_y[10][%i]/I", geom::nPadx)
                   );
 
   _output_vector.push_back(outtree);
@@ -67,11 +90,6 @@ bool dEdxAna::Initialize() {
 
   _un_trunk_cluster = new TH1F("un_trunc_cluster", "", 1000, 0., 10000);
 
-  _fst_pad_charge = new TH1F("fst_pad", "", 1000, 0., 10000);
-  _scd_pad_charge = new TH1F("scd_pad", "", 1000, 0., 10000);
-  _trd_pad_charge = new TH1F("trd_pad", "", 1000, 0., 10000);
-  _fth_pad_charge = new TH1F("fth_pad", "", 1000, 0., 10000);
-
   _delta_t_fst = new TH1F("delta_t_fst", "", 300, -150., 150.);
   _delta_t_scd = new TH1F("delta_t_scd", "", 300, -150., 150.);
 
@@ -84,10 +102,6 @@ bool dEdxAna::Initialize() {
   _angle = new TH2F("angle", "YZ angle vs XY angle", 150, 0., 1.5, 150, 0., 1.5);
 
   _delta_t_angle = new TH2F("dt_angle", "", 300, -150., 150., 150, 0., 1.5);
-
-  for (auto i = 0; i < 4; ++i) {
-    _charge_per_mult.push_back(new TH1F(Form("charge_per_mult_%i", i), "", 1000, 0., 10000.));
-  }
 
   _output_vector.push_back(_hdEdx);
   _output_vector.push_back(_hTime);
@@ -104,24 +118,12 @@ bool dEdxAna::Initialize() {
   _output_vector.push_back(_max_charge_pad);
   _output_vector.push_back(_un_trunk_cluster);
 
-  _output_vector.push_back(_fst_pad_charge);
-  _output_vector.push_back(_scd_pad_charge);
-  _output_vector.push_back(_trd_pad_charge);
-  _output_vector.push_back(_fth_pad_charge);
-
   _output_vector.push_back(_max_charge_time);
   _output_vector.push_back(_max_charge_pos);
 
   _output_vector.push_back(_XZ_leading);
   _output_vector.push_back(_XZ_bias);
 
-  for (uint i = 0; i < _charge_per_mult.size(); ++i)
-    _output_vector.push_back(_charge_per_mult[i]);
-
-  for (auto i = 0; i < geom::nPadx; ++i) {
-    _mult_col[i] = new TH1F(Form("Mult_col_%i", i), "multiplicity", 10, 0., 10.);
-    _output_vector.push_back(_mult_col[i]);
-  }
   _selEvents = 0;
 
   // Initilise selection
@@ -162,23 +164,28 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
     if (_test_mode)
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
+    // vector of charge in a cluster
     std::vector <double> QsegmentS;
-    for(auto col:itrack->GetCols(_invert)) if(col.size()){
+    auto cols = itrack->GetCols(_invert);
+    for(auto col:cols) if(col.size()){
       int colQ = 0;
       auto it_x = col[0]->GetCol(_invert);
-      std::vector <std::pair<int, int> > Qpads;
+      std::vector <THit*> Qpads;
       int z_max, x_max, q_max;
       z_max = x_max = q_max = 0;
-      for(auto h:col){
+
+      auto robust_col = GetRobustPadsInColumn(col);
+      for(auto h:robust_col){
         colQ+=h->GetQ();
         _hTime->Fill(h->GetTime());
-        Qpads.push_back(std::make_pair(h->GetTime(), h->GetQ()));
+        Qpads.push_back(h);
+        // study thw WF
         if (h->GetQ() > q_max) {
           q_max = h->GetQ();
           z_max = h->GetTime();
           x_max = h->GetCol(_invert);
         }
-      }
+      } // loop over rows
 
       _maxcharge_frac[it_x] = (float) q_max/colQ;
       _maxcharge_time[it_x] = z_max;
@@ -190,26 +197,31 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       }
       _un_trunk_cluster->Fill(colQ);
 
-      if (col.size() != 0 && col.size() <= _charge_per_mult.size())
-        _charge_per_mult[col.size()-1]->Fill(colQ);
-
       _mult->Fill(col.size());
-      _mult_col[it_x]->Fill(col.size());
 
       _multiplicity[it_x] = col.size();
+      _multiplicity_robust[it_x] = robust_col.size();
 
-      sort(Qpads.begin(), Qpads.end(), [](std::pair<int, double> x1,
-                                          std::pair<int, double> x2) {
-                                            return x1.second > x2.second;
+      sort(Qpads.begin(), Qpads.end(), [](THit* x1,
+                                          THit* x2) {
+                                            return x1->GetQ() > x2->GetQ();
                                           });
 
       for (uint pad_id = 0; pad_id < 10; pad_id++) {
         if (pad_id < Qpads.size()) {
-          _pad_time[pad_id][it_x] = Qpads[pad_id].first;
-          _pad_charge[pad_id][it_x] = Qpads[pad_id].second;
+          _pad_time[pad_id][it_x]   = Qpads[pad_id]->GetTime();
+          _pad_charge[pad_id][it_x] = Qpads[pad_id]->GetQ();
+          _wf_width[pad_id][it_x]   = Qpads[pad_id]->GetWidth();
+          _wf_fwhm[pad_id][it_x]    = Qpads[pad_id]->GetFWHM();
+          _pad_x[pad_id][it_x]      = Qpads[pad_id]->GetCol();
+          _pad_y[pad_id][it_x]      = Qpads[pad_id]->GetRow();
         } else {
-          _pad_time[pad_id][it_x] = -9999;
+          _pad_time[pad_id][it_x]   = -9999;
           _pad_charge[pad_id][it_x] = -9999;
+          _wf_width[pad_id][it_x]   = -9999;
+          _wf_fwhm[pad_id][it_x]    = -9999;
+          _pad_x[pad_id][it_x]      = -9999;
+          _pad_y[pad_id][it_x]      = -9999;
         }
       }
     } // loop over column
@@ -240,24 +252,15 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       _max_charge_time->Fill(MaxCharge_time);
     }
 
-    // if(_batch == 0) {
-    //   DrawCharge();
-    //   DrawSelection(event,trkID);
-    // }
+    if(_batch == 0) {
+      DrawCharge();
+      DrawSelection(event,trkID);
+    }
   } // loop over tracks
   return true;
 }
 
 bool dEdxAna::WriteOutput() {
-  std::cout << "Process result for output................";
-  for (auto i = 0; i < geom::nPadx; ++i) {
-    _mult_graph->SetPoint(_mult_graph->GetN(), i, _mult_col[i]->GetMean());
-    _mult_graph->SetPointError(_mult_graph->GetN() - 1, 0, _mult_col[i]->GetRMS());
-
-    _mult_graph_err->SetPoint(_mult_graph_err->GetN(), i, _mult_col[i]->GetMean());
-    _mult_graph_err->SetPointError(_mult_graph_err->GetN() - 1, 0, _mult_col[i]->GetMeanError());
-  }
-  std::cout << "done" << std::endl;
   AnalysisBase::WriteOutput();
   return true;
 }

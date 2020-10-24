@@ -26,12 +26,19 @@ class dEdxAna: public AnalysisBase {
   Int_t _npoints;
 
   Int_t _multiplicity[geom::nPadx];
-  Float_t _charge[geom::nPadx];
+  Int_t _multiplicity_robust[geom::nPadx];
+  Int_t _charge[geom::nPadx];
+  Int_t _maxcharge_time[geom::nPadx];
   Float_t _maxcharge_frac[geom::nPadx];
-  Float_t _maxcharge_time[geom::nPadx];
 
-  Float_t _pad_charge[10][geom::nPadx];
-  Float_t _pad_time[10][geom::nPadx];
+  Int_t _pad_charge[10][geom::nPadx];
+  Int_t _pad_time[10][geom::nPadx];
+
+  Int_t _pad_x[10][geom::nPadx];
+  Int_t _pad_y[10][geom::nPadx];
+
+  Int_t _wf_width[10][geom::nPadx];
+  Int_t _wf_fwhm[10][geom::nPadx];
 
   /**
    * Histogramms and graphs declaration
@@ -40,9 +47,8 @@ class dEdxAna: public AnalysisBase {
   TH1F* _hdEdx;
   TH1F* _hTime;
   TH1F* _mult;
-  int   _selEvents;
+  Int_t   _selEvents;
 
-  TH1F* _mult_col[geom::nPadx];
   TGraphErrors* _mult_graph;
   TGraphErrors* _mult_graph_err;
 
@@ -51,11 +57,6 @@ class dEdxAna: public AnalysisBase {
 
   /// cluster charge before truncation
   TH1F* _un_trunk_cluster;
-  /// leading pad charge
-  TH1F* _fst_pad_charge;
-  TH1F* _scd_pad_charge;
-  TH1F* _trd_pad_charge;
-  TH1F* _fth_pad_charge;
 
   /// Max charge pos and time
   TH1F* _max_charge_pos;
@@ -70,9 +71,6 @@ class dEdxAna: public AnalysisBase {
 
   /// Time difference wrt angle in YZ
   TH2F* _delta_t_angle;
-
-  ///
-  std::vector<TH1F*> _charge_per_mult;
 
   /// HIT MAPS
   TH2F* _XZ_leading;

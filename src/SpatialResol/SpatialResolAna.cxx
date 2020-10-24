@@ -94,6 +94,14 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_gr_prev = NULL;
   _uncertainty_vs_prf_histo   = NULL;
 
+  _PRF_function = InitializePRF("PRF_function");
+  _PRF_function_2pad = InitializePRF("PRF_function_2pad");
+  _PRF_function_3pad = InitializePRF("PRF_function_3pad");
+  _PRF_function_4pad = InitializePRF("PRF_function_4pad");
+
+  if (_do_full_track_fit)
+    _PRF_function->FixParameter(0, 1.);
+
   // load information from previous iteration
   if (_iteration) {
     TString prev_file_name = _file_out_name;
@@ -103,20 +111,25 @@ bool SpatialResolAna::Initialize() {
     prev_file_name  += ".root";
 
     _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
-    _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
-    auto uncertainty_graph = (TGraphErrors*)_Prev_iter_file->Get("resol_final");
+    auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
+    auto gr = new TGraphErrors();
+    ProfilePRF(histo_prev, gr);
+    gr->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+    _PRF_function = gr->GetFunction("PRF_function");
+    // _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
+    auto uncertainty_graph = (TH1F*)_Prev_iter_file->Get("resol_total");
+
     if (!_PRF_function || !uncertainty_graph) {
       std::cerr << "ERROR. SpatialResolAna::Initialize().";
       std::cout << "PRF function or resolution is not specified" << std::endl;
       std::cerr << "Search in " << prev_file_name << std::endl;
       exit(1);
     }
-    _uncertainty = 0;
-    for (auto i = 0; i < uncertainty_graph->GetN(); ++i) {
-      double x, y;
-      uncertainty_graph->GetPoint(i, x, y);
-      _uncertainty += y / uncertainty_graph->GetN();
-    }
+
+    Double_t mean, sigma;
+    sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
+    uncertainty_graph->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
+    _uncertainty = uncertainty_graph->GetFunction("gaus")->GetParameter(2);
 
     TGraphErrors* temp = NULL;
     if (_do_separate_pad_fit)
@@ -150,14 +163,6 @@ bool SpatialResolAna::Initialize() {
       }
       this->SetEventList(vec);
     }
-  } else {
-    _PRF_function = InitializePRF("PRF_function");
-    _PRF_function_2pad = InitializePRF("PRF_function_2pad");
-    _PRF_function_3pad = InitializePRF("PRF_function_3pad");
-    _PRF_function_4pad = InitializePRF("PRF_function_4pad");
-
-    if (_do_full_track_fit)
-      _PRF_function->FixParameter(0, 1.);
   }
 
   _qulity_ratio   = new TH1F("quality_ratio",
@@ -441,7 +446,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           -1*geom::nPadx*geom::dx/2., 1.*geom::nPadx*geom::dx/2.);
 
       // loop over rows
-      for (auto pad:col) {
+      auto robust_pads = GetRobustPadsInColumn(col);
+      for (auto pad:robust_pads) {
         if (!pad)
           continue;
 
@@ -465,7 +471,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       ++Ndots;
 
-      track_pos[it_x] = _fitter->FitCluster(col,
+      track_pos[it_x] = _fitter->FitCluster(robust_pads,
           cluster[it_x], cluster_mean[it_x], pos_in_pad,
           _uncertainty_vs_prf_histo);
 
@@ -572,53 +578,54 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
 
       // in case of full track fit calc normalisation coefficient
-      if (_do_full_track_fit) {
-        float a_nom = 0.;
-        float a_den = 0.;
-        for (auto pad:col) {
-          auto q      = pad->GetQ();
-          auto it_y   = pad->GetRow(_invert);
-          if (!q)
-            continue;
-          double center_pad_y = geom::GetYpos(it_y, _invert);
+      // if (_do_full_track_fit) {
+      //   float a_nom = 0.;
+      //   float a_den = 0.;
+      //   for (auto pad:col) {
+      //     auto q      = pad->GetQ();
+      //     auto it_y   = pad->GetRow(_invert);
+      //     if (!q)
+      //       continue;
+      //     double center_pad_y = geom::GetYpos(it_y, _invert);
 
-          if (abs(center_pad_y - track_fit_y) > fit_bound_right)
-            continue;
+      //     if (abs(center_pad_y - track_fit_y) > fit_bound_right)
+      //       continue;
 
-          a_nom += _PRF_function->Eval(center_pad_y - track_fit_y);
-          a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_fit_y), 2) /   q;
-        }
+      //     a_nom += _PRF_function->Eval(center_pad_y - track_fit_y);
+      //     a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_fit_y), 2) /   q;
+      //   }
 
-        a_peak_fit[it_x] = a_nom / a_den;
-      } else
-        a_peak_fit[it_x] = 1.*cluster[it_x];
+      //   a_peak_fit[it_x] = a_nom / a_den;
+      // } else
+      a_peak_fit[it_x] = 1.*cluster[it_x];
 
       // fill pad accuracy
-      if (_do_separate_pad_fit) {
-        for (auto it = pos_in_pad[it_x].begin();
-                  it < pos_in_pad[it_x].end();
-                  ++it) {
-          int bin_prf = -1 + _prf_scale_axis->FindBin((*it).first);
-        // TODO make the definition through constants
-          if (bin_prf < 0 || bin_prf > 2) {
-            std::cout << "Error bin 1  " << bin_prf << "\t" << (*it).first << std::endl;
-            exit(1);
-          }
-          _Fit_quality_plots[bin_prf][it_x]->Fill(abs(track_fit_y - (*it).second.first) / (*it).second.second);
+      // if (_do_separate_pad_fit) {
+      //   for (auto it = pos_in_pad[it_x].begin();
+      //             it < pos_in_pad[it_x].end();
+      //             ++it) {
+      //     int bin_prf = -1 + _prf_scale_axis->FindBin((*it).first);
+      //   // TODO make the definition through constants
+      //     if (bin_prf < 0 || bin_prf > 2) {
+      //       std::cout << "Error bin 1  " << bin_prf << "\t" << (*it).first << std::endl;
+      //       exit(1);
+      //     }
+      //     _Fit_quality_plots[bin_prf][it_x]->Fill(abs(track_fit_y - (*it).second.first) / (*it).second.second);
 
-          int bin2 = -1 + _prf_error_axis->FindBin((*it).first);
-          if (bin2 < 0 || bin2 >= prf_error_bins-1) {
-            std::cout << "Error bin 2  " << bin2 << "\t" << (*it).first << std::endl;
-            exit(1);
-          }
-          _uncertainty_prf_bins[bin2]->Fill(track_fit_y - (*it).second.first);
-        }
-      }
+      //     int bin2 = -1 + _prf_error_axis->FindBin((*it).first);
+      //     if (bin2 < 0 || bin2 >= prf_error_bins-1) {
+      //       std::cout << "Error bin 2  " << bin2 << "\t" << (*it).first << std::endl;
+      //       exit(1);
+      //     }
+      //     _uncertainty_prf_bins[bin2]->Fill(track_fit_y - (*it).second.first);
+      //   }
+      // }
 
       if (cluster_N[it_x] == 1)
         continue;
       // Fill PRF
-      for (auto pad:col) {
+      auto robust_pads = GetRobustPadsInColumn(col);
+      for (auto pad:robust_pads) {
         if (!pad)
           continue;
 
