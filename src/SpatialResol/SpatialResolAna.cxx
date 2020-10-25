@@ -112,8 +112,13 @@ bool SpatialResolAna::Initialize() {
 
     _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
     auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
+    histo_prev->SetName("prev_hsto");
     auto gr = new TGraphErrors();
-    ProfilePRF(histo_prev, gr);
+    if (!ProfilePRF(histo_prev, gr)) {
+      std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
+      std::cerr << "PRF can not be profiled" << std::endl;
+      exit(1);
+    }
     gr->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
     _PRF_function = gr->GetFunction("PRF_function");
     // _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
@@ -125,6 +130,15 @@ bool SpatialResolAna::Initialize() {
       std::cerr << "Search in " << prev_file_name << std::endl;
       exit(1);
     }
+
+    // if (_PRF_function) {
+    //   std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
+    //   for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
+    //     std::cout << "  " << _PRF_function->GetParameter(i) << ",";
+    //   std::cout << "  Chi2/NDF " << _PRF_function->GetChisquare()
+    //             << "/" << _PRF_function->GetNDF() << std::endl;
+    //   std::cout << std::endl;
+    // }
 
     Double_t mean, sigma;
     sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
@@ -334,13 +348,6 @@ bool SpatialResolAna::Initialize() {
   for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
     dir_prf->Append(_PRF_histo_col[j]);
   }
-  // for (auto j = 0; j < 4; ++j) {
-  //   _output_vector.push_back(_PRF_histo_xscan[j]);
-  // }
-
-  // for (auto j = 0; j < 4; ++j) {
-  //   _output_vector.push_back(_PRF_graph_xscan[j]);
-  // }
 
   _passed_events.clear();
 
@@ -737,20 +744,29 @@ bool SpatialResolAna::WriteOutput() {
   if (!_file_out)
     return true;
 
-  std::cout << "Postprocessing histoes for writing.......";
+  std::cout << "PRF profiling............................";
 
   ProfilePRF(_PRF_histo, _PRF_graph);
   ProfilePRF(_PRF_histo_2pad, _PRF_graph_2pad);
   ProfilePRF(_PRF_histo_3pad, _PRF_graph_3pad);
   ProfilePRF(_PRF_histo_4pad, _PRF_graph_4pad);
 
+  std::cout << "done" << std::endl;
+  std::cout << "PRF fit..................................";
+
   _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
   _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
   _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
   _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
 
-  for (auto i = 0; i < 5; ++i)
+  std::cout << "done" << std::endl;
+  std::cout << "Process x histoes........................";
+
+  for (auto i = 0; i < 4; ++i)
     ProfilePRF(_PRF_histo_xscan[i], _PRF_graph_xscan[i]);
+
+  std::cout << "done" << std::endl;
+  std::cout << "Process histoes..........................";
 
   TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
 
@@ -790,13 +806,19 @@ bool SpatialResolAna::WriteOutput() {
       _resol_col_hist_2pad_except[i]->Fit("gaus", "Q");
       _resol_col_hist_3pad_except[i]->Fit("gaus", "Q");
 
+      TF1* func_ex = res_e->GetFunction("gaus");
+      if (!func_ex) {
+        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Exeptional residual fit fail" << std::endl;
+        continue;
+      }
+
       mean     = func->GetParameter(1);
       sigma    = func->GetParameter(2);
-      sigma_ex =res_e->GetFunction("gaus")->GetParameter(2);
+      sigma_ex = func_ex->GetParameter(2);
 
       mean_e      = func->GetParError(1);
       sigma_e     = func->GetParError(2);
-      sigma_ex_e  = res_e->GetFunction("gaus")->GetParError(2);
+      sigma_ex_e  = func_ex->GetParError(2);
     } else {
       // use FWHM
       sigma_ex = 0.5 * GetFWHM(res_e, mean);
@@ -865,6 +887,7 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   if (_PRF_graph->GetFunction("PRF_function")) {
+    _PRF_function = _PRF_graph->GetFunction("PRF_function");
     std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
     for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
       std::cout << "  " << _PRF_function->GetParameter(i) << ",";
@@ -907,10 +930,19 @@ bool SpatialResolAna::WriteOutput() {
 }
 
 bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
+  if (!PRF_h)
+    return false;
+
+  Float_t threshold = 0.05 * PRF_h->GetMaximum();
 
   for (auto i = 1; i < PRF_h->GetXaxis()->GetNbins(); ++i) {
 
-    TH1D* temp_h = PRF_h-> ProjectionY(Form("projections_bin_%i", i), i, i);
+    TH1D* temp_h = PRF_h->ProjectionY(Form("projections_bin_%i", i), i, i);
+    if (!temp_h)
+      return false;
+
+    if (temp_h->GetMaximum() < threshold)
+      continue;
 
     double x = PRF_h->GetXaxis()->GetBinCenter(i);
     double y = temp_h->GetBinCenter(temp_h->GetMaximumBin());

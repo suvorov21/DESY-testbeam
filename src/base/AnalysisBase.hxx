@@ -37,7 +37,7 @@ class AnalysisBase {
 
   virtual void CL_progress_dump(int eventID, int Nevents);
 
-  std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*>& col);
+  std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*> col);
 
   /// Print usage
   void help(const std::string& name);

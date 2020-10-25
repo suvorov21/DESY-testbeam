@@ -457,7 +457,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   delete event3D;
 }
 
-std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*>& col) {
+std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   std::vector<THit*> result;
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
@@ -467,6 +467,9 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*>& col) 
     auto q      = pad->GetQ();
     if (!q)
       continue;
+
+    // if (i > 1)
+    //   continue;
 
     // avoid "suspisious" WF with small time difference
     // if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5) {
