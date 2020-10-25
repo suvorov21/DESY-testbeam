@@ -38,18 +38,18 @@ SpatialResol_raw_test:
     - cd test/; make SR_test;
     - ./SR_test.exe ../Spatial_test_iter0.root; ./SR_test.exe ../Spatial_test_iter1.root;
 
-SpatialResol_pad_test:
-  stage: test
-  before_script:
-    - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input.root
-  script:
-    - ./build/SpatialResol.exe --separate_pad_fit -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe --separate_pad_fit -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
-    - ./build/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
-    - cd test/; make SR_test;
-    - ./SR_test.exe ../Spatial_test_iter2.root;
+# SpatialResol_pad_test:
+#   stage: test
+#   before_script:
+#     - yum -y install wget
+#     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+#     - mv download input.root
+#   script:
+#     - ./build/SpatialResol.exe --separate_pad_fit -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+#     - ./build/SpatialResol.exe --separate_pad_fit -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+#     - ./build/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
+#     - cd test/; make SR_test;
+#     - ./SR_test.exe ../Spatial_test_iter2.root;
 
 dEdx_raw_test:
   stage: test
