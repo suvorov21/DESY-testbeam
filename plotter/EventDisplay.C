@@ -38,7 +38,7 @@ protected:
   // file
   TFile* f;
   TTree* t;
-  Int_t padAmpl[36][32][511];
+  Int_t padAmpl[36][32][510];
   Int_t eventID = 0;
 
   TH2F* MM;
@@ -144,8 +144,9 @@ void MyMainFrame::DoDraw() {
     for (auto y = 0; y < 32; ++y) {
       auto max = 0;
       for (auto t = 0; t < 511; ++t) {
-        if (padAmpl[x][y][t] > max) {
-          max = padAmpl[x][y][t];
+        int Q = padAmpl[x][y][t] - 250;
+        if (Q > max) {
+          max = Q;
         }
       } // over t
       if (max)
@@ -186,13 +187,17 @@ void MyMainFrame::EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected)
   f_WF_canvas->Divide(3, 3);
   for (auto i = 0; i < 9; ++i) {
     WF[i]->Reset();
-    for (auto t_id = 0; t_id < 511; ++t_id) {
+    for (auto t_id = 0; t_id < 510; ++t_id) {
       if (x+1 > 35 || x-1 < 0 || y+1 > 31 || y-1 < 0)
         continue;
-      WF[i]->SetBinContent(t_id, padAmpl[x-1+i%3][y+1-i/3][t_id]);
+      if (padAmpl[x-1+i%3][y+1-i/3][t_id] - 250 > 0)
+        WF[i]->SetBinContent(t_id, padAmpl[x-1+i%3][y+1-i/3][t_id] - 250);
+      else
+        WF[i]->SetBinContent(t_id, 0);
     }
 
     f_WF_canvas->cd(i+1);
+    WF[i]->GetXaxis()->SetRangeUser(100., 250.);
     WF[i]->Draw("hist");
     f_WF_canvas->Modified();
     f_WF_canvas->Update();

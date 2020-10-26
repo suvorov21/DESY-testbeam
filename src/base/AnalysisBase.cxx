@@ -468,14 +468,17 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
     if (!q)
       continue;
 
-    // if (i > 1)
-    //   continue;
+    // not more then 3 pads
+    if (i > 2)
+      continue;
 
-    // avoid "suspisious" WF with small time difference
-    // if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5) {
-    //   // std::cout << i << "\t" << pad->GetTime() << "\t" << pad->GetTime() - col[0]->GetTime() << std::endl;
-    //   continue;
-    // }
+    // WF with negative dt
+    if (pad->GetTime() - col[0]->GetTime() < -1)
+      continue;
+
+    // avoid "suspisious" WF with small time difference in the 3rd pad
+    if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5)
+      continue;
 
     result.push_back(pad);
 
