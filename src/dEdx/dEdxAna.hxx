@@ -5,6 +5,8 @@
 #include "DBSCANReconstruction.hxx"
 #include "Selection.hxx"
 
+const double alpha = 0.625;
+
 
 /// Spatial resolution analysis
 class dEdxAna: public AnalysisBase {
@@ -12,12 +14,41 @@ class dEdxAna: public AnalysisBase {
   dEdxAna(int argc, char** argv);
   virtual ~dEdxAna() {;}
 
+  /**
+   * Trees declaration
+   */
+  /// Tree with entry per event
+  TTree *outtree;
+  Int_t _ev;
+  Float_t _dEdx;
+  Float_t _angle_xy;
+  Float_t _angle_yz;
+  Int_t _npoints;
+
+  Int_t _multiplicity[geom::nPadx];
+  Int_t _multiplicity_robust[geom::nPadx];
+  Int_t _charge[geom::nPadx];
+  Int_t _maxcharge_time[geom::nPadx];
+  Float_t _maxcharge_frac[geom::nPadx];
+
+  Int_t _pad_charge[10][geom::nPadx];
+  Int_t _pad_time[10][geom::nPadx];
+
+  Int_t _pad_x[10][geom::nPadx];
+  Int_t _pad_y[10][geom::nPadx];
+
+  Int_t _wf_width[10][geom::nPadx];
+  Int_t _wf_fwhm[10][geom::nPadx];
+
+  /**
+   * Histogramms and graphs declaration
+   */
+
   TH1F* _hdEdx;
   TH1F* _hTime;
   TH1F* _mult;
-  int   _selEvents;
+  Int_t   _selEvents;
 
-  TH1F* _mult_col[geom::nPadx];
   TGraphErrors* _mult_graph;
   TGraphErrors* _mult_graph_err;
 
@@ -26,11 +57,6 @@ class dEdxAna: public AnalysisBase {
 
   /// cluster charge before truncation
   TH1F* _un_trunk_cluster;
-  /// leading pad charge
-  TH1F* _fst_pad_charge;
-  TH1F* _scd_pad_charge;
-  TH1F* _trd_pad_charge;
-  TH1F* _fth_pad_charge;
 
   /// Max charge pos and time
   TH1F* _max_charge_pos;
@@ -46,38 +72,9 @@ class dEdxAna: public AnalysisBase {
   /// Time difference wrt angle in YZ
   TH2F* _delta_t_angle;
 
-  ///
-  std::vector<TH1F*> _charge_per_mult;
-
   /// HIT MAPS
   TH2F* _XZ_leading;
   TH1F* _XZ_bias;
-
-  ////TTree 
-  TTree *outtree;
-  Int_t ev;
-  Float_t dEdx;
-  Float_t angle_xy;
-  Float_t angle_yz;
-  Int_t npoints;
-
-  Float_t delta_t_fst[geom::nPadx];
-  Float_t delta_t_scd[geom::nPadx];
-  Int_t multiplicity[geom::nPadx];
-  Float_t charge[geom::nPadx];
-  Float_t maxcharge_frac[geom::nPadx];
-  Float_t maxcharge_time[geom::nPadx];
-  Float_t fst_pad_charge[geom::nPadx];
-  Float_t scd_pad_charge[geom::nPadx];
-  Float_t trd_pad_charge[geom::nPadx];
-  Float_t fth_pad_charge[geom::nPadx];
-  Float_t fst_pad_time[geom::nPadx];
-  Float_t scd_pad_time[geom::nPadx];
-  Float_t trd_pad_time[geom::nPadx];
-  Float_t fth_pad_time[geom::nPadx];
-
-
-  
 
 
   /// Initialise histoes, input files, selections

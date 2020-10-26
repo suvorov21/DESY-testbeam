@@ -20,6 +20,8 @@ struct Node{
     int  q = -999;  // charge
     int  c = -999;  // cluster ID
     int id = -999;  // node ID
+    int  w = -999;  // WF width
+    int whm = -999; // WF WHM
 };
 
 struct Cluster{

@@ -173,14 +173,9 @@ bool AnalysisBase::Initialize() {
     _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
     _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
 
-    /*std::vector<int> *_iPadT(0);
-    std::vector<int> *_jPadT(0);
-    _tgeom->SetBranchAddress("jPad", &_jPadT );
-    _tgeom->SetBranchAddress("iPad", &_iPadT );*/
-
-
   } else if (!_work_with_event_file) {
     _chain->SetBranchAddress("PadAmpl", _padAmpl);
+    // read the branch name in format "padAmple[][][]"
     TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
     if ((branch_name.Contains("[510]") && geom::Nsamples != 510) ||
         (branch_name.Contains("[511]") && geom::Nsamples != 511)) {
@@ -352,7 +347,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       delete _event;
       _event = NULL;
     }
-  }
+  } // end of event loop
 
   if (_verbose == 1)
     std::cout << std::endl;
@@ -461,6 +456,38 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   delete MM;
   delete MMsel;
   delete event3D;
+}
+
+std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
+  std::vector<THit*> result;
+  // sort in charge decreasing order
+  sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
+
+  for (uint i = 0; i < col.size(); ++i) {
+    auto pad    = col[i];
+    auto q      = pad->GetQ();
+    if (!q)
+      continue;
+
+    // not more then 3 pads
+    if (i > 2)
+      continue;
+
+    // WF with negative dt
+    if (pad->GetTime() - col[0]->GetTime() < -1)
+      continue;
+
+    // avoid "suspisious" WF with small time difference in the 3rd pad
+    if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5)
+      continue;
+
+    result.push_back(pad);
+
+    // auto it_y   = pad->GetRow(_invert);
+    // auto center_pad_y = geom::GetYpos(it_y, _invert);
+  }
+
+  return result;
 }
 
 void AnalysisBase::help(const std::string& name) {
