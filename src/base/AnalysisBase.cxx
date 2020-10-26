@@ -205,7 +205,8 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  if (!_test_mode){
+  //if (!_test_mode){
+  if (1){
 
     if(_overwrite)
       _file_out = new TFile(_file_out_name.Data(), "RECREATE");
@@ -362,8 +363,8 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 }
 
 bool AnalysisBase::WriteOutput() {
-
-  if(_test_mode) return true;
+  
+  //if(_test_mode) return true;
   if (!_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;

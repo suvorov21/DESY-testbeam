@@ -126,6 +126,36 @@ bool dEdxAna::Initialize() {
 
   _selEvents = 0;
 
+  //Initialize tree
+  outtree = new TTree("outtree","outtree");
+  outtree->Branch("ev",&ev,"ev/I");
+  outtree->Branch("dEdx",&dEdx,"dEdx/F");
+  outtree->Branch("npoints",&npoints,"npoints/I");
+  outtree->Branch("angle_xy",&angle_xy,"angle_xy/F");
+  outtree->Branch("angle_yz",&angle_yz,"angle_yz/F");
+  outtree->Branch("delta_t_fst",&delta_t_fst,TString::Format("delta_t_fst[%i]/F", geom::nPadx));
+  outtree->Branch("delta_t_scd",&delta_t_scd,TString::Format("delta_t_scd[%i]/F", geom::nPadx));
+  outtree->Branch("multiplicity",&multiplicity,TString::Format("multiplicity[%i]/I", geom::nPadx));
+
+  outtree->Branch("charge",&charge,TString::Format("charge[%i]/F", geom::nPadx));
+  outtree->Branch("maxcharge_frac",&maxcharge_frac,TString::Format("maxcharge_frac[%i]/F", geom::nPadx));
+  outtree->Branch("maxcharge_time",&maxcharge_time,TString::Format("maxcharge_time[%i]/F", geom::nPadx));
+
+  outtree->Branch("fst_pad_charge",&fst_pad_charge,TString::Format("fst_pad_charge[%i]/F", geom::nPadx));
+  outtree->Branch("scd_pad_charge",&scd_pad_charge,TString::Format("scd_pad_charge[%i]/F", geom::nPadx));
+  outtree->Branch("trd_pad_charge",&trd_pad_charge,TString::Format("trd_pad_charge[%i]/F", geom::nPadx));
+  outtree->Branch("fth_pad_charge",&fth_pad_charge,TString::Format("fth_pad_charge[%i]/F", geom::nPadx));
+
+  outtree->Branch("fst_pad_time",&fst_pad_time,TString::Format("fst_pad_time[%i]/F", geom::nPadx));
+  outtree->Branch("scd_pad_time",&scd_pad_time,TString::Format("scd_pad_time[%i]/F", geom::nPadx));
+  outtree->Branch("trd_pad_time",&trd_pad_time,TString::Format("trd_pad_time[%i]/F", geom::nPadx));
+  outtree->Branch("fth_pad_time",&fth_pad_time,TString::Format("fth_pad_time[%i]/F", geom::nPadx));
+
+
+
+
+  _output_vector.push_back(outtree);
+
   // Initilise selection
   _reconstruction = new DBSCANReconstruction();
   _reconstruction->Initialize();
@@ -156,6 +186,9 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     _angle->Fill(abs(fit_v[2]), abs(fit_xz[2] * sel::v_drift_est));
     _angle_xy = fit_v[2];
     _angle_yz = fit_xz[2] * sel::v_drift_est;
+
+    angle_xy = abs(fit_v[2]);
+    angle_yz = abs(fit_xz[2]*sel::v_drift_est);
 
     _store_event = true;
 
