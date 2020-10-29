@@ -363,7 +363,7 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 }
 
 bool AnalysisBase::WriteOutput() {
-  
+
   //if(_test_mode) return true;
   if (!_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
@@ -469,17 +469,17 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
     if (!q)
       continue;
 
-    // not more then 3 pads
-    if (i > 2)
-      continue;
+    // // not more then 3 pads
+    // if (i > 2)
+    //   continue;
 
-    // WF with negative dt
-    if (pad->GetTime() - col[0]->GetTime() < -1)
-      continue;
+    // // WF with negative dt
+    // if (pad->GetTime() - col[0]->GetTime() < -1)
+    //   continue;
 
-    // avoid "suspisious" WF with small time difference in the 3rd pad
-    if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5)
-      continue;
+    // // avoid "suspisious" WF with small time difference in the 3rd pad
+    // if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5)
+    //   continue;
 
     result.push_back(pad);
 

@@ -933,7 +933,8 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
   if (!PRF_h)
     return false;
 
-  Float_t threshold = 0.05 * PRF_h->GetMaximum();
+  // Float_t threshold = 0.05 * PRF_h->GetMaximum();
+  Float_t threshold = 0.;
 
   for (auto i = 1; i < PRF_h->GetXaxis()->GetNbins(); ++i) {
 

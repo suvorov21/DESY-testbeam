@@ -43,6 +43,9 @@ protected:
 
   TH2F* MM;
   TH1F* WF[9];
+  Int_t WFstart = 0;
+  Int_t WFend = 511;
+
 
   // GUI
   TCanvas *f_ED_canvas;
@@ -197,7 +200,7 @@ void MyMainFrame::EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected)
     }
 
     f_WF_canvas->cd(i+1);
-    WF[i]->GetXaxis()->SetRangeUser(100., 250.);
+    WF[i]->GetXaxis()->SetRangeUser(WFstart, WFend);
     WF[i]->Draw("hist");
     f_WF_canvas->Modified();
     f_WF_canvas->Update();
