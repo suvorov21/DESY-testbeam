@@ -166,8 +166,8 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
     // vector of charge in a cluster
     std::vector <double> QsegmentS;
-    auto cols = itrack->GetCols(_invert);
-    for(auto col:cols) if(col.size()){
+    auto robust_col = GetRobustCols(itrack->GetCols(_invert));
+    for(auto col:robust_col) {
       int colQ = 0;
       auto it_x = col[0]->GetCol(_invert);
       std::vector <THit*> Qpads;
@@ -175,15 +175,15 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       z_max = x_max = q_max = 0;
 
       auto robust_col = GetRobustPadsInColumn(col);
-      for(auto h:robust_col){
-        colQ+=h->GetQ();
-        _hTime->Fill(h->GetTime());
-        Qpads.push_back(h);
+      for(auto pad:robust_col){
+        colQ+=pad->GetQ();
+        _hTime->Fill(pad->GetTime());
+        Qpads.push_back(pad);
         // study thw WF
-        if (h->GetQ() > q_max) {
-          q_max = h->GetQ();
-          z_max = h->GetTime();
-          x_max = h->GetCol(_invert);
+        if (pad->GetQ() > q_max) {
+          q_max = pad->GetQ();
+          z_max = pad->GetTime();
+          x_max = pad->GetCol(_invert);
         }
       } // loop over rows
 
