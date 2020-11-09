@@ -418,16 +418,6 @@ bool SpatialResolAna::Initialize() {
 }
 
 //********************************************************************
-bool SpatialResolAna::MissColumn(const int it_x) {
-  //********************************************************************
-
-  if (it_x == 0 || it_x == geom::GetMaxColumn(_invert)-1)
-    return true;
-
-  return false;
-}
-
-//********************************************************************
 bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   //********************************************************************
 
@@ -477,6 +467,13 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _dx[colId][padId]   = -999;
         _qfrac[colId][padId] = -999;
       }
+
+      cluster[colId]       = 0;
+      cluster_N[colId]     = 0;
+      charge_max[colId]    = 0;
+      track_pos[colId]     = -999.;
+      cluster_mean[colId]  = 0.;
+      a_peak_fit[colId]    = 0.;
     }
 
     auto robust_cols = GetRobustCols(track->GetCols(_invert));
@@ -484,17 +481,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (!col[0])
         continue;
       auto it_x = col[0]->GetCol(_invert);
-
-      cluster[it_x]       = 0;
-      cluster_N[it_x]     = 0;
-      charge_max[it_x]    = 0;
-      track_pos[it_x]     = -999.;
-      cluster_mean[it_x]  = 0.;
-      a_peak_fit[it_x]    = 0.;
-
-      // exlude 1st/last column
-      if (MissColumn(it_x))
-        continue;
 
       TH1F* cluster_h;
       if (!_invert)
@@ -602,8 +588,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (!col[0])
         continue;
       auto it_x = col[0]->GetCol(_invert);
-      if (MissColumn(it_x))
-        continue;
 
       if (track_pos[it_x]  == -999.)
         continue;
@@ -634,13 +618,13 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           _resol_col_x_scan_lim_mult[it_x][bin-1]->Fill(track_pos[it_x] - track_fit_y);
       }
 
-      if (cluster_N[it_x] == 2) {
-        _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
-        _resol_col_hist_2pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
-      } else if (cluster_N[it_x] == 3) {
-        _resol_col_hist_3pad[it_x]->Fill(track_pos[it_x] - track_fit_y);
-        _resol_col_hist_3pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
-      }
+      // if (cluster_N[it_x] == 2) {
+      //   _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
+      //   _resol_col_hist_2pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
+      // } else if (cluster_N[it_x] == 3) {
+      //   _resol_col_hist_3pad[it_x]->Fill(track_pos[it_x] - track_fit_y);
+      //   _resol_col_hist_3pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
+      // }
 
       // in case of full track fit calc normalisation coefficient
       // if (_do_full_track_fit) {

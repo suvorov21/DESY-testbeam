@@ -18,11 +18,6 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event);
 
-  /// Whether to miss the column in the fitter
-  bool MissColumn(int it_x);
-  /// Whether the cluster is good for fitting
-  //bool UseCluster(const std::vector<THit*>& col);
-
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
   /// Write output files (histos, trees)
