@@ -46,7 +46,7 @@ namespace geom
         0.066235, 0.076425, 0.086615, 0.096805, 0.106995, 0.117185, 0.127375,
         0.137565, 0.147755, 0.157945};
 
-    static const int Nsamples = 510;
+    static const int Nsamples = 511;
 
     float GetYpos(int it_y, bool invert = false);
 
