@@ -12,9 +12,6 @@ compile_gcc:
   stage: build
   before_script:
   script:
-    # a VERY dirty fix to keep test passing
-    - pwd; ls
-    - sed -i '49s/.*/static const int Nsamples = 511;/' src/utils/Geom.hxx
     - mkdir build; cd build
     - gcc -v > ../gcc.log
     - cmake3 ../src

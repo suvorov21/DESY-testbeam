@@ -174,14 +174,17 @@ bool AnalysisBase::Initialize() {
     _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
 
   } else if (!_work_with_event_file) {
-    _chain->SetBranchAddress("PadAmpl", _padAmpl);
-    // read the branch name in format "padAmple[][][]"
     TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
-    if ((branch_name.Contains("[510]") && geom::Nsamples != 510) ||
-        (branch_name.Contains("[511]") && geom::Nsamples != 511)) {
+    if (branch_name.Contains("[510]")) {
+      _saclay_cosmics = true;
+      _chain->SetBranchAddress("PadAmpl", _padAmpl_saclay);
+    } else if (branch_name.Contains("[511]")) {
+      _saclay_cosmics = false;
+      _chain->SetBranchAddress("PadAmpl", _padAmpl);
+    } else {
       std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
       std::cerr << "Time binning is inconsistent." << std::endl;
-      std::cerr << "File branch is " << branch_name << " while " << geom::Nsamples << " is read" << std::endl;
+      std::cerr << "Read from file " << branch_name  << std::endl;
       exit(1);
     }
   } else
@@ -291,28 +294,38 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _chain->GetEntry(EventList[eventID]);
 
     if (_useCern) {
-      memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
-      for (uint ic=0; ic< _listOfChannels->size(); ic++){
-        int chan= (*_listOfChannels)[ic];
-        if ((*_jPad)[chan] >= geom::nPadx ||
-              (*_iPad)[chan] >= geom::nPady)
-          continue;
-        for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
-          if (it >= geom::Nsamples)
-            continue;
-          int adc = (*_listOfSamples)[ic][it];
-          _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
-        }
-      }
+      std::cerr << "CERN data format is deprecated" << std::endl;
+      exit(1);
+      // memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
+      // for (uint ic=0; ic< _listOfChannels->size(); ic++){
+      //   int chan= (*_listOfChannels)[ic];
+      //   if ((*_jPad)[chan] >= geom::nPadx ||
+      //         (*_iPad)[chan] >= geom::nPady)
+      //     continue;
+      //   for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
+      //     if (it >= geom::Nsamples)
+      //       continue;
+      //     int adc = (*_listOfSamples)[ic][it];
+      //     _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
+      //   }
+      // }
     } else {
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
           for (auto t = 0; t < geom::Nsamples; ++t) {
-            if (_padAmpl[x][y][t] - 250 < 0)
-              _padAmpl[x][y][t] = 0;
-            else
-              _padAmpl[x][y][t] = _padAmpl[x][y][t] - 250;
+            // ommit last
+            if (_saclay_cosmics && t == geom::Nsamples)
+              continue;
+            int q = 0;
+            if (_saclay_cosmics) {
+              q = _padAmpl_saclay[x][y][t] - 250;
+            } else {
+              q = _padAmpl[x][y][t] - 250;
+            }
+
+            _padAmpl[x][y][t] = q < 0 ? 0 : q;
+
           }
         }
       }
@@ -463,11 +476,11 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
 
-  int cluster_q = 0;
+  // int cluster_q = 0;
   // for (auto pad:col)
   //   cluster_q += pad->GetQ();
 
-  // if (cluster_q > 1800)
+  // if (cluster_q > 2000)
   //   return result;
 
   for (uint i = 0; i < col.size(); ++i) {
@@ -499,6 +512,17 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
 
 std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::vector<THit*> > tr) {
   std::vector<std::vector<THit*> > result;
+  // remove first and last column
+  // also filter empty columns
+  tr.erase(std::remove_if(tr.begin(), tr.end(), [&](const std::vector<THit*> col) {
+    return  !col[0] ||
+            col[0]->GetCol(_invert) == 0 ||
+            col[0]->GetCol(_invert) == geom::GetMaxColumn(_invert)-1 ||
+            accumulate(col.begin(), col.end(), 0,
+                      [](const int& x, const THit* hit)
+                      {return x + hit->GetQ();}
+                      ) == 0;
+  }), tr.end());
   // sort clusters in increasing order
   sort(tr.begin(), tr.end(), [](std::vector<THit*> col1,
                                 std::vector<THit*> col2){
@@ -511,10 +535,28 @@ std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::ve
                                                     {return x + hit->GetQ();}
                                                     );
                                 });
-  // Int_t i_max = round(0.7 * tr.size());
-  Int_t i_max = tr.size();
-  for (auto i = 0; i < i_max; ++i)
+  // trancation cut
+  auto frac = 1.00;
+  Int_t i_max = round(frac * tr.size());
+  for (auto i = 0; i < i_max; ++i) {
     result.push_back(tr[i]);
+  }
+
+
+  // cut on the total charge in the cluster
+  // auto q_cut = 2000;
+  // for (auto col:tr) {
+  //   auto total_q = 0;
+  //   for (auto pad:col) {
+  //     total_q += pad->GetQ();
+  //   }
+  //   // auto total_q = accumulate(col.begin(), col.end(), 0,
+  //   //                     [](const int& x, const THit* hit)
+  //   //                     {return x + hit->GetQ();}
+  //   //                     );
+  //   if (total_q < q_cut)
+  //     result.push_back(col);
+  // }
   return result;
 }
 

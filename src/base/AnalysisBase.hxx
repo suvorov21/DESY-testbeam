@@ -79,7 +79,9 @@ class AnalysisBase {
   TChain* _chain;
 
   /// what we read from input
+  bool _saclay_cosmics;
   Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
+  Int_t _padAmpl_saclay[geom::nPadx][geom::nPady][geom::Nsamples_saclay];
 
   /// outout vector to put in the file
   std::vector<TObject*> _output_vector;
