@@ -68,8 +68,6 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _PRF_graph_3pad;
   TGraphErrors* _PRF_graph_4pad;
 
-  TH1F* _residual_charge;
-
   /// Fitter class for the track and cluster fitting
   TrackFitter* _fitter;
 

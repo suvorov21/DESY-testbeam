@@ -8,10 +8,10 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _file_in_name(""),
   _file_out_name(""),
   _event_list_file_name(""),
-  _event(NULL),
   _start_ID(-1),
   _end_ID(-1),
   _selected(0),
+  _event(NULL),
   _store_event_tree(false),
   _work_with_event_file(false),
   _file_in(NULL),
@@ -494,6 +494,27 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
     // auto center_pad_y = geom::GetYpos(it_y, _invert);
   }
 
+  return result;
+}
+
+std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::vector<THit*> > tr) {
+  std::vector<std::vector<THit*> > result;
+  // sort clusters in increasing order
+  sort(tr.begin(), tr.end(), [](std::vector<THit*> col1,
+                                std::vector<THit*> col2){
+                                  return  accumulate(col1.begin(), col1.end(), 0,
+                                                    [](const int& x, const THit* hit)
+                                                    {return x + hit->GetQ();}
+                                                    )
+                                        < accumulate(col2.begin(), col2.end(), 0,
+                                                    [](const int& x, const THit* hit)
+                                                    {return x + hit->GetQ();}
+                                                    );
+                                });
+  // Int_t i_max = round(0.7 * tr.size());
+  Int_t i_max = tr.size();
+  for (auto i = 0; i < i_max; ++i)
+    result.push_back(tr[i]);
   return result;
 }
 

@@ -1,5 +1,3 @@
-#include <numeric>
-
 #include "SpatialResolAna.hxx"
 
 //! verbosity level
@@ -481,7 +479,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
     }
 
-    for (auto col:track->GetCols(_invert)) {
+    auto robust_cols = GetRobustCols(track->GetCols(_invert));
+    for (auto col:robust_cols) {
       if (!col[0])
         continue;
       auto it_x = col[0]->GetCol(_invert);
@@ -511,6 +510,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _charge[it_x] = std::accumulate(robust_pads.begin(), robust_pads.end(), 0,
                                       [](const int& x, const THit* hit)
                                       {return x + hit->GetQ();});
+
       for (auto pad:robust_pads) {
         if (!pad)
           continue;
@@ -598,7 +598,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _sw_partial[4]->Start(false);
 
     // second loop over columns
-    for (auto col:track->GetCols(_invert)) {
+    for (auto col:robust_cols) {
       if (!col[0])
         continue;
       auto it_x = col[0]->GetCol(_invert);

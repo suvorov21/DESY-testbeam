@@ -2,6 +2,8 @@
 #define SRC_BASE_ANALYSISBASE_HXX_
 
 /** @cond */
+#include <numeric>
+
 #include "TString.h"
 #include "TFile.h"
 #include "TDirectory.h"
@@ -38,6 +40,7 @@ class AnalysisBase {
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*> col);
+  std::vector<std::vector<THit*> > GetRobustCols(std::vector<std::vector<THit*> > tr);
 
   /// Print usage
   void help(const std::string& name);
