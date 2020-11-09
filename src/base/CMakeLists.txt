@@ -20,3 +20,7 @@ file (GLOB BASE_SET_HEADERFILES
 
 add_library(TBase ${BASE_SET_SOURCEFILES})
 target_link_libraries(TBase TEvent)
+
+add_custom_command(TARGET TBase POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                   ${CMAKE_CURRENT_BINARY_DIR}/DataStorage/libEventDict_rdict.pcm ${CMAKE_CURRENT_BINARY_DIR}/../)
