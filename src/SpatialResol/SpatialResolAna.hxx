@@ -39,6 +39,16 @@ class SpatialResolAna: public AnalysisBase {
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
 
+  /// output tree
+  TTree* _tree;
+  Float_t _angle_xy;
+  Float_t _angle_yz;
+  Float_t _residual[geom::nPadx];
+  Int_t   _charge[geom::nPadx];
+  Int_t   _multiplicity[geom::nPadx];
+  Float_t _dx[geom::nPadx][10];
+  Float_t _qfrac[geom::nPadx][10];
+
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
   /// PRF histoes
@@ -57,6 +67,8 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _PRF_graph_2pad;
   TGraphErrors* _PRF_graph_3pad;
   TGraphErrors* _PRF_graph_4pad;
+
+  TH1F* _residual_charge;
 
   /// Fitter class for the track and cluster fitting
   TrackFitter* _fitter;

@@ -463,14 +463,21 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
 
+  int cluster_q = 0;
+  // for (auto pad:col)
+  //   cluster_q += pad->GetQ();
+
+  // if (cluster_q > 1800)
+  //   return result;
+
   for (uint i = 0; i < col.size(); ++i) {
     auto pad    = col[i];
     auto q      = pad->GetQ();
     if (!q)
       continue;
 
-    // // not more then 3 pads
-    // if (i > 2)
+    // not more then 3 pads
+    // if (i > 1)
     //   continue;
 
     // // WF with negative dt

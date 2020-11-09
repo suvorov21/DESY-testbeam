@@ -1,3 +1,5 @@
+#include <numeric>
+
 #include "SpatialResolAna.hxx"
 
 //! verbosity level
@@ -111,6 +113,11 @@ bool SpatialResolAna::Initialize() {
     prev_file_name  += ".root";
 
     _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
+    if (!_Prev_iter_file->IsOpen()) {
+      std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
+      std::cerr << "File from previous iteration is not found" << std::endl;
+      exit(1);
+    }
     auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
     histo_prev->SetName("prev_hsto");
     auto gr = new TGraphErrors();
@@ -204,6 +211,32 @@ bool SpatialResolAna::Initialize() {
   // PRF for different multiplicities
   auto dir_prf_mult = _file_out->mkdir("prf_mult");
   _output_vector.push_back(dir_prf_mult);
+
+  _tree = new TTree("outtree", "");
+  _tree->Branch("angle_yz",     _angle_yz);
+  _tree->Branch("angle_xy",     _angle_xy);
+  _tree->Branch("multiplicity",
+                _multiplicity,
+                TString::Format("multiplicity[%i]/I", geom::nPadx)
+                );
+  _tree->Branch("charge",
+                _charge,
+                TString::Format("charge[%i]/I", geom::nPadx)
+                );
+  _tree->Branch("residual",
+                _residual,
+                TString::Format("residual[%i]/F", geom::nPadx)
+                );
+  _tree->Branch("dx",
+                _dx,
+                TString::Format("dx[%i][10]/F", geom::nPadx)
+                );
+  _tree->Branch("qfrac",
+                _qfrac,
+                TString::Format("qfrac[%i][10]/F", geom::nPadx)
+                );
+
+  _output_vector.push_back(_tree);
 
   _PRF_histo_2pad = new TH2F("PRF_histo_2pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
@@ -411,6 +444,13 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (!sel::CrossingTrackSelection(track, _invert, _verbose))
       continue;
 
+    std::vector<double> fit_v = sel::GetFitParams(track, _invert);
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(track, _invert);
+
+    _angle_xy = fit_v[2];
+    _angle_yz = fit_xz[2] * sel::v_drift_est;
+
+
     _store_event = true;
 
     int cluster[geom::nPadx];
@@ -428,6 +468,18 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // At the moment ommit first and last column
     // first loop over columns
     _sw_partial[2]->Start(false);
+
+    // reset tree values
+    for (auto colId = 0; colId < geom::nPadx; ++colId) {
+      _multiplicity[colId]  = -999;
+      _charge[colId]        = -999;
+      _residual[colId]      = -999;
+      for (auto padId = 0; padId < 10; ++padId) {
+        _dx[colId][padId]   = -999;
+        _qfrac[colId][padId] = -999;
+      }
+    }
+
     for (auto col:track->GetCols(_invert)) {
       if (!col[0])
         continue;
@@ -454,6 +506,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       // loop over rows
       auto robust_pads = GetRobustPadsInColumn(col);
+      _multiplicity[it_x] = robust_pads.size();
+      _charge[it_x] = std::accumulate(robust_pads.begin(), robust_pads.end(), 0,
+                                      [](const int& x, const THit* hit)
+                                      {return x + hit->GetQ();});
       for (auto pad:robust_pads) {
         if (!pad)
           continue;
@@ -562,6 +618,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
 
       // fill SR
+      _residual[it_x] = track_pos[it_x] - track_fit_y;
       _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
       _resol_col_hist_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
 
@@ -632,6 +689,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         continue;
       // Fill PRF
       auto robust_pads = GetRobustPadsInColumn(col);
+      int padId = 0;
       for (auto pad:robust_pads) {
         if (!pad)
           continue;
@@ -667,6 +725,15 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         else if (cluster_N[it_x] == 4)
           _PRF_histo_4pad->Fill(center_pad_y - track_fit_y,
                                 q / a_peak_fit[it_x]);
+
+        if (padId > 9)
+          continue;
+
+        _dx[it_x][padId]    = center_pad_y - track_fit_y;
+        _qfrac[it_x][padId] = q / a_peak_fit[it_x];
+
+        // robust_pads are assumed sorted!!
+        ++padId;
       }
     } // loop over colums
     _sw_partial[4]->Stop();
@@ -680,6 +747,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     if(_test_mode) this->DrawSelectionCan(event,trackId);
   } // loop over tracks
+
+  _tree->Fill();
 
   if (_store_event)
     _passed_events.push_back(event->GetID());
