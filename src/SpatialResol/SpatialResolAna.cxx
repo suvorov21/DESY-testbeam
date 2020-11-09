@@ -212,6 +212,7 @@ bool SpatialResolAna::Initialize() {
   auto dir_prf_mult = _file_out->mkdir("prf_mult");
   _output_vector.push_back(dir_prf_mult);
 
+  _file_out->cd();
   _tree = new TTree("outtree", "");
   _tree->Branch("angle_yz",     _angle_yz);
   _tree->Branch("angle_xy",     _angle_xy);
