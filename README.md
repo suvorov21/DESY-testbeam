@@ -44,7 +44,7 @@ target_link_libraries(SpatialResol.exe TEvent TBase)
 6. Enjoy the output!
 
 ## Plotters
-All the macroses for the result plotting are put in plotters/ folder.
+All the macroses for the result plotting are put in plotters/ folder. More information about plotters can be found in `plotters/README.md`
 
 ### Event display
 Event display for raw events is available in plotters/EventDisplay.C. With this tool the pattern of the whole event and the particular waveforms can be studied. No selection or pattern recognition is applied at this step. One can start the ROOT interactive session and then run the display with
