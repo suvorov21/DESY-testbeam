@@ -343,7 +343,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       if (!_reconstruction->SelectEvent(_padAmpl, _event))
         continue;
     }
-    else _event->SetID(EventList[eventID]);
+    // else _event->SetID(EventList[eventID]);
 
     _sw_partial[0]->Stop();
     _sw_partial[1]->Start(false);

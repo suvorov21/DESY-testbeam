@@ -170,7 +170,7 @@ bool SpatialResolAna::Initialize() {
     // reason: in at the step 0 TEvent file is generated and the list of events
     // is different from the initial (raw) data file
     // need to look through all events again
-    if (!_work_with_event_file || _iteration != 1) {
+    if (!_work_with_event_file) {
       Int_t read_var;
       auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
       event_tree->SetBranchAddress("PassedEvents",    &read_var);
@@ -182,7 +182,7 @@ bool SpatialResolAna::Initialize() {
       }
       this->SetEventList(vec);
     }
-  }
+  } // if iteration
 
   _qulity_ratio   = new TH1F("quality_ratio",
     "Quality ratio arc/linear", 100, 0., 2.);
@@ -212,27 +212,36 @@ bool SpatialResolAna::Initialize() {
 
   _file_out->cd();
   _tree = new TTree("outtree", "");
-  _tree->Branch("angle_yz",     _angle_yz);
-  _tree->Branch("angle_xy",     _angle_xy);
+  _tree->Branch("ev",           &_ev);
+  _tree->Branch("angle_yz",     &_angle_yz);
+  _tree->Branch("angle_xy",     &_angle_xy);
   _tree->Branch("multiplicity",
-                _multiplicity,
+                &_multiplicity,
                 TString::Format("multiplicity[%i]/I", geom::nPadx)
                 );
   _tree->Branch("charge",
-                _charge,
+                &_charge,
                 TString::Format("charge[%i]/I", geom::nPadx)
                 );
   _tree->Branch("residual",
-                _residual,
+                &_residual,
                 TString::Format("residual[%i]/F", geom::nPadx)
                 );
   _tree->Branch("dx",
-                _dx,
+                &_dx,
                 TString::Format("dx[%i][10]/F", geom::nPadx)
                 );
   _tree->Branch("qfrac",
-                _qfrac,
+                &_qfrac,
                 TString::Format("qfrac[%i][10]/F", geom::nPadx)
+                );
+  _tree->Branch("clust_pos",
+                &_clust_pos,
+                TString::Format("clust_pos[%i]/I", geom::nPadx)
+                );
+  _tree->Branch("track_pos",
+                &_track_pos,
+                TString::Format("track_pos[%i]/I", geom::nPadx)
                 );
 
   _output_vector.push_back(_tree);
@@ -439,6 +448,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _angle_xy = fit_v[2];
     _angle_yz = fit_xz[2] * sel::v_drift_est;
 
+    _ev = event->GetID();
 
     _store_event = true;
 
@@ -603,6 +613,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
 
       // fill SR
+      _clust_pos[it_x] = track_pos[it_x];
+      _track_pos[it_x] = track_fit_y;
       _residual[it_x] = track_pos[it_x] - track_fit_y;
       _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
       _resol_col_hist_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);

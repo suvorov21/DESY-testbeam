@@ -36,6 +36,7 @@ class SpatialResolAna: public AnalysisBase {
 
   /// output tree
   TTree* _tree;
+  Int_t _ev;
   Float_t _angle_xy;
   Float_t _angle_yz;
   Float_t _residual[geom::nPadx];
@@ -43,6 +44,8 @@ class SpatialResolAna: public AnalysisBase {
   Int_t   _multiplicity[geom::nPadx];
   Float_t _dx[geom::nPadx][10];
   Float_t _qfrac[geom::nPadx][10];
+  Float_t _clust_pos[geom::nPadx];
+  Float_t _track_pos[geom::nPadx];
 
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;
