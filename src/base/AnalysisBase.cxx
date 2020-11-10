@@ -289,7 +289,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       std::cout << "Event " << eventID << std::endl;
 
     if (_verbose == 1 && (eventID%(N_events/denimonator)) == 0)
-      this->CL_progress_dump(eventID, N_events);
+      this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
 
     _chain->GetEntry(EventList[eventID]);
 
