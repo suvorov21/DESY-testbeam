@@ -542,18 +542,27 @@ std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::ve
     result.push_back(tr[i]);
   }
 
+  // trancation + neibours
+  // auto frac = 0.95;
+  // std::vector<Int_t> bad_pads;
+  // Int_t i_max = round(frac * tr.size());
+  // for (uint i = i_max; i < tr.size(); ++i) {
+  //   bad_pads.push_back(tr[i][0]->GetCol(_invert));
+  // }
+  // for (auto i = 0; i < i_max; ++i) {
+  //   auto it_x = tr[i][0]->GetCol(_invert);
+  //   if (find(bad_pads.begin(), bad_pads.end(), it_x+1) == bad_pads.end() ||
+  //       find(bad_pads.begin(), bad_pads.end(), it_x-1) == bad_pads.end())
+  //     result.push_back(tr[i]);
+  // }
 
   // cut on the total charge in the cluster
   // auto q_cut = 2000;
   // for (auto col:tr) {
-  //   auto total_q = 0;
-  //   for (auto pad:col) {
-  //     total_q += pad->GetQ();
-  //   }
-  //   // auto total_q = accumulate(col.begin(), col.end(), 0,
-  //   //                     [](const int& x, const THit* hit)
-  //   //                     {return x + hit->GetQ();}
-  //   //                     );
+  //   auto total_q = accumulate(col.begin(), col.end(), 0,
+  //                       [](const int& x, const THit* hit)
+  //                       {return x + hit->GetQ();}
+  //                       );
   //   if (total_q < q_cut)
   //     result.push_back(col);
   // }

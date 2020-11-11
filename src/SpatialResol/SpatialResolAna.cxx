@@ -961,7 +961,13 @@ bool SpatialResolAna::WriteOutput() {
               << "/" << _PRF_graph->GetFunction("PRF_function")->GetNDF() << std::endl;
     std::cout << std::endl;
 
-    std::cout << "Resol\t" << 1.e6*resol->GetMean() << " um" << "\tRMS\t" << 1.e6*resol->GetRMS() << " um" << std::endl;
+    _resol_total->Fit("gaus", "Q");
+    auto func = _resol_total->GetFunction("gaus");
+    TString output = "NaN";
+    if (func)
+      output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
+
+    std::cout << "Spatial resolution\t" << output << std::endl;
   }
 
   // Write objects
