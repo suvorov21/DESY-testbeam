@@ -15,6 +15,8 @@
 #include "TTree.h"
 #include "TStyle.h"
 #include "TBox.h"
+#include "TGNumberEntry.h"
+#include "TGTextEntry.h"
 
 #include <iostream>
 
@@ -22,13 +24,14 @@
 class MyMainFrame : public TGMainFrame {
 
 public:
-  MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h);
+  MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h, TString name);
   virtual ~MyMainFrame();
   void     CloseWindow();
 
   void DoDraw();
   void NextEvent();
   void PrevEvent();
+  void UpdateNumber();
 
   void EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected);
 
@@ -38,11 +41,16 @@ protected:
   // file
   TFile* f;
   TTree* t;
+  bool saclay_cosmics;
   Int_t padAmpl[36][32][511];
+  Int_t padAmpl_saclay[36][32][510];
   Int_t eventID = 0;
 
   TH2F* MM;
   TH1F* WF[9];
+  Int_t WFstart = 100;
+  Int_t WFend = 260;
+
 
   // GUI
   TCanvas *f_ED_canvas;
@@ -55,16 +63,32 @@ protected:
   TGTextButton* fButtonDraw;
   TGTextButton* fNextEvent;
   TGTextButton* fPrevEvent;
+
+  TGNumberEntry* fNumber;
+  TGTextEntry* fEntry;
 };
 
 //______________________________________________________________________________
-MyMainFrame::MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h) :
+MyMainFrame::MyMainFrame(const TGWindow *p, UInt_t w, UInt_t h, TString name) :
 TGMainFrame(p, w, h)
 {
   // read file
-  f = new TFile("/Users/suvorov/DATA/DESY_TestBeam/phi_50.root", "READ");
+  f = new TFile(name, "READ");
   t = (TTree*)f->Get("tree");
-  t->SetBranchAddress("PadAmpl", padAmpl);
+
+  saclay_cosmics = false;
+  TString branch_name = t->GetBranch("PadAmpl")->GetTitle();
+  if (branch_name.Contains("[510]")) {
+    saclay_cosmics = true;
+    t->SetBranchAddress("PadAmpl", padAmpl_saclay);
+  } else if (branch_name.Contains("[511]")) {
+    saclay_cosmics = false;
+    t->SetBranchAddress("PadAmpl", padAmpl);
+  } else {
+    std::cerr << "Time binning is unknown." << std::endl;
+    std::cerr << "Read from file " << branch_name  << std::endl;
+    exit(1);
+  }
   MM = new TH2F("h", "", 38, -1., 37., 34, -1., 33.);
   for (auto i = 0; i < 9; ++i)
     WF[i] = new TH1F(Form("WF_%i", i), "", 511, 0., 511);
@@ -86,13 +110,6 @@ TGMainFrame(p, w, h)
   hfrm->AddFrame(fButtonExit, new TGLayoutHints(kLHintsCenterX | kLHintsRight,
    10, 10, 10, 10));
 
-
-  // do draw
-  fButtonDraw = new TGTextButton(hfrm, "        &Draw        ", 3);
-  fButtonDraw->Connect("Clicked()" , "MyMainFrame", this, "DoDraw()");
-  hfrm->AddFrame(fButtonDraw, new TGLayoutHints(kLHintsCenterX | kLHintsRight,
-   10, 10, 10, 10));
-
   // next event
   fNextEvent = new TGTextButton(hfrm, "        &Next        ", 3);
   fNextEvent->Connect("Clicked()" , "MyMainFrame", this, "NextEvent()");
@@ -104,6 +121,20 @@ TGMainFrame(p, w, h)
   fPrevEvent->Connect("Clicked()" , "MyMainFrame", this, "PrevEvent()");
   hfrm->AddFrame(fPrevEvent, new TGLayoutHints(kLHintsCenterX | kLHintsRight,
    10, 10, 10, 10));
+
+  // do draw
+  fButtonDraw = new TGTextButton(hfrm, "        &Draw        ", 3);
+  fButtonDraw->Connect("Clicked()" , "MyMainFrame", this, "UpdateNumber()");
+  hfrm->AddFrame(fButtonDraw, new TGLayoutHints(kLHintsCenterX | kLHintsRight,
+   10, 10, 10, 10));
+
+  fNumber = new TGNumberEntry(this, 0, 9,999, TGNumberFormat::kNESInteger,
+                                               TGNumberFormat::kNEANonNegative,
+                                               TGNumberFormat::kNELLimitMinMax,
+                                               0, 99999);
+  // fEntry = new TGTextEntry(this);
+  // hfrm->AddFrame(fEntry, new TGLayoutHints(kLHintsCenterX | kLHintsRight, 10, 10, 10, 10));
+  hfrm->AddFrame(fNumber, new TGLayoutHints(kLHintsBottom | kLHintsRight, 10, 10, 10, 10));
 
   AddFrame(hfrm, new TGLayoutHints(kLHintsTop | kLHintsExpandX, 5, 5, 5, 5));
 
@@ -119,11 +150,18 @@ TGMainFrame(p, w, h)
 
 void MyMainFrame::NextEvent() {
   ++eventID;
+  fNumber->SetIntNumber(eventID);
   DoDraw();
 }
 
 void MyMainFrame::PrevEvent() {
   --eventID;
+  fNumber->SetIntNumber(eventID);
+  DoDraw();
+}
+
+void MyMainFrame::UpdateNumber() {
+  eventID = fNumber->GetNumberEntry()->GetIntNumber();
   DoDraw();
 }
 
@@ -139,13 +177,19 @@ void MyMainFrame::DoDraw() {
 
   // read event
   t->GetEntry(eventID);
+  std::cout << "Event\t" << eventID << std::endl;
   MM->Reset();
   for (auto x = 0; x < 36; ++x) {
     for (auto y = 0; y < 32; ++y) {
       auto max = 0;
       for (auto t = 0; t < 511; ++t) {
-        if (padAmpl[x][y][t] > max) {
-          max = padAmpl[x][y][t];
+        int Q = 0;
+        if (saclay_cosmics)
+          Q = padAmpl_saclay[x][y][t] - 250;
+        else
+          Q = padAmpl[x][y][t] - 250;
+        if (Q > max) {
+          max = Q;
         }
       } // over t
       if (max)
@@ -186,13 +230,22 @@ void MyMainFrame::EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected)
   f_WF_canvas->Divide(3, 3);
   for (auto i = 0; i < 9; ++i) {
     WF[i]->Reset();
-    for (auto t_id = 0; t_id < 511; ++t_id) {
+    for (auto t_id = 0; t_id < 510; ++t_id) {
       if (x+1 > 35 || x-1 < 0 || y+1 > 31 || y-1 < 0)
         continue;
-      WF[i]->SetBinContent(t_id, padAmpl[x-1+i%3][y+1-i/3][t_id]);
+      int WF_signal = 0;
+      if (saclay_cosmics)
+        WF_signal = padAmpl_saclay[x-1+i%3][y+1-i/3][t_id] - 250;
+      else
+        WF_signal = padAmpl[x-1+i%3][y+1-i/3][t_id] - 250;
+      if (WF_signal > 0)
+        WF[i]->SetBinContent(t_id, WF_signal - 250);
+      else
+        WF[i]->SetBinContent(t_id, 0);
     }
 
     f_WF_canvas->cd(i+1);
+    WF[i]->GetXaxis()->SetRangeUser(WFstart, WFend);
     WF[i]->Draw("hist");
     f_WF_canvas->Modified();
     f_WF_canvas->Update();
@@ -226,9 +279,10 @@ void MyMainFrame::CloseWindow()
 }
 
 //------------------------------------------------------------------------------
-void EventDisplay()
+void EventDisplay(TString name="")
 {
    // Main function (entry point)
+  // TString name = "haha";
 
- new MyMainFrame(gClient->GetRoot(), 1000, 1000);
+ new MyMainFrame(gClient->GetRoot(), 1000, 1000, name);
 }

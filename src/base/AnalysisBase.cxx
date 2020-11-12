@@ -8,6 +8,9 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _file_in_name(""),
   _file_out_name(""),
   _event_list_file_name(""),
+  _start_ID(-1),
+  _end_ID(-1),
+  _selected(0),
   _event(NULL),
   _store_event_tree(false),
   _work_with_event_file(false),
@@ -26,6 +29,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // TODO redefine CLI.
   // now written in an ugly way
+  // prevent copy-past between the daughter-parent classes
   const struct option longopts[] = {
     {"input",           no_argument,    0,    'i'},  // 0
     {"output",          no_argument,    0,    'o'},
@@ -33,10 +37,13 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     {"verbose",         no_argument,    0,    'v'},
     {"rewrite",         no_argument,    0,    'r'},
     {"correction",      no_argument,    0,    'c'},
-    {"full_track_fit",    no_argument,  0,     0}, // 6
-    {"separate_pad_fit",  no_argument,  0,     0}, // 7
-    {"linear_fit",        no_argument,  0,     0}, // 8
+    {"full_track_fit",    no_argument,  0,     0},  // 6
+    {"separate_pad_fit",  no_argument,  0,     0},  // 7
+    {"linear_fit",        no_argument,  0,     0},  // 8
+    {"gaus_lorentz",      no_argument,  0,     0}, // 9
     {"help",            no_argument,    0,    'h'},
+    {"start",           required_argument,    0,     0},  // 11
+    {"end",             required_argument,    0,     0},  // 12
     {0,                 0,              0,     0}
   };
 
@@ -47,15 +54,28 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     int c = getopt_long(argc, argv, "i:o:bv:drhst:ca", longopts, &index);
     if (c < 0) break;
     switch (c) {
+      case 0  :
+        if (index == 11) _start_ID         =  atoi(optarg);
+        if (index == 12) _end_ID           =  atoi(optarg);
+        break;
       case 'i' : _file_in_name     = optarg;       break;
       case 'o' : _file_out_name    = optarg;       break;
       case 'b' : _batch            = true;         break;
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
-      case 'r' : _overwrite        = true;         break;
+      case 'r' :
+        _overwrite        = true;
+        std::cout << "Output will be overwritten" << std::endl;
+        break;
       case 'h' : help(argv[0]);                    break;
-      case 'a' : _invert           = true;         break;
-      case 's' : _store_event_tree = true; break;
+      case 'a' :
+        _invert           = true;
+        std::cout << "Inverted geometry is used" << std::endl;
+        break;
+      case 's' :
+        _store_event_tree = true;
+        std::cout << "Tree with TEvents will be written" << std::endl;
+        break;
       //case '?' : help(argv[0]);
     }
   }
@@ -153,15 +173,21 @@ bool AnalysisBase::Initialize() {
     _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
     _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
 
-    /*std::vector<int> *_iPadT(0);
-    std::vector<int> *_jPadT(0);
-    _tgeom->SetBranchAddress("jPad", &_jPadT );
-    _tgeom->SetBranchAddress("iPad", &_iPadT );*/
-
-
-  } else if (!_work_with_event_file)
-    _chain->SetBranchAddress("PadAmpl", _padAmpl);
-  else
+  } else if (!_work_with_event_file) {
+    TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
+    if (branch_name.Contains("[510]")) {
+      _saclay_cosmics = true;
+      _chain->SetBranchAddress("PadAmpl", _padAmpl_saclay);
+    } else if (branch_name.Contains("[511]")) {
+      _saclay_cosmics = false;
+      _chain->SetBranchAddress("PadAmpl", _padAmpl);
+    } else {
+      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+      std::cerr << "Time binning is inconsistent." << std::endl;
+      std::cerr << "Read from file " << branch_name  << std::endl;
+      exit(1);
+    }
+  } else
     _chain->SetBranchAddress("Event", &_event);
 
   // setup the T2K style
@@ -182,7 +208,8 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  if (!_test_mode){
+  //if (!_test_mode){
+  if (1){
 
     if(_overwrite)
       _file_out = new TFile(_file_out_name.Data(), "RECREATE");
@@ -234,6 +261,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (_test_mode)
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
 
+  if (_start_ID < 0)
+    _start_ID = 0;
+  if (_end_ID > 0)
+    N_events = _end_ID;
+
   _sw_event = new TStopwatch();
 
   _sw_partial[0] = new TStopwatch();
@@ -249,38 +281,51 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _sw_event->Start(0);
   }
 
-  for (auto eventID = 0; eventID < N_events; ++eventID) {
+  int denimonator = 100;
+  if (N_events < 100)
+    denimonator = N_events;
+  for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
     if (_verbose > 1)
       std::cout << "Event " << eventID << std::endl;
 
-    if (_verbose == 1 && (eventID%(N_events/100)) == 0)
-      this->CL_progress_dump(eventID, N_events);
+    if (_verbose == 1 && (eventID%(N_events/denimonator)) == 0)
+      this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
 
     _chain->GetEntry(EventList[eventID]);
 
     if (_useCern) {
-      memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
-      for (uint ic=0; ic< _listOfChannels->size(); ic++){
-        int chan= (*_listOfChannels)[ic];
-        if ((*_jPad)[chan] >= geom::nPadx ||
-              (*_iPad)[chan] >= geom::nPady)
-          continue;
-        for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
-          if (it >= geom::Nsamples)
-            continue;
-          int adc = (*_listOfSamples)[ic][it];
-          _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
-        }
-      }
+      std::cerr << "CERN data format is deprecated" << std::endl;
+      exit(1);
+      // memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
+      // for (uint ic=0; ic< _listOfChannels->size(); ic++){
+      //   int chan= (*_listOfChannels)[ic];
+      //   if ((*_jPad)[chan] >= geom::nPadx ||
+      //         (*_iPad)[chan] >= geom::nPady)
+      //     continue;
+      //   for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
+      //     if (it >= geom::Nsamples)
+      //       continue;
+      //     int adc = (*_listOfSamples)[ic][it];
+      //     _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
+      //   }
+      // }
     } else {
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
           for (auto t = 0; t < geom::Nsamples; ++t) {
-            if (_padAmpl[x][y][t] - 250 < 0)
-              _padAmpl[x][y][t] = 0;
-            else
-              _padAmpl[x][y][t] = _padAmpl[x][y][t] - 250;
+            // ommit last
+            if (_saclay_cosmics && t == geom::Nsamples)
+              continue;
+            int q = 0;
+            if (_saclay_cosmics) {
+              q = _padAmpl_saclay[x][y][t] - 250;
+            } else {
+              q = _padAmpl[x][y][t] - 250;
+            }
+
+            _padAmpl[x][y][t] = q < 0 ? 0 : q;
+
           }
         }
       }
@@ -298,21 +343,24 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       if (!_reconstruction->SelectEvent(_padAmpl, _event))
         continue;
     }
-    else _event->SetID(EventList[eventID]);
+    // else _event->SetID(EventList[eventID]);
 
     _sw_partial[0]->Stop();
     _sw_partial[1]->Start(false);
     ProcessEvent(_event);
     _sw_partial[1]->Stop();
 
-    if (_store_event_tree && _store_event)
-      _event_tree->Fill();
+    if (_store_event) {
+      ++_selected;
+      if (_store_event_tree)
+        _event_tree->Fill();
+    }
 
     if (!_store_event_tree && !_work_with_event_file) {
       delete _event;
       _event = NULL;
     }
-  }
+  } // end of event loop
 
   if (_verbose == 1)
     std::cout << std::endl;
@@ -329,7 +377,7 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 
 bool AnalysisBase::WriteOutput() {
 
-  if(_test_mode) return true;
+  //if(_test_mode) return true;
   if (!_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
@@ -423,6 +471,104 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   delete event3D;
 }
 
+std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
+  std::vector<THit*> result;
+  // sort in charge decreasing order
+  sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
+
+  // int cluster_q = 0;
+  // for (auto pad:col)
+  //   cluster_q += pad->GetQ();
+
+  // if (cluster_q > 2000)
+  //   return result;
+
+  for (uint i = 0; i < col.size(); ++i) {
+    auto pad    = col[i];
+    auto q      = pad->GetQ();
+    if (!q)
+      continue;
+
+    // not more then 3 pads
+    // if (i > 1)
+    //   continue;
+
+    // // WF with negative dt
+    // if (pad->GetTime() - col[0]->GetTime() < -1)
+    //   continue;
+
+    // // avoid "suspisious" WF with small time difference in the 3rd pad
+    // if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5)
+    //   continue;
+
+    result.push_back(pad);
+
+    // auto it_y   = pad->GetRow(_invert);
+    // auto center_pad_y = geom::GetYpos(it_y, _invert);
+  }
+
+  return result;
+}
+
+std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::vector<THit*> > tr) {
+  std::vector<std::vector<THit*> > result;
+  // remove first and last column
+  // also filter empty columns
+  tr.erase(std::remove_if(tr.begin(), tr.end(), [&](const std::vector<THit*> col) {
+    return  !col[0] ||
+            col[0]->GetCol(_invert) == 0 ||
+            col[0]->GetCol(_invert) == geom::GetMaxColumn(_invert)-1 ||
+            accumulate(col.begin(), col.end(), 0,
+                      [](const int& x, const THit* hit)
+                      {return x + hit->GetQ();}
+                      ) == 0;
+  }), tr.end());
+  // sort clusters in increasing order
+  sort(tr.begin(), tr.end(), [](std::vector<THit*> col1,
+                                std::vector<THit*> col2){
+                                  return  accumulate(col1.begin(), col1.end(), 0,
+                                                    [](const int& x, const THit* hit)
+                                                    {return x + hit->GetQ();}
+                                                    )
+                                        < accumulate(col2.begin(), col2.end(), 0,
+                                                    [](const int& x, const THit* hit)
+                                                    {return x + hit->GetQ();}
+                                                    );
+                                });
+  // trancation cut
+  auto frac = 1.00;
+  Int_t i_max = round(frac * tr.size());
+  for (auto i = 0; i < i_max; ++i) {
+    result.push_back(tr[i]);
+  }
+
+  // trancation + neibours
+  // auto frac = 0.95;
+  // std::vector<Int_t> bad_pads;
+  // Int_t i_max = round(frac * tr.size());
+  // for (uint i = i_max; i < tr.size(); ++i) {
+  //   bad_pads.push_back(tr[i][0]->GetCol(_invert));
+  // }
+  // for (auto i = 0; i < i_max; ++i) {
+  //   auto it_x = tr[i][0]->GetCol(_invert);
+  //   if (find(bad_pads.begin(), bad_pads.end(), it_x+1) == bad_pads.end() ||
+  //       find(bad_pads.begin(), bad_pads.end(), it_x-1) == bad_pads.end())
+  //     result.push_back(tr[i]);
+  // }
+
+  // cut on the total charge in the cluster
+  // auto q_cut = 2000;
+  // for (auto col:tr) {
+  //   auto total_q = accumulate(col.begin(), col.end(), 0,
+  //                       [](const int& x, const THit* hit)
+  //                       {return x + hit->GetQ();}
+  //                       );
+  //   if (total_q < q_cut)
+  //     result.push_back(col);
+  // }
+  return result;
+}
+
 void AnalysisBase::help(const std::string& name) {
   std::cout << name << " usage\n" << std::endl;
   std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
@@ -474,7 +620,8 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  std::cout << "\t Memory  " <<  real << "\t" << virt;
+  // std::cout << "\t Memory  " <<  real << "\t" << virt;
+  std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed CPU " << CPUtime << " ms/event";
     std::cout << "\t EET real " << m << ":";

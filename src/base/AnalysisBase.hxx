@@ -2,8 +2,11 @@
 #define SRC_BASE_ANALYSISBASE_HXX_
 
 /** @cond */
+#include <numeric>
+
 #include "TString.h"
 #include "TFile.h"
+#include "TDirectory.h"
 #include "TChain.h"
 #include "TApplication.h"
 #include "TCanvas.h"
@@ -36,6 +39,9 @@ class AnalysisBase {
 
   virtual void CL_progress_dump(int eventID, int Nevents);
 
+  std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*> col);
+  std::vector<std::vector<THit*> > GetRobustCols(std::vector<std::vector<THit*> > tr);
+
   /// Print usage
   void help(const std::string& name);
 
@@ -57,6 +63,9 @@ class AnalysisBase {
   TString _event_list_file_name;
   std::vector<Int_t> _EventList;
   bool    _store_event;
+  int     _start_ID;
+  int     _end_ID;
+  int     _selected;
 
   TEvent* _event;
   bool    _store_event_tree;
@@ -70,7 +79,9 @@ class AnalysisBase {
   TChain* _chain;
 
   /// what we read from input
+  bool _saclay_cosmics;
   Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
+  Int_t _padAmpl_saclay[geom::nPadx][geom::nPady][geom::Nsamples_saclay];
 
   /// outout vector to put in the file
   std::vector<TObject*> _output_vector;

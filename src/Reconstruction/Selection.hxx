@@ -22,10 +22,11 @@ namespace sel
   std::vector <double> GetFitParamsXZ(const TTrack*, bool invert = false);
   std::vector <double> Get3DFitParams(const TTrack*, bool invert = false);
 
-  // 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin
+  // 25 MHz --> 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin
+  // 50 Mhz --> ... --> 0.14 cm / bin
   static const float v_drift_est    = 0.28;
   static const float horizontal_cut = 0.1;
-  static const float vertical_cut   = 0.2;
+  static const float vertical_cut   = 0.1;
 }
 
 #endif  // SRC_SELECTION_SELECTION_HXX_

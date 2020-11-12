@@ -12,17 +12,23 @@ class THit : public TObject{
   void SetCol(int col)    {fc = col;}
   void SetTime(int time)  {ft = time;}
   void SetQ(int Q)        {fq = Q;}
+  void SetWidth(int w)    {fw = w;}
+  void SetWHM(int whm)    {fwhm = whm;}
 
   int GetRow(bool invert = false)    const;
   int GetCol(bool invert = false)    const;
   int GetTime()   const   {return ft;}
   int GetQ()      const   {return fq;}
+  int GetWidth()  const   {return fw;}
+  int GetFWHM()   const   {return fwhm;}
 
-  THit(int col, int row, int time, int q){
+  THit(int col, int row, int time, int q, int w = 0, int whm = 0){
     fr = row;
     fc = col;
     ft = time;
     fq = q;
+    fw = w;
+    fwhm = whm;
   }
 
   THit(){
@@ -40,6 +46,8 @@ class THit : public TObject{
   int  fc;
   int  ft;
   int  fq;
+  int  fw;
+  int  fwhm;
 };
 
 #endif

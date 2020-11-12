@@ -20,7 +20,7 @@ bool sel::CrossingTrackSelection( const TTrack* track,
   if (abs(fit_v[2]) > sel::horizontal_cut) return false;
 
   if (invert)
-    if (abs(fit_xz[2] * sel::v_drift_est) > 0.625) return false;
+    if (abs(fit_xz[2] * sel::v_drift_est) > sel::vertical_cut) return false;
 
 
   if (verbose > 1)
@@ -152,7 +152,7 @@ std::vector <double> sel::GetFitParamsXZ(const TTrack* track, bool invert){
 }
 
 //// 3D FITTING:    ---- WARNING ---- UNDER DEVELOPMENT, DO NOT USE IT!
-
+/*
 #include <TMath.h>
 #include <TGraph2D.h>
 #include <TRandom2.h>
@@ -319,5 +319,5 @@ std::vector<double> sel::Get3DFitParams(const TTrack* track, bool invert)
   return p_result;
 }
 
-
+*/
 
