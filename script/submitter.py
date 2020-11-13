@@ -12,26 +12,29 @@ from itertools import chain
 def main():
     # **********************************************************************************
     #define input
-    n_iter = 20
+    n_iter = 10
     doiter = True
 
     generate_TEvent = True
-    submit = False
-    launch = True
+    submit = True
+    launch = False
 
-    bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build_911/"
+    bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build/"
     bin_name  = "SpatialResol.exe"
-    bin_flag  = "-b -a"
+    bin_flag  = "-b -r"
 
     input_prefix  = ["/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/v1/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM_2/",
+                     "/eos/experiment/neutplatform/t2knd280/MM2_data/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM2-data/",
-                     "/eos/experiment/neutplatform/t2knd280/ERAM_3/"]
+                     "/eos/experiment/neutplatform/t2knd280/ERAM_3/",
+                     # "/eos/user/s/ssuvorov/DESY_testbeam/cosmic_strict_v2/"
+                     ]
     # input_prefix  = ["/eos/user/s/ssuvorov/DESY_testbeam/"]
     input_version = ""
 
     outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-    outpt_version = "cosmic_2020"
+    outpt_version = "tree_v2"
     output_post   = ""
 
     # espresso     = 20 minutes
@@ -50,7 +53,7 @@ def main():
         print("Submit and launch should not be executed together")
         return 0
 
-    temp = "/temp_0/"
+    temp = "/temp_1/"
 
     parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
     parser.add_argument("-f", metavar="f", type=str,
@@ -77,6 +80,7 @@ def main():
     with open(args.f) as file_list:
         i = 0
         # for each input file
+        # create a bash script
         if launch:
             launcher = open(project_path + "/script/" + temp + "all.sh", "w")
         else:
@@ -87,8 +91,11 @@ def main():
             if line.isspace() or line == '':
                 continue
 
+            # parse inoput/output file names and additional flags
             in_file  = line.split()[0]
             ot_file  = line.split()[1]
+            add_flags = []
+            add_flags.extend(line.split()[2:])
 
             if (in_file == "" or ot_file == ""):
                 print("ERROR. No file names specified")
@@ -100,8 +107,7 @@ def main():
             temp_file = open(temp_filename, "w")
             first_file_name = ""
 
-            # path = input_prefix+"/"+input_version+"/"
-
+            # search for inout files
             for root, dirt, find_file in chain.from_iterable(os.walk(path) for path in input_prefix):
                 if "soft" in root:
                     continue
@@ -120,7 +126,7 @@ def main():
 
             # fo each iteration
             for i_iter in range(0, n_iter):
-                command += bin_dir + "/" + bin_name + " " + bin_flag + " -t " + str(i_iter)
+                command += bin_dir + "/" + bin_name + " " + bin_flag  + " ".join(add_flags) + " -t " + str(i_iter)
                 if (i_iter == 0 and generate_TEvent):
                     command += " -s "
                 if (not generate_TEvent or i_iter == 0):
@@ -135,9 +141,11 @@ def main():
                 if not doiter:
                     break
 
+            # create a bash file with a job
             file_out.write("#!/bin/bash\n")
-            # file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
-            # file_out.write("source /afs/cern.ch/work/s/ssuvorov/public/ROOT/root-6.18.00-build_gcc73/bin/thisroot.sh\n")
+            if submit:
+                file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
+                file_out.write("source /afs/cern.ch/work/s/ssuvorov/public/ROOT/root-6.18.00-build_gcc73/bin/thisroot.sh\n")
             file_out.write("cd " + bin_dir + "\n")
             file_out.write(command + "\n")
 
@@ -145,10 +153,12 @@ def main():
 
             launcher.write("chmod 765 ./" + str(i) + ".sh\n")
             launcher.write("./" + str(i) + ".sh\n")
+            launcher.write("email " + "\"Job done\" " + "\"ot_file\"\n")
             i+=1
 
         launcher.close()
 
+    # create Condor submission file
     submit_file = open(project_path + "/script/" + temp + "/Submit.sub", "w")
 
     submit_file.write("executable              = $(filename)\n")
