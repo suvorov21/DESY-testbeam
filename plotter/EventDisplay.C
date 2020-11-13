@@ -239,7 +239,7 @@ void MyMainFrame::EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected)
       else
         WF_signal = padAmpl[x-1+i%3][y+1-i/3][t_id] - 250;
       if (WF_signal > 0)
-        WF[i]->SetBinContent(t_id, WF_signal - 250);
+        WF[i]->SetBinContent(t_id, WF_signal);
       else
         WF[i]->SetBinContent(t_id, 0);
     }
