@@ -44,6 +44,7 @@ class SpatialResolAna: public AnalysisBase {
   Int_t   _multiplicity[geom::nPadx];
   Float_t _dx[geom::nPadx][10];
   Float_t _qfrac[geom::nPadx][10];
+  Int_t   _time[geom::nPadx][10];
   Float_t _clust_pos[geom::nPadx];
   Float_t _track_pos[geom::nPadx];
 

@@ -235,6 +235,10 @@ bool SpatialResolAna::Initialize() {
                 &_qfrac,
                 TString::Format("qfrac[%i][10]/F", geom::nPadx)
                 );
+  _tree->Branch("time",
+                &_time,
+                TString::Format("time[%i][10]/I", geom::nPadx)
+                );
   _tree->Branch("clust_pos",
                 &_clust_pos,
                 TString::Format("clust_pos[%i]/I", geom::nPadx)
@@ -475,6 +479,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _residual[colId]      = -999;
       for (auto padId = 0; padId < 10; ++padId) {
         _dx[colId][padId]   = -999;
+        _time[colId][padId]   = -999;
         _qfrac[colId][padId] = -999;
       }
 
@@ -692,7 +697,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           continue;
 
         auto it_y = pad->GetRow(_invert);
-        auto q = pad->GetQ();
+        auto q    = pad->GetQ();
+        auto time = pad->GetTime();
 
         if (!cluster[it_x] || !q)
           continue;
@@ -726,8 +732,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         if (padId > 9)
           continue;
 
+        _time[it_x][padId]    = time;
         _dx[it_x][padId]    = center_pad_y - track_fit_y;
         _qfrac[it_x][padId] = q / a_peak_fit[it_x];
+        // std::cout << padId << "\t" << _dt[it_x][padId] << "\t" << _dx[it_x][padId] << "\t" << _qfrac[it_x][padId] << std::endl;
 
         // robust_pads are assumed sorted!!
         ++padId;
