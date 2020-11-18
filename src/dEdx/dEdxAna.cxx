@@ -25,6 +25,10 @@ bool dEdxAna::Initialize() {
                   &_multiplicity,
                   TString::Format("multiplicity[%i]/I", geom::nPadx)
                   );
+  outtree->Branch("colID",
+                  &_colID,
+                  TString::Format("colID[%i]/I", geom::nPadx)
+                  );
   outtree->Branch("mult_rob",
                   &_multiplicity_robust,
                   TString::Format("multiplicity_robust[%i]/I", geom::nPadx)
@@ -162,6 +166,17 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     // if survives the selection, use track info:
     _selEvents++;
 
+    _dEdx = -999;
+    _npoints = -999;
+    for (auto i = 0; i < geom::nPadx; ++i) {
+      _multiplicity[i] = -999;
+      _colID[i] = -999;
+      _multiplicity_robust[i] = -999;
+      _charge[i] = -999;
+      _maxcharge_time[i] = -999;
+      _maxcharge_frac[i] = -999;
+    }
+
     if (_test_mode)
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
     // vector of charge in a cluster
@@ -199,6 +214,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
 
       _mult->Fill(col.size());
 
+      _colID[it_x] = col[0]->GetCol(_invert);
       _multiplicity[it_x] = col.size();
       _multiplicity_robust[it_x] = robust_col.size();
 

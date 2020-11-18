@@ -25,6 +25,8 @@ class dEdxAna: public AnalysisBase {
   Float_t _angle_yz;
   Int_t _npoints;
 
+  Int_t _colID[geom::nPadx];
+
   Int_t _multiplicity[geom::nPadx];
   Int_t _multiplicity_robust[geom::nPadx];
   Int_t _charge[geom::nPadx];
