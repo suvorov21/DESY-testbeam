@@ -30,7 +30,7 @@ class SpatialResolAna: public AnalysisBase {
 
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
 
- private:
+ protected:
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
 
@@ -39,14 +39,20 @@ class SpatialResolAna: public AnalysisBase {
   Int_t _ev;
   Float_t _angle_xy;
   Float_t _angle_yz;
-  Float_t _residual[geom::nPadx];
-  Int_t   _charge[geom::nPadx];
-  Int_t   _multiplicity[geom::nPadx];
-  Float_t _dx[geom::nPadx][10];
-  Float_t _qfrac[geom::nPadx][10];
-  Int_t   _time[geom::nPadx][10];
-  Float_t _clust_pos[geom::nPadx];
-  Float_t _track_pos[geom::nPadx];
+  Float_t _residual[70];
+  Int_t   _charge[70];
+  Int_t   _multiplicity[70];
+  Float_t _dx[70][10];
+  Float_t _qfrac[70][10];
+  Int_t   _time[70][10];
+  Float_t _clust_pos[70];
+  Float_t _track_pos[70];
+
+  Float_t _cluster_av[70];
+  Float_t _x_av[70];
+
+  Float_t _x[70];
+
 
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*    _PRF_function;

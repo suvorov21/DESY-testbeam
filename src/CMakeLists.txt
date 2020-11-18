@@ -37,11 +37,14 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/SpatialResol/)    #---SR analysis
 add_subdirectory(${PROJECT_SOURCE_DIR}/base/)
 
 #---Create  a main program using the library
-add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
+add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/RunSR.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
 target_link_libraries(SpatialResol.exe TEvent TBase)
 
 add_executable(dEdx.exe ${PROJECT_SOURCE_DIR}/dEdx/dEdxAna.cxx)
 target_link_libraries(dEdx.exe TEvent TBase)
+
+add_executable(InclinedTracks.exe ${PROJECT_SOURCE_DIR}/SpatialResol/RunInc.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/InclinedTracks.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
+target_link_libraries(InclinedTracks.exe TEvent TBase)
 
 
 

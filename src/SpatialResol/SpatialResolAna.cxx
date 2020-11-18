@@ -217,35 +217,35 @@ bool SpatialResolAna::Initialize() {
   _tree->Branch("angle_xy",     &_angle_xy);
   _tree->Branch("multiplicity",
                 &_multiplicity,
-                TString::Format("multiplicity[%i]/I", geom::nPadx)
+                TString::Format("multiplicity[%i]/I", 70)
                 );
   _tree->Branch("charge",
                 &_charge,
-                TString::Format("charge[%i]/I", geom::nPadx)
+                TString::Format("charge[%i]/I", 70)
                 );
   _tree->Branch("residual",
                 &_residual,
-                TString::Format("residual[%i]/F", geom::nPadx)
+                TString::Format("residual[%i]/F", 70)
                 );
   _tree->Branch("dx",
                 &_dx,
-                TString::Format("dx[%i][10]/F", geom::nPadx)
+                TString::Format("dx[%i][10]/F", 70)
                 );
   _tree->Branch("qfrac",
                 &_qfrac,
-                TString::Format("qfrac[%i][10]/F", geom::nPadx)
+                TString::Format("qfrac[%i][10]/F", 70)
                 );
   _tree->Branch("time",
                 &_time,
-                TString::Format("time[%i][10]/I", geom::nPadx)
+                TString::Format("time[%i][10]/I", 70)
                 );
   _tree->Branch("clust_pos",
                 &_clust_pos,
-                TString::Format("clust_pos[%i]/I", geom::nPadx)
+                TString::Format("clust_pos[%i]/F", 70)
                 );
   _tree->Branch("track_pos",
                 &_track_pos,
-                TString::Format("track_pos[%i]/I", geom::nPadx)
+                TString::Format("track_pos[%i]/F", 70)
                 );
 
   _output_vector.push_back(_tree);
@@ -456,12 +456,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     _store_event = true;
 
-    int cluster[geom::nPadx];
-    int cluster_N[geom::nPadx];
-    double track_pos[geom::nPadx];
-    double cluster_mean[geom::nPadx];
-    float charge_max[geom::nPadx];
-    double a_peak_fit[geom::nPadx];
+    int cluster[70];
+    int cluster_N[70];
+    double track_pos[70];
+    double cluster_mean[70];
+    float charge_max[70];
+    double a_peak_fit[70];
 
     pads_t pos_in_pad;
     pos_in_pad.clear();
@@ -473,7 +473,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _sw_partial[2]->Start(false);
 
     // reset tree values
-    for (auto colId = 0; colId < geom::nPadx; ++colId) {
+    for (auto colId = 0; colId < 70; ++colId) {
       _multiplicity[colId]  = -999;
       _charge[colId]        = -999;
       _residual[colId]      = -999;
@@ -735,7 +735,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _time[it_x][padId]    = time;
         _dx[it_x][padId]    = center_pad_y - track_fit_y;
         _qfrac[it_x][padId] = q / a_peak_fit[it_x];
-        // std::cout << padId << "\t" << _dt[it_x][padId] << "\t" << _dx[it_x][padId] << "\t" << _qfrac[it_x][padId] << std::endl;
 
         // robust_pads are assumed sorted!!
         ++padId;
@@ -858,8 +857,8 @@ bool SpatialResolAna::WriteOutput() {
     sigma = 0.5 * GetFWHM(res, mean);
 
     if (!res->Integral()) {
-      std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Empty residuals" << std::endl;
-      exit(1);
+      std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty residuals" << std::endl;
+      continue;
     }
 
     if (_gaussian_residuals) {
@@ -872,7 +871,7 @@ bool SpatialResolAna::WriteOutput() {
       TF1* func = res->GetFunction("gaus");
 
       if (!func) {
-        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
         continue;
       }
 
@@ -882,7 +881,7 @@ bool SpatialResolAna::WriteOutput() {
 
       TF1* func_ex = res_e->GetFunction("gaus");
       if (!func_ex) {
-        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Exeptional residual fit fail" << std::endl;
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Exeptional residual fit fail" << std::endl;
         continue;
       }
 
@@ -936,7 +935,7 @@ bool SpatialResolAna::WriteOutput() {
       TF1* func = res->GetFunction("gaus");
 
       if (!func) {
-        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
         exit(1);
       }
 
@@ -970,12 +969,16 @@ bool SpatialResolAna::WriteOutput() {
     std::cout << std::endl;
 
     _resol_total->Fit("gaus", "Q");
-    auto func = _resol_total->GetFunction("gaus");
-    TString output = "NaN";
-    if (func)
-      output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
+    if (!_resol_total->Integral()) {
+      std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty global residual" << std::endl;
+    } else {
+      auto func = _resol_total->GetFunction("gaus");
+      TString output = "NaN";
+      if (func)
+        output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
 
-    std::cout << "Spatial resolution\t" << output << std::endl;
+      std::cout << "Spatial resolution\t" << output << std::endl;
+    }
   }
 
   // Write objects
@@ -1050,6 +1053,9 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
 }
 
 Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
+  if (!h->Integral())
+    return -1.;
+
   mean = h->GetMean();
   float max   = h->GetMaximum();
   float start = h->GetBinLowEdge(h->FindFirstBinAbove(max/2));
@@ -1086,21 +1092,14 @@ TF1* SpatialResolAna::InitializePRF(const TString name) {
   func->SetParName(3, "b2");
   func->SetParName(4, "b4");
 
-  double co = 1.;
-  double a2 = 2.35167e3;
-  double a4 = 6.78962e7;
-  double b2 = 3.36748e3;
-  double b4 = 6.45311e8;
+  double co = 0.85436010;
+  double a2 = -1919.1462;
+  double a4 = 17575063.;
+  double b2 = 627.88307;
+  double b4 = 1.0339875e+09;
+
   func->SetParameters(co, a2, a4, b2, b4);
 
   return func;
 }
 
-int main(int argc, char** argv) {
-  auto ana = new SpatialResolAna(argc, argv);
-  if (!ana->Initialize())               return -1;
-  if (!ana->Loop(ana->GetEventList()))  return -1;
-  if (!ana->WriteOutput())              return -1;
-
-  return 0;
-}
