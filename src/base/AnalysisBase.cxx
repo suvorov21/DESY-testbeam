@@ -44,6 +44,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     {"help",            no_argument,    0,    'h'},
     {"start",           required_argument,    0,     0},  // 11
     {"end",             required_argument,    0,     0},  // 12
+    {"para_fit",        no_argument,    0,     0},  // 13
     {0,                 0,              0,     0}
   };
 
