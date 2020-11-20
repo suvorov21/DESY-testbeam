@@ -77,7 +77,8 @@ class SpatialResolAna: public AnalysisBase {
   TrackFitter* _fitter;
 
   /// Whether to use arc function for track fitting
-  bool _do_arc_fit;
+  bool _do_linear_fit;
+  bool _do_para_fit;
   /// Whether to use full track fitting
   bool _do_full_track_fit;
 

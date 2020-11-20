@@ -9,7 +9,8 @@
 //********************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
-  _do_arc_fit(true),
+  _do_linear_fit(false),
+  _do_para_fit(false),
   _do_full_track_fit(false),
   _do_separate_pad_fit(false),
   // WARNING
@@ -35,6 +36,7 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
     {"help",            no_argument,    0,    'h'},
     {"start",           required_argument,    0,     0},  // 11
     {"end",             required_argument,    0,     0},  // 12
+    {"para_fit",        no_argument,    0,     0},  // 13
     {0,                 0,              0,     0}
   };
 
@@ -51,7 +53,9 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
         if (index == 7)
           _do_separate_pad_fit = true;
         if (index == 8)
-          _do_arc_fit = false;
+          _do_linear_fit = true;
+        if (index == 13)
+          _do_para_fit = true;
         if (index == 9)
           _gaus_lorentz_PRF = true;
         break;
@@ -412,7 +416,7 @@ bool SpatialResolAna::Initialize() {
   // Initialise track fitter
   _fitter = new TrackFitter(TrackFitter::CERN_like, _PRF_function,
       fit_bound_right, _uncertainty, _iteration, _verbose, _invert,
-      _charge_uncertainty, _do_arc_fit);
+      _charge_uncertainty, (!_do_linear_fit && !_do_para_fit));
 
   if (_do_full_track_fit)
     _fitter->SetType(TrackFitter::ILC_like);
@@ -574,7 +578,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     TString func = fit->GetName();
 
     // in case of arc fitting fill the momentum histo
-    if (_do_arc_fit) {
+    if (!_do_linear_fit) {
       float mom = fit->GetParameter(0) * units::B * units::clight / 1.e9;
       if (func.CompareTo("circle_dn") == 0) mom *= -1.;
       _mom_reco->Fill(mom);
