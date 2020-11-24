@@ -199,6 +199,10 @@ void MyMainFrame::DoDraw() {
   f_ED_canvas->cd();
   gStyle->SetOptStat(0);
   MM->Draw("colz");
+  MM->GetXaxis()->SetNdivisions(38);
+  MM->GetXaxis()->SetLabelSize(0.025);
+  MM->GetYaxis()->SetNdivisions(36);
+  gPad->SetGrid();
   f_ED_canvas->Update();
 }
 
