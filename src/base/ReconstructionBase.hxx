@@ -20,9 +20,12 @@ class ReconstructionBase {
   ReconstructionBase() {;}
   virtual ~ReconstructionBase() {;}
 
-  virtual bool Initialize();
+  virtual bool Initialize(int verbose);
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
                   TEvent* event);
+
+protected:
+  int _verbose;
 };
 
 #endif  // SRC_BASE_RECONSTRUCTIONBASE_HXX_

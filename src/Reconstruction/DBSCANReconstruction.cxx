@@ -10,9 +10,9 @@ DBSCANReconstruction::DBSCANReconstruction(): ReconstructionBase() {
   ;
 }
 
-bool DBSCANReconstruction::Initialize() {
+bool DBSCANReconstruction::Initialize(int verbose) {
   std::cout << "Initialize DBSCAN Reconstruction.........";
-
+  _verbose = verbose;
   std::cout << "done" << std::endl;
   return true;
 }
@@ -62,6 +62,8 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
       nodesToCheck.erase(nodesToCheck.begin());
     }
   }
+  if (_verbose > 2)
+    std::cout << "Found " << nodes.size() << " nodes" << std::endl;
   return nodes;
 }
 
@@ -137,6 +139,8 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
       }
     }
   }
+  if (_verbose > 2)
+    std::cout << "Filed " << nodes.size() << " nodes" << std::endl;
   return nodes;
 }
 
@@ -144,8 +148,13 @@ std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<No
   std::vector<Cluster> clusters;
   auto it_max = std::max_element(nodes.begin(), nodes.end(),
                        [](const Node& n1, const Node& n2) { return n1.c < n2.c; });
-  int numClusters = (it_max == nodes.end()) ? 0 : (*it_max).c;
-  int maxNodes = 150;
+  int numClusters = (it_max == nodes.end()) ? -1 : (*it_max).c;
+  if (_verbose > 2) {
+    std::cout << "numClusters = " << numClusters << std::endl;
+    for (auto n:nodes)
+      std::cout << n.c << " ";
+    std::cout << std::endl;
+  }
   int acceptedClusters = 0;
   for(int i=0; i<=numClusters; i++){
     Cluster cluster;
@@ -155,11 +164,16 @@ std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<No
       cluster.nodes[cluster.size] = n.id;
       cluster.size++;
     }
-    if(cluster.size >= minNodes && cluster.size <= maxNodes){
+    if (_verbose > 2) {
+      std::cout << "cluster id:n\t" << i << "\t" << cluster.size << std::endl;
+    }
+    if(cluster.size >= minNodes && cluster.size <= MAX_NODES){
       acceptedClusters++;
       clusters.push_back(cluster);
     }
   }
+  if (_verbose > 2)
+    std::cout << "Found larger " << clusters.size() << " nodes" << std::endl;
   return clusters;
 }
 
@@ -175,6 +189,8 @@ std::vector<Node> DBSCANReconstruction::UpdateNodes(std::vector<Cluster> cluster
             updated_nodes.push_back(nodes[c.nodes[i]]);
         }
     }
+    if (_verbose > 2)
+      std::cout << "Updated " << updated_nodes.size() << " nodes" << std::endl;
     return updated_nodes;
 }
 

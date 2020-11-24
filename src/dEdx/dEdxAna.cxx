@@ -132,7 +132,7 @@ bool dEdxAna::Initialize() {
 
   // Initilise selection
   _reconstruction = new DBSCANReconstruction();
-  _reconstruction->Initialize();
+  _reconstruction->Initialize(_verbose);
 
   return true;
 }
