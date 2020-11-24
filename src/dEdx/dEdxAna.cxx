@@ -181,7 +181,8 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       if(_selEvents%10 == 0) std::cout << "selEvents: " << _selEvents << std::endl;
     // vector of charge in a cluster
     std::vector <double> QsegmentS;
-    auto robust_col = GetRobustCols(itrack->GetCols(_invert));
+    // auto robust_col = GetRobustCols(itrack->GetCols(_invert));
+    auto robust_col = itrack->GetCols(_invert);
     for(auto col:robust_col) {
       int colQ = 0;
       auto it_x = col[0]->GetCol(_invert);

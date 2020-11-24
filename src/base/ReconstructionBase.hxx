@@ -11,6 +11,7 @@
 /** @endcond */
 
 #include "TEvent.hxx"
+#include "TCluster.hxx"
 #include "Geom.hxx"
 
 /// Template for the Reconstruction class

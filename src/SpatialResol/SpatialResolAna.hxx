@@ -7,6 +7,8 @@
 #include "Selection.hxx"
 #include "TrackFitter.hxx"
 
+const int Nclusters = 70;
+
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
  public:
@@ -30,6 +32,9 @@ class SpatialResolAna: public AnalysisBase {
 
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
 
+  /// Draw the histograms of interest
+  bool Draw();
+
  protected:
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
@@ -39,23 +44,24 @@ class SpatialResolAna: public AnalysisBase {
   Int_t _ev;
   Float_t _angle_xy;
   Float_t _angle_yz;
-  Float_t _residual[70];
-  Int_t   _charge[70];
-  Int_t   _multiplicity[70];
-  Float_t _dx[70][10];
-  Float_t _qfrac[70][10];
-  Int_t   _time[70][10];
-  Float_t _clust_pos[70];
-  Float_t _track_pos[70];
+  Float_t _residual[Nclusters];
+  Int_t   _charge[Nclusters];
+  Int_t   _multiplicity[Nclusters];
+  Float_t _dx[Nclusters][10];
+  Float_t _qfrac[Nclusters][10];
+  Int_t   _time[Nclusters][10];
+  Float_t _clust_pos[Nclusters];
 
-  Float_t _cluster_av[70];
-  Float_t _x_av[70];
 
-  Float_t _x[70];
+  Float_t _track_pos[Nclusters];
+  Float_t _cluster_av[Nclusters];
+  Float_t _x_av[Nclusters];
+
+  Float_t _x[Nclusters];
 
 
   /// PRF function from the previous step. Used for Chi2 fit
-  TF1*    _PRF_function;
+  TF1*  _PRF_function;
   /// PRF histoes
   TH2F* _PRF_histo;
   // PRF profiling graphs
@@ -97,6 +103,9 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to use Gaussian lorentzian PRf fit over polynomial
   bool _gaus_lorentz_PRF;
 
+  /// whether to select diagonal; clusters
+  bool _diagonal;
+
   /// iteration number. Starting from 0
   Int_t   _iteration;
 
@@ -115,27 +124,25 @@ class SpatialResolAna: public AnalysisBase {
   /// Residuals X_track - X_fit histoes
   TH1F* _resol_total;
 
-  TH1F* _resol_col_hist[geom::nPadx];
-  TH1F* _resol_col_hist_except[geom::nPadx];
+  TH1F* _resol_col_hist[Nclusters];
+  TH1F* _resol_col_hist_except[Nclusters];
 
-  TH1F* _resol_col_hist_2pad[geom::nPadx];
-  TH1F* _resol_col_hist_2pad_except[geom::nPadx];
+  TH1F* _resol_col_hist_2pad[Nclusters];
+  TH1F* _resol_col_hist_2pad_except[Nclusters];
 
-  TH1F* _resol_col_hist_3pad[geom::nPadx];
-  TH1F* _resol_col_hist_3pad_except[geom::nPadx];
+  TH1F* _resol_col_hist_3pad[Nclusters];
+  TH1F* _resol_col_hist_3pad_except[Nclusters];
 
   TGraphErrors* _residual_mean;
   TGraphErrors* _residual_sigma;
-  // TH1F* _residual_sigma_2pad;
-  // TH1F* _residual_sigma_3pad;
 
   TGraphErrors* _residual_sigma_unbiased;
   TGraphErrors* _residual_sigma_biased;
 
-  TH2F* _PRF_histo_col[geom::nPadx];
+  TH2F* _PRF_histo_col[Nclusters];
 
   /// separate pad fit study
-  TH1F* _Fit_quality_plots[3][geom::nPadx];
+  TH1F* _Fit_quality_plots[3][Nclusters];
   TAxis* _prf_scale_axis;
 
   /// errors vs the PRF value
@@ -153,11 +160,11 @@ class SpatialResolAna: public AnalysisBase {
   const float x_scan_min = -0.035;
   const float x_scan_max = 0.015;
   TAxis* _x_scan_axis;
-  TH1F* _resol_col_x_scan[geom::nPadx][x_scan_bin];
-  TH1F* _mult_x_scan[geom::nPadx][x_scan_bin];
+  TH1F* _resol_col_x_scan[Nclusters][x_scan_bin];
+  TH1F* _mult_x_scan[Nclusters][x_scan_bin];
   TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
 
-  TH1F* _resol_col_x_scan_lim_mult[geom::nPadx][x_scan_bin];
+  TH1F* _resol_col_x_scan_lim_mult[Nclusters][x_scan_bin];
 
   TH2F* _PRF_histo_xscan[4];
   TGraphErrors* _PRF_graph_xscan[4];

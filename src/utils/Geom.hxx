@@ -4,7 +4,10 @@
 
 /** @cond */
 #include <iostream>
+#include "TMath.h"
 /** @endcond */
+
+#include "THit.hxx"
 
 //           31 ___________
 //             |           |
@@ -49,16 +52,21 @@ namespace geom
     static const int Nsamples = 511;
     static const int Nsamples_saclay = 510;
 
+    float GetYposPad(const THit* h, bool invert = false, Float_t angle = 0);
+    float GetXposPad(const THit* h, bool invert = false, Float_t angle = 0);
+
     float GetYpos(int it_y, bool invert = false);
 
     float GetXpos(int it_x, bool invert = false);
 
     int GetMaxColumn(bool invert = false);
+    int GetMaxRow(bool invert = false);
 }
 
 namespace units {
     const float clight  =   299792458.;
     const float B       =   0.2;
+    const float a45     =   0.78539816;
 }
 
 #endif

@@ -30,22 +30,29 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   // TODO redefine CLI.
   // now written in an ugly way
   // prevent copy-past between the daughter-parent classes
+  // read CLI
   const struct option longopts[] = {
-    {"input",           no_argument,    0,    'i'},  // 0
-    {"output",          no_argument,    0,    'o'},
-    {"batch",           no_argument,    0,    'b'},
-    {"verbose",         no_argument,    0,    'v'},
-    {"rewrite",         no_argument,    0,    'r'},
-    {"correction",      no_argument,    0,    'c'},
-    {"full_track_fit",    no_argument,  0,     0},  // 6
-    {"separate_pad_fit",  no_argument,  0,     0},  // 7
-    {"linear_fit",        no_argument,  0,     0},  // 8
-    {"gaus_lorentz",      no_argument,  0,     0}, // 9
-    {"help",            no_argument,    0,    'h'},
-    {"start",           required_argument,    0,     0},  // 11
-    {"end",             required_argument,    0,     0},  // 12
-    {"para_fit",        no_argument,    0,     0},  // 13
-    {0,                 0,              0,     0}
+    {"input",           no_argument,    0,    'i'},         // 0
+    {"output",          no_argument,    0,    'o'},         // 1
+    {"batch",           no_argument,    0,    'b'},         // 2
+    {"verbose",         no_argument,    0,    'v'},         // 3
+    {"rewrite",         no_argument,    0,    'r'},         // 4
+    {"correction",      no_argument,    0,    'c'},         // 5
+    {"start",           required_argument,      0,     0},  // 6
+    {"end",             required_argument,      0,     0},  // 7
+    // fitter method
+    {"full_track_fit",  no_argument,    0,      0},         // 8
+    {"separate_pad_fit",no_argument,    0,      0},         // 9
+    // track shape
+    {"linear_fit",      no_argument,    0,      0},         // 10
+    {"para_fit",        no_argument,    0,      0},         // 11
+    // PRF  shape
+    {"gaus_lorentz",    no_argument,    0,      0},         // 12
+
+    {"diagonal",        no_argument,    0,      0},         // 13
+    {"help",            no_argument,    0,    'h'},         // 14
+
+    {0,                 0,              0,      0}
   };
 
   int index;
@@ -56,8 +63,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     if (c < 0) break;
     switch (c) {
       case 0  :
-        if (index == 11) _start_ID         =  atoi(optarg);
-        if (index == 12) _end_ID           =  atoi(optarg);
+        if (index == 6) _start_ID         =  atoi(optarg);
+        if (index == 7) _end_ID           =  atoi(optarg);
         break;
       case 'i' : _file_in_name     = optarg;       break;
       case 'o' : _file_out_name    = optarg;       break;
@@ -477,13 +484,6 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
 
-  // int cluster_q = 0;
-  // for (auto pad:col)
-  //   cluster_q += pad->GetQ();
-
-  // if (cluster_q > 2000)
-  //   return result;
-
   for (uint i = 0; i < col.size(); ++i) {
     auto pad    = col[i];
     auto q      = pad->GetQ();
@@ -511,31 +511,13 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   return result;
 }
 
-std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::vector<THit*> > tr) {
-  std::vector<std::vector<THit*> > result;
-  // remove first and last column
-  // also filter empty columns
-  tr.erase(std::remove_if(tr.begin(), tr.end(), [&](const std::vector<THit*> col) {
-    return  !col[0] ||
-            col[0]->GetCol(_invert) == 0 ||
-            col[0]->GetCol(_invert) == geom::GetMaxColumn(_invert)-1 ||
-            accumulate(col.begin(), col.end(), 0,
-                      [](const int& x, const THit* hit)
-                      {return x + hit->GetQ();}
-                      ) == 0;
-  }), tr.end());
+std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
+  std::vector<TCluster*> result;
   // sort clusters in increasing order
-  sort(tr.begin(), tr.end(), [](std::vector<THit*> col1,
-                                std::vector<THit*> col2){
-                                  return  accumulate(col1.begin(), col1.end(), 0,
-                                                    [](const int& x, const THit* hit)
-                                                    {return x + hit->GetQ();}
-                                                    )
-                                        < accumulate(col2.begin(), col2.end(), 0,
-                                                    [](const int& x, const THit* hit)
-                                                    {return x + hit->GetQ();}
-                                                    );
-                                });
+  sort(tr.begin(), tr.end(), [](TCluster* cl1,
+                                TCluster* cl){
+                                  return  cl1->GetCharge() < cl->GetCharge();});
+
   // trancation cut
   auto frac = 1.00;
   Int_t i_max = round(frac * tr.size());
@@ -568,6 +550,72 @@ std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::ve
   //     result.push_back(col);
   // }
   return result;
+}
+
+std::vector<TCluster*> AnalysisBase::ColonizeTrack(const TTrack* tr) {
+  std::vector<TCluster*> cluster_v;
+
+  for (auto col:tr->GetCols(_invert)) {
+    if (!col[0])
+      continue;
+    // skip first and last column
+    auto it = col[0]->GetCol(_invert);
+    if (it == 0 || it == geom::GetMaxColumn(_invert))
+      continue;
+    TCluster* cl = new TCluster(col[0]);
+    cl->SetX(geom::GetXposPad(col[0], _invert));
+    for (uint i = 1; i < col.size(); ++i) {
+      cl->AddHit(col[i]);
+    } // loop over pads
+    cluster_v.push_back(cl);
+  } // loop over column
+
+  return cluster_v;
+}
+
+std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
+  std::vector<TCluster*> cluster_v;
+  for (auto col:tr->GetCols(_invert)) {
+    // skip first and last column
+    auto it = col[0]->GetCol(_invert);
+    if (it == 0 || it == geom::GetMaxColumn(_invert))
+      continue;
+    for (auto pad:col) {
+      auto col_id = pad->GetCol(_invert);
+      auto row_id = pad->GetRow(_invert);
+      auto cons = col_id - row_id;
+      if (row_id == 0 || row_id == geom::GetMaxRow(_invert))
+        continue;
+
+      // BUG block
+      if (cons >= 31 | cons <= -30)
+            continue;
+      if (col_id < 1 || col_id > 34 || row_id < 1 || row_id > 30)
+            continue;
+      // end of block
+
+
+      // search if the diagonal is already considered
+      std::vector<TCluster*>::iterator it;
+      for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
+        if (!(*it)->GetHits()[0]) {
+          continue;
+        }
+
+        if ((*it)->GetHits()[0]->GetCol(_invert) -  (*it)->GetHits()[0]->GetRow(_invert) == cons) {
+          (*it)->AddHit(pad);
+          break;
+        }
+      } // loop over track_diag
+      if (it == cluster_v.end()) {
+        TCluster* cl = new TCluster(pad);
+        cl->SetX(geom::GetXposPad(pad, _invert, units::a45));
+        cluster_v.push_back(cl);
+      }
+    } // over pads
+  } // over cols diagonalise track
+
+  return cluster_v;
 }
 
 void AnalysisBase::help(const std::string& name) {

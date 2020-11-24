@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
 # Set name of our project
-project(DESY_testbeam VERSION 1.4)
+project(DESY_testbeam VERSION 1.5)
 
 set(default_build_type "Debug")
 

@@ -55,6 +55,7 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
         auto col_id = pad->GetCol(_invert);
         auto row_id = pad->GetRow(_invert);
         auto cons = col_id - row_id;
+        // exclude 1st/last columns
         if (col_id < 1 || col_id > 34 || row_id < 1 || row_id > 30)
           continue;
         if (cons >= 31 | cons <= -30)
@@ -95,7 +96,7 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
     // std::cout << "col mult "  <<  track_diag.size() << std::endl;
 
     // selection
-    if (track_diag.size() < 25 )
+    if (track_diag.size() < 50 )
       continue;
     _store_event = true;
 
@@ -135,12 +136,13 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
     // first loop over column
     std::vector<std::pair<float, float> > track_pos_vec;
 
-    for (uint pairIt = 0; pairIt < track_diag.size(); pairIt += 2) {
+    for (uint pairIt = 1; pairIt < track_diag.size()-1; pairIt += 2) {
 
-      if (track_diag.size() - pairIt < 2)
+      if (track_diag.size()-1 - pairIt < 2)
         continue;
 
       std::pair<float, float> cluster[2];
+      cluster[1] = std::make_pair(-999, -999);
       float cluster_e[2];
       for (uint pair = 0; pair < 2; ++pair) {
         auto colIt = pairIt + pair;
@@ -149,6 +151,9 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
           continue;
 
         _multiplicity[colIt] = col.size();
+
+        // if (_multiplicity[colIt] == 1)
+        //   continue;
 
         // centre of charge as fit starting point
         Float_t weight_mean = 0.;
@@ -216,11 +221,19 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
         _x[colIt] = GetInclinedX(col[0]);
         cluster[pair] = std::make_pair(GetInclinedX(col[0]), _clust_pos[colIt]);
         if (_multiplicity[colIt] == 1)
-          cluster_e[pair] = 0.01;
+          cluster_e[pair] = 0.001;
         else
-          cluster_e[pair] = 0.008;
+          cluster_e[pair] = 0.0008;
+
+        std::cout << _x[colIt] << "\t" << _clust_pos[colIt] << std::endl;
 
       } // loop over pair
+      // if the second pair component is missed copy the 1st component
+      if (cluster[1].first == -999) {
+        cluster[1].first = cluster[0].first;
+        cluster[1].second = cluster[0].second;
+        cluster_e[1] = cluster_e[0];
+      }
       float av_x = 0.5*(cluster[0].first + cluster[1].first);
       float y1 = cluster[0].second;
       float y2 = cluster[1].second;
@@ -238,20 +251,23 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
 
     TF1* fit;
     TString func;
-    if (!_do_arc_fit) {
+    if (_do_linear_fit) {
       track_gr->Fit("pol1", "Q");
       fit = (TF1*)track_gr->GetFunction("pol1")->Clone();
+    } else if (_do_para_fit) {
+      track_gr->Fit("pol2", "Q");
+      fit = (TF1*)track_gr->GetFunction("pol2")->Clone();
     } else {
       Float_t q_up, q_down;
       q_up = q_down = 1.e9;
-      _circle_function_dn->SetParameters(80., 0, 0.);
-      track_gr->Fit("circle_dn", "Q");
+      _circle_function_dn->SetParameters(80., 0.14, -0.03);
+      track_gr->Fit("circle_dn");
       fit = track_gr->GetFunction("circle_dn");
       if (fit)
         q_down = fit->GetChisquare() / fit->GetNDF();
 
-      _circle_function_up->SetParameters(80., 0, 0.);
-      track_gr->Fit("circle_up", "Q");
+      _circle_function_up->SetParameters(80., 0.14, -0.03);
+      track_gr->Fit("circle_up");
       fit = track_gr->GetFunction("circle_up");
       if (fit)
         q_up = fit->GetChisquare() / fit->GetNDF();
@@ -286,7 +302,9 @@ bool InclinedTracks::ProcessEvent(const TEvent* event) {
 
       auto col = track_diag[colIt];
       int padId = 0;
-      // std::cout << "column" << std::endl;
+      // don't fill PRF in case of one pad
+      if (col.size() < 2)
+        continue;
       for (auto pad:col) {
         auto inc_y = GetInclinedY(pad);
         auto inc_x = GetInclinedX(pad);
@@ -321,19 +339,20 @@ bool InclinedTracks::Draw() {
   TGraphErrors* gr = new TGraphErrors();
   TGraphErrors* gr_f = new TGraphErrors();
   TGraphErrors* gr_c = new TGraphErrors();
+  auto scale = 1.;
   for (auto colIt = 0; colIt < 70; ++colIt) {
     if (_cluster_av[colIt] == -999)
       continue;
 
-    gr->SetPoint(gr->GetN(), 1e3*_x_av[colIt], 1e3*_cluster_av[colIt]);
-    gr_f->SetPoint(gr_f->GetN(), 1e3*_x_av[colIt], 1e3*_track_pos[colIt]);
+    gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_cluster_av[colIt]);
+    gr_f->SetPoint(gr_f->GetN(), scale*_x_av[colIt], scale*_track_pos[colIt]);
   }
 
   for (auto colIt = 0; colIt < 70; ++colIt) {
     if (_clust_pos[colIt] == -999)
       continue;
 
-    gr_c->SetPoint(gr_c->GetN(), 1e3*_x[colIt], 1e3*_clust_pos[colIt]);
+    gr_c->SetPoint(gr_c->GetN(), scale*_x[colIt], scale*_clust_pos[colIt]);
   }
 
   gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));

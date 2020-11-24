@@ -9,6 +9,7 @@
 
 #include "TEvent.hxx"
 #include "Geom.hxx"
+#include "TCluster.hxx"
 
 // define the complicated construction of pads in the column
 // TODO make it as class??
@@ -36,13 +37,23 @@ public:
     Separate_pads
   };
 
+  enum TrackShape {
+    arc = 0,
+    parabola,
+    linear
+  };
+
   TrackFitter(FitterType type, TF1* func, float fit_bound,
     float uncertainty, Int_t it, Int_t verbose, bool invert,
-    bool charge_uncertainty, bool do_arc_fit);
+    bool charge_uncertainty);
   virtual ~TrackFitter() {;}
 
   /// set the type of the fitter
   void SetType(FitterType type) {_type = type;}
+
+  void SetTrackShape(TrackShape shape) {_shape = shape;};
+
+  void SetDiagonal(bool d) {_diagonal = d;}
 
   /// General function for fitting the cluster
   Double_t FitCluster(const std::vector<THit*>& col,
@@ -52,7 +63,7 @@ public:
      TH1F* uncertainty = NULL);
 
   /// general function for fitting the whole track
-  TF1* FitTrack(const double* track_pos = NULL,
+  TF1* FitTrack(const std::vector<TCluster*> clusters,
     const int* mult = NULL,
     const TTrack* track = NULL,
     const double pos = 0,
@@ -61,8 +72,10 @@ public:
 
 protected:
   /// Fit the whole track with CERN method
-  TF1* GetTrackFitCERN(const double* track_pos, const int* mult,
-                        const int miss_id = -1);
+  TF1* GetTrackFitCERN(const std::vector<TCluster*> clusters,
+                       const int* mult,
+                       const int miss_id = -1
+                       );
   /// Fit the whole track with ILC method
   TF1* GetTrackFitILC(const TTrack* track, const double pos,
                         const int miss_id = -1);
@@ -103,6 +116,8 @@ private:
   bool _invert;
   bool _charge_uncertainty;
   bool _do_arc_fit;
+  TrackShape _shape;
+  bool _diagonal;
 
   const float default_error   = 0.001;
   const float one_pad_error   = 0.002;

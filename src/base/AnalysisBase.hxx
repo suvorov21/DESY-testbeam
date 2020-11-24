@@ -21,6 +21,8 @@
 #include "ReconstructionBase.hxx"
 #include "SetT2KStyle.hxx"
 
+class TCluster;
+
 /// Main analysis template
 class AnalysisBase {
  public:
@@ -40,7 +42,7 @@ class AnalysisBase {
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*> col);
-  std::vector<std::vector<THit*> > GetRobustCols(std::vector<std::vector<THit*> > tr);
+  std::vector<TCluster*> GetRobustCols(std::vector<TCluster*> tr);
 
   /// Print usage
   void help(const std::string& name);
@@ -49,6 +51,11 @@ class AnalysisBase {
 
   void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
   std::vector<Int_t> GetEventList() const {return _EventList;}
+
+  /// Clusterization
+  std::vector<TCluster*> DiagonolizeTrack(const TTrack* tr);
+
+  std::vector<TCluster*> ColonizeTrack(const TTrack* tr);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}

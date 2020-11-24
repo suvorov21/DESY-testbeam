@@ -7,7 +7,7 @@
 //********************************************************************
 TrackFitter::TrackFitter(FitterType type, TF1* func,
   float fit_bound, float uncertainty, Int_t it, Int_t verbose, bool invert,
-  bool charge_uncertainty, bool do_arc_fit) {
+  bool charge_uncertainty) {
   //********************************************************************
   _type         = type;
   _PRF_function = func;
@@ -20,7 +20,6 @@ TrackFitter::TrackFitter(FitterType type, TF1* func,
   _invert     = invert;
 
   _charge_uncertainty = charge_uncertainty;
-  _do_arc_fit = do_arc_fit;
 
   _circle_function_up = new TF1("circle_up",
     "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]",
@@ -59,12 +58,12 @@ Double_t TrackFitter::FitCluster(const std::vector<THit*>& col,
 }
 
 //********************************************************************
-TF1* TrackFitter::FitTrack(const double* track_pos, const int* mult,
+TF1* TrackFitter::FitTrack(const std::vector<TCluster*> clusters, const int* mult,
   const TTrack* track, const double pos, const pads_t pos_in_pad,
   const int miss_id) {
   //********************************************************************
   switch (_type) {
-    case CERN_like:     return GetTrackFitCERN(track_pos, mult, miss_id);
+    case CERN_like:     return GetTrackFitCERN(clusters, mult, miss_id);
     case ILC_like:      return GetTrackFitILC(track, pos, miss_id);
     case Separate_pads: return GetTrackFitSeparatePad(pos_in_pad, miss_id);
 
@@ -160,8 +159,8 @@ double TrackFitter::GetClusterPosCERN(const std::vector<THit*>& col,
     const int cluster, const double pos) {
   //********************************************************************
 
-  if (!_iteration)
-    return pos;
+  // if (!_iteration)
+  //   return pos;
 
   auto chi2Function_cluster = [&](const Double_t *par) {
     //minimisation function computing the sum of squares of residuals
@@ -170,12 +169,18 @@ double TrackFitter::GetClusterPosCERN(const std::vector<THit*>& col,
 
     for (auto pad:col) {
       auto q      = pad->GetQ();
-      auto it_y   = pad->GetRow(_invert);
+      // auto it_y   = pad->GetRow(_invert);
       if (!q)
         continue;
 
       double a = 1. * q / cluster;
-      double center_pad_y = geom::GetYpos(it_y, _invert);
+      double center_pad_y;
+      if (_diagonal) {
+        center_pad_y = geom::GetYposPad(pad, _invert, units::a45);
+      } else {
+        center_pad_y = geom::GetYposPad(pad, _invert);
+      }
+
 
       // avoid using pads wich are far away from track
       // limit by PRF fitting range (PRF function robustness)
@@ -270,30 +275,32 @@ double TrackFitter::GetClusterPosILC(const std::vector<THit*>& col,
 }
 
 //********************************************************************
-TF1* TrackFitter::GetTrackFitCERN(const double* track_pos,
+TF1* TrackFitter::GetTrackFitCERN(const std::vector<TCluster*> clusters,
   const int* mult, const int miss_id) {
   //********************************************************************
   TGraphErrors* track_gr = new TGraphErrors();
 
-  for (auto it_x = 0; it_x < geom::GetMaxColumn(_invert); ++it_x) {
-    double x = geom::GetXpos(it_x, _invert);
-    if (track_pos[it_x] == -999.)
+  for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
+    double x   = clusters[clusterId]->GetX();
+    double y   = clusters[clusterId]->GetY();
+    double y_e = clusters[clusterId]->GetYE();
+    // if (track_pos[it_x] == -999.)
+    //   continue;
+
+    if (int(clusterId) == miss_id)
       continue;
 
-    if (it_x == miss_id)
-      continue;
-
-    track_gr->SetPoint(track_gr->GetN(), x, track_pos[it_x]);
-    double error;
-    if (mult[it_x] == 1)
-      error = one_pad_error;
-    else {
-      if (_iteration == 0)
-        error = default_error;
-      else
-        error = _uncertainty;
-    }
-    track_gr->SetPointError(track_gr->GetN()-1, 0., error);
+    track_gr->SetPoint(track_gr->GetN(), x, y);
+    // double error;
+    // if (mult[it_x] == 1)
+    //   error = one_pad_error;
+    // else {
+    //   if (_iteration == 0)
+    //     error = default_error;
+    //   else
+    //     error = _uncertainty;
+    // }
+    track_gr->SetPointError(track_gr->GetN()-1, 0., y_e);
   } // loop over x
 
   if (_verbose > 2)
@@ -301,20 +308,26 @@ TF1* TrackFitter::GetTrackFitCERN(const double* track_pos,
 
   TF1* fit;
   TString func;
-  if (!_do_arc_fit) {
-    track_gr->Fit("pol1", "Q");
+  TString opt = "Q";
+  if (_verbose > 2)
+    opt = "";
+  if (_shape == parabola) {
+    track_gr->Fit("pol2", opt);
+    fit = (TF1*)track_gr->GetFunction("pol2")->Clone();
+  } else if (_shape == linear) {
+    track_gr->Fit("pol1", opt);
     fit = (TF1*)track_gr->GetFunction("pol1")->Clone();
-  } else {
+  } else if (_shape == arc) {
     Float_t q_up, q_down;
     q_up = q_down = 1.e9;
     _circle_function_dn->SetParameters(80., 0, 0.);
-    track_gr->Fit("circle_dn", "Q");
+    track_gr->Fit("circle_dn", opt);
     fit = track_gr->GetFunction("circle_dn");
     if (fit)
       q_down = fit->GetChisquare() / fit->GetNDF();
 
     _circle_function_up->SetParameters(80., 0, 0.);
-    track_gr->Fit("circle_up", "Q");
+    track_gr->Fit("circle_up", opt);
     fit = track_gr->GetFunction("circle_up");
     if (fit)
       q_up = fit->GetChisquare() / fit->GetNDF();

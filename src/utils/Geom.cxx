@@ -14,6 +14,16 @@ float geom::GetYpos(int it_y, bool invert) {
     return geom::x_pos[it_y];
 }
 
+Float_t geom::GetXposPad(const THit* h, bool invert, Float_t angle) {
+  return geom::GetXpos(h->GetCol(invert)) * TMath::Cos(angle) -
+         geom::GetYpos(h->GetRow(invert)) * TMath::Sin(angle);
+}
+
+Float_t geom::GetYposPad(const THit* h, bool invert, Float_t angle) {
+  return   geom::GetXpos(h->GetCol(invert)) * TMath::Sin(angle) +
+           geom::GetYpos(h->GetRow(invert)) * TMath::Cos(angle);
+}
+
 float geom::GetXpos(int it_x, bool invert) {
   if ((!invert && it_x >= geom::nPadx) ||
       (invert && it_x >= geom::nPady) || it_x < 0) {
@@ -31,4 +41,11 @@ int geom::GetMaxColumn(bool invert) {
     return nPadx;
   else
     return nPady;
+}
+
+int geom::GetMaxRow(bool invert) {
+  if (!invert)
+    return nPady;
+  else
+    return nPadx;
 }
