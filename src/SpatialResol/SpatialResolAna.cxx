@@ -539,7 +539,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose > 1)
       std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
-    if (robust_clusters.size() < 50)
+    if (_diagonal && robust_clusters.size() < 50)
       continue;
 // *******************  STEP 2 *************************************************
 
