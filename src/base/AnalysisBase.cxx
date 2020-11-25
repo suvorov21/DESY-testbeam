@@ -50,7 +50,9 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     {"gaus_lorentz",    no_argument,    0,      0},         // 12
 
     {"diagonal",        no_argument,    0,      0},         // 13
-    {"help",            no_argument,    0,    'h'},         // 14
+
+    {"previous",        no_argument,    0,    'p'},         // 14
+    {"help",            no_argument,    0,    'h'},         // 15
 
     {0,                 0,              0,      0}
   };

@@ -47,6 +47,8 @@ class SpatialResolAna: public AnalysisBase {
   };
 
  protected:
+  /// Name of the file from previous iteration
+  TString _Prev_iter_name;
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
 
@@ -110,7 +112,7 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _PRF_graph_4pad;
 
   /// Fitter class for the track and cluster fitting
-  TrackFitter* _fitter;
+  TrackFitCern* _fitter;
 
   /// Whether to use arc function for track fitting
   bool _do_linear_fit;

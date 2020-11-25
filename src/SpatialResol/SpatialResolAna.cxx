@@ -12,6 +12,7 @@
 //******************************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
+  _Prev_iter_name(""),
   _do_linear_fit(false),
   _do_para_fit(false),
   _do_full_track_fit(false),
@@ -45,7 +46,9 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
     {"gaus_lorentz",    no_argument,    0,      0},         // 12
 
     {"diagonal",        no_argument,    0,      0},         // 13
-    {"help",            no_argument,    0,    'h'},         // 14
+
+    {"previous",        required_argument, 0, 'p'},         // 14
+    {"help",            no_argument,    0,    'h'},         // 15
 
     {0,                 0,              0,      0}
   };
@@ -70,6 +73,8 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
           _gaus_lorentz_PRF = true;
         if(index == 13)
           _diagonal = true;
+        if (index == 14)
+          _Prev_iter_name = optarg;
         break;
       case 't' : _iteration        = atoi(optarg);  break;
       case 'c' : _correction       = true;         break;
@@ -120,13 +125,15 @@ bool SpatialResolAna::Initialize() {
 
   // load information from previous iteration
   if (_iteration) {
-    TString prev_file_name = _file_out_name;
-    prev_file_name   = prev_file_name(0, prev_file_name.Index("iter"));
-    prev_file_name  += "iter";
-    prev_file_name  += TString::Itoa(_iteration - 1, 10);
-    prev_file_name  += ".root";
+    if (_Prev_iter_name == "") {
+      TString _Prev_iter_name = _file_out_name;
+      _Prev_iter_name   = _Prev_iter_name(0, _Prev_iter_name.Index("iter"));
+      _Prev_iter_name  += "iter";
+      _Prev_iter_name  += TString::Itoa(_iteration - 1, 10);
+      _Prev_iter_name  += ".root";
+    }
 
-    _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
+    _Prev_iter_file = new TFile(_Prev_iter_name.Data(), "READ");
     if (!_Prev_iter_file->IsOpen()) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
       std::cerr << "File from previous iteration is not found" << std::endl;
@@ -147,7 +154,7 @@ bool SpatialResolAna::Initialize() {
     if (!_PRF_function || !uncertainty_graph) {
       std::cerr << "ERROR. SpatialResolAna::Initialize().";
       std::cout << "PRF function or resolution is not specified" << std::endl;
-      std::cerr << "Search in " << prev_file_name << std::endl;
+      std::cerr << "Search in " << _Prev_iter_name << std::endl;
       exit(1);
     }
 
@@ -416,27 +423,21 @@ bool SpatialResolAna::Initialize() {
   _reconstruction->Initialize(_verbose);
 
   // Initialise track fitter
-  _fitter = new TrackFitter(TrackFitter::CERN_like, _PRF_function,
-      fit_bound_right, _uncertainty, _iteration, _verbose, _invert,
-      _charge_uncertainty);
-
-  if (_do_full_track_fit)
-    _fitter->SetType(TrackFitter::ILC_like);
-  else if (_do_separate_pad_fit)
-    _fitter->SetType(TrackFitter::Separate_pads);
-
+  TrackFitterBase::TrackShape shape = TrackFitterBase::arc;
   if (_do_linear_fit) {
-    _fitter->SetTrackShape(TrackFitter::linear);
+    shape = TrackFitterBase::linear;
   } else if (_do_para_fit) {
-    _fitter->SetTrackShape(TrackFitter::parabola);
-  } else {
-    _fitter->SetTrackShape(TrackFitter::arc);
+    shape = TrackFitterBase::parabola;
   }
 
-  if (_diagonal) {
-    _fitter->SetDiagonal(true);
-  }
-
+  _fitter = new TrackFitCern(shape,
+                             _invert,
+                             _diagonal,
+                             _verbose,
+                             _uncertainty,
+                             _iteration,
+                             _PRF_function
+                             );
 
   // Initialize timers
   _sw_partial[2] = new TStopwatch();
@@ -582,8 +583,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       if (_multiplicity[clusterId] > 1 && _iteration > 0){
         track_pos[clusterId] = _fitter->FitCluster(robust_pads,
-            _charge[clusterId], _clust_pos[clusterId], pos_in_pad,
-            _uncertainty_vs_prf_histo);
+                                                   _charge[clusterId],
+                                                   _clust_pos[clusterId]
+                                                   );
         _clust_pos[clusterId] = track_pos[clusterId];
       } else {
         track_pos[clusterId] = _clust_pos[clusterId];
@@ -660,8 +662,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 //******************** STEP 3 **************************************************
 
     TF1* fit = NULL;
-    fit = _fitter->FitTrack(clusters_clean, cluster_N, track,
-                            track_pos[1], pos_in_pad);
+    fit = _fitter->FitTrack(clusters_clean);
 
     if (!fit)
       continue;
@@ -695,13 +696,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (!_correction)
         fit1[i] = fit;
       else {
-        fit1[i] = _fitter->FitTrack(clusters_clean,
-                                    cluster_N,
-                                    track,
-                                    track_pos[1],
-                                    pos_in_pad,
-                                    i
-                                    );
+        fit1[i] = _fitter->FitTrack(clusters_clean, i);
         // TODO review this mess
         if (_do_full_track_fit)
           fit1[i] = (TF1*)fit1[i]->Clone();
@@ -1183,7 +1178,7 @@ bool SpatialResolAna::Draw() {
   TGraphErrors* gr = new TGraphErrors();
   TGraphErrors* gr_f = new TGraphErrors();
   TGraphErrors* gr_c = new TGraphErrors();
-  auto scale = 1.;
+  auto scale = 1.e3;
   for (auto colIt = 0; colIt < 70; ++colIt) {
     if (_cluster_av[colIt] == -999)
       continue;
@@ -1200,11 +1195,13 @@ bool SpatialResolAna::Draw() {
   }
 
   gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));
+  gr_c->GetYaxis()->SetTitle("Reference Y, [mm]");
+  gr_c->GetXaxis()->SetTitle("Reference X, [mm]");
+  gPad->SetGrid();
   gr_c->SetMarkerStyle(kPlus);
   gr_c->Draw("ap");
   gr->Draw("same p");
-  gr->GetYaxis()->SetTitle("Inclined Y, [mm]");
-  gr->GetXaxis()->SetTitle("Inclined X, [mm]");
+
 
   gr_f->SetLineColor(kRed);
   gr_f->Draw("same l");
