@@ -593,7 +593,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
 
       cluster->SetY(track_pos[clusterId]);
-      // cluster->SetCharge(_charge[clusterId]);
+      cluster->SetCharge(_charge[clusterId]);
 
       if (_verbose >= v_fit_details) {
         for (auto pad:cluster->GetHits()) {
