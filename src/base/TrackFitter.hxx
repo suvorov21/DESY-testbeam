@@ -97,7 +97,9 @@ public:
                int verbose,
                float uncertainty,
                int it,
-               TF1* PRF);
+               TF1* PRF,
+               float fit_bound,
+               bool charge_uncertainty);
   virtual ~TrackFitCern() {;}
 
   /// Cluster fitter

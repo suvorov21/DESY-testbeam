@@ -125,8 +125,8 @@ bool SpatialResolAna::Initialize() {
 
   // load information from previous iteration
   if (_iteration) {
-    if (_Prev_iter_name == "") {
-      TString _Prev_iter_name = _file_out_name;
+    if (_Prev_iter_name.Length() == 0) {
+      _Prev_iter_name = _file_out_name;
       _Prev_iter_name   = _Prev_iter_name(0, _Prev_iter_name.Index("iter"));
       _Prev_iter_name  += "iter";
       _Prev_iter_name  += TString::Itoa(_iteration - 1, 10);
@@ -137,6 +137,7 @@ bool SpatialResolAna::Initialize() {
     if (!_Prev_iter_file->IsOpen()) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
       std::cerr << "File from previous iteration is not found" << std::endl;
+      std::cerr << "File name: " << _Prev_iter_name << std::endl;
       exit(1);
     }
     auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
@@ -436,7 +437,9 @@ bool SpatialResolAna::Initialize() {
                              _verbose,
                              _uncertainty,
                              _iteration,
-                             _PRF_function
+                             _PRF_function,
+                             fit_bound_right,
+                             _charge_uncertainty
                              );
 
   // Initialize timers

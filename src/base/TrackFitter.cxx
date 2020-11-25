@@ -58,9 +58,14 @@ TrackFitCern::TrackFitCern(TrackShape shape,
                int verbose,
                float uncertainty,
                int it,
-               TF1* PRF): TrackFitterBase(shape, invert, diagonal, verbose, uncertainty, it) {
+               TF1* PRF,
+               float fit_bound,
+               bool charge_uncertainty
+               ): TrackFitterBase(shape, invert, diagonal, verbose, uncertainty, it) {
 //******************************************************************************
-  _PRF_function = PRF;
+  _PRF_function       = PRF;
+  _fit_bound          = fit_bound;
+  _charge_uncertainty = charge_uncertainty;
 }
 
 //******************************************************************************
