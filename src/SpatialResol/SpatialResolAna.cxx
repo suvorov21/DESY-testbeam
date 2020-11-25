@@ -111,9 +111,9 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_histo   = NULL;
 
   _PRF_function = InitializePRF("PRF_function");
-  _PRF_function_2pad = InitializePRF("PRF_function_2pad");
-  _PRF_function_3pad = InitializePRF("PRF_function_3pad");
-  _PRF_function_4pad = InitializePRF("PRF_function_4pad");
+  // _PRF_function_2pad = InitializePRF("PRF_function_2pad");
+  // _PRF_function_3pad = InitializePRF("PRF_function_3pad");
+  // _PRF_function_4pad = InitializePRF("PRF_function_4pad");
 
   if (_do_full_track_fit)
     _PRF_function->FixParameter(0, 1.);
@@ -267,9 +267,9 @@ bool SpatialResolAna::Initialize() {
   dir_prf_mult->Append(_PRF_histo_3pad);
   dir_prf_mult->Append(_PRF_histo_4pad);
 
-  dir_prf_mult->Append(_PRF_function_2pad);
-  dir_prf_mult->Append(_PRF_function_3pad);
-  dir_prf_mult->Append(_PRF_function_4pad);
+  // dir_prf_mult->Append(_PRF_function_2pad);
+  // dir_prf_mult->Append(_PRF_function_3pad);
+  // dir_prf_mult->Append(_PRF_function_4pad);
 
   dir_prf_mult->Append(_PRF_graph_2pad);
   dir_prf_mult->Append(_PRF_graph_3pad);
@@ -403,7 +403,7 @@ bool SpatialResolAna::Initialize() {
   _passed_events.clear();
 
   std::cout << "done" << std::endl;
-  if (_verbose > 1) {
+  if (_verbose >= v_event_number) {
     std::cout << "\t PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula();
     std::cout << "  with ";
     for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
@@ -459,7 +459,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (!track)
       continue;
 
-    if (_verbose > 1)
+    if (_verbose >= v_event_number)
       std::cout << "Track id = " << trackId << std::endl;
 
     if (!sel::CrossingTrackSelection(track, _invert, _verbose))
@@ -524,7 +524,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     else
       clusters = ColonizeTrack(track);
 
-    if (_verbose > 1)
+    if (_verbose >= v_analysis_steps)
       std::cout << "Clusterization done" << std::endl;
 
     if (_diagonal) {
@@ -539,14 +539,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // truncation
     auto robust_clusters = GetRobustCols(clusters);
 
-    if (_verbose > 1)
+    if (_verbose >= v_analysis_steps)
       std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
     if (_diagonal && robust_clusters.size() < 50)
       continue;
 // *******************  STEP 2 *************************************************
 
-    if (_verbose > 1)
+    if (_verbose >= v_analysis_steps)
       std::cout << "start cluster fit" << std::endl;
 
     for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
@@ -592,14 +592,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       cluster->SetY(track_pos[clusterId]);
       cluster->SetCharge(_charge[clusterId]);
 
-      if (_verbose > 4) {
+      if (_verbose >= v_fit_details) {
         for (auto pad:cluster->GetHits()) {
           std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
         }
         std::cout << std::endl;
       }
 
-      if (_verbose > 2)
+      if (_verbose >= v_fit_details)
         std::cout << "X:CoC:Fit\t" << cluster->GetX() << "\t" << CoC << "\t" << cluster->GetY() << std::endl;
 
 
@@ -609,7 +609,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         cluster->SetYE(0.0008);
       }
 
-      if (_verbose > 5) {
+      if (_verbose >= v_residuals) {
         std::cout << "Cluster pos " << track_pos[clusterId] << "\t";
         std::cout << cluster_mean[clusterId] << std::endl;
       }
@@ -648,7 +648,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         clusters_clean.push_back(cluster);
     }
 
-    if (_verbose > 3) {
+    if (_verbose >= v_analysis_steps) {
       std::cout << "Loop over columns done" << std::endl;
     }
 
@@ -673,7 +673,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     double quality = fit->GetChisquare() / fit->GetNDF();
     _Chi2_track->Fill(quality);
 
-    if (_verbose > 3)
+    if (_verbose >= v_analysis_steps)
       std::cout << "Track fit done" << std::endl;
 
     TString func = fit->GetName();
@@ -722,7 +722,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       double track_fit_y    = fit->Eval(_x_av[clusterId]);
       double track_fit_y1   = fit1[clusterId]->Eval(_x_av[clusterId]);
 
-      if (_verbose > 4) {
+      if (_verbose >= v_residuals) {
         std::cout << "Residuals id:x:cluster:track\t" << clusterId << "\t";
         std::cout << _x_av[clusterId] << "\t";
         std::cout << clusters_clean[clusterId]->GetY() << "\t";
@@ -766,22 +766,38 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
         double track_fit_y    = fit->Eval(x);
 
-        if (_verbose > 3) {
-          std::cout << "PRF fill\t" << center_pad_y - track_fit_y << "\t" << q / a_peak_fit[clusterId] << std::endl;
-        }
-
-        // fill PRF
-        _PRF_histo->Fill( center_pad_y - track_fit_y,
-                          q / a_peak_fit[clusterId]);
-        _PRF_histo_col[clusterId]->Fill( center_pad_y - track_fit_y,
-                                    q / a_peak_fit[clusterId]);
-
+        /// WARNING only 9 first pads are used
         if (padId > 9)
           continue;
 
         _time[clusterId][padId]    = time;
         _dx[clusterId][padId]    = center_pad_y - track_fit_y;
         _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
+
+        if (_verbose >= v_prf) {
+          std::cout << "PRF fill\t" << _dx[clusterId][padId] << "\t" << _qfrac[clusterId][padId] << std::endl;
+        }
+
+        // fill PRF
+        _PRF_histo->Fill( _dx[clusterId][padId],
+                          _qfrac[clusterId][padId]
+                          );
+        _PRF_histo_col[clusterId]->Fill( _dx[clusterId][padId],
+                                         _qfrac[clusterId][padId]
+                                         );
+
+        if (_multiplicity[clusterId] == 2)
+          _PRF_histo_2pad->Fill( _dx[clusterId][padId],
+                                 _qfrac[clusterId][padId]
+                                 );
+        else if (_multiplicity[clusterId] == 3)
+          _PRF_histo_3pad->Fill( _dx[clusterId][padId],
+                                 _qfrac[clusterId][padId]
+                                 );
+        else if (_multiplicity[clusterId] == 4)
+          _PRF_histo_4pad->Fill( _dx[clusterId][padId],
+                                 _qfrac[clusterId][padId]
+                                 );
 
         // robust_pads are assumed sorted!!
         ++padId;

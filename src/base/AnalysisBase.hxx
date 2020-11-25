@@ -39,6 +39,7 @@ class AnalysisBase {
   virtual bool WriteOutput();
   virtual void DrawSelection(const TEvent *event, int trackID);
 
+  /// Dump progress in the command line
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*> col);
@@ -54,13 +55,19 @@ class AnalysisBase {
 
   /// Clusterization
   std::vector<TCluster*> DiagonolizeTrack(const TTrack* tr);
-
   std::vector<TCluster*> ColonizeTrack(const TTrack* tr);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
   bool operator==(const AnalysisBase* ana){(void)ana;
     std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+
+  /// verbosity levels
+  enum verbosity_base {
+    v_progress = 1,
+    v_event_number,
+    v_base_last
+  };
 
  protected:
 

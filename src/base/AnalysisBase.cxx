@@ -281,7 +281,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   _sw_partial[1] = new TStopwatch();
   _sw_partial[1]->Reset();
 
-  if (_verbose == 1) {
+  if (_verbose >= v_progress) {
     std::cout << "Input file..............................." << _file_in_name << std::endl;
     std::cout << "output file.............................." << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
@@ -293,10 +293,10 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (N_events < 100)
     denimonator = N_events;
   for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
-    if (_verbose > 1)
+    if (_verbose >= v_event_number)
       std::cout << "Event " << eventID << std::endl;
 
-    if (_verbose == 1 && (eventID%(N_events/denimonator)) == 0)
+    if (_verbose == v_progress && (eventID%(N_events/denimonator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
 
     _chain->GetEntry(EventList[eventID]);
@@ -370,7 +370,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     }
   } // end of event loop
 
-  if (_verbose == 1)
+  if (_verbose == v_progress)
     std::cout << std::endl;
 
   return true;

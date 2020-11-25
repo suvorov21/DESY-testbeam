@@ -26,40 +26,70 @@ class SpatialResolAna: public AnalysisBase {
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
 
+  /// Profile PRF with peak and RMS
   bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
 
+  /// Initialise PRF with expected params
   TF1* InitializePRF(const TString name);
 
+  /// Get mean and FWHM for the histo
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
 
   /// Draw the histograms of interest
   bool Draw();
+
+  /// verbosity levels
+  enum verbosity_SR {
+    v_analysis_steps = v_base_last + 1,
+    v_fit_details,
+    v_residuals,
+    v_prf
+  };
 
  protected:
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
 
   /// output tree
-  TTree* _tree;
-  Int_t _ev;
+  TTree*  _tree;
+  /// 0putput tree vars
+
+  // Event vars
+  /// event number
+  Int_t   _ev;
+  /// angle in MM plane
   Float_t _angle_xy;
+  /// angle w.r.t. MM
   Float_t _angle_yz;
-  Float_t _residual[Nclusters];
-  Int_t   _charge[Nclusters];
-  Int_t   _multiplicity[Nclusters];
-  Float_t _dx[Nclusters][10];
-  Float_t _qfrac[Nclusters][10];
-  Int_t   _time[Nclusters][10];
+
+  /// Cluster vars
+  /// Position of the cluster
   Float_t _clust_pos[Nclusters];
-
-
-  Float_t _track_pos[Nclusters];
-  Float_t _cluster_av[Nclusters];
-  Float_t _x_av[Nclusters];
-
+  /// X position of the cluster
   Float_t _x[Nclusters];
+  /// Position of the "clean" cluster
+  /** e.g. average 2 neighbour diagonals **/
+  Float_t _cluster_av[Nclusters];
+  /// X position of the evareged cluster
+  Float_t _x_av[Nclusters];
+  /// Position of the track
+  Float_t _track_pos[Nclusters];
+  /// Residuals (X_track-X_cluster)
+  Float_t _residual[Nclusters];
+  /// charge in the cluster
+  Int_t   _charge[Nclusters];
+  /// multiplicity of the cluster
+  Int_t   _multiplicity[Nclusters];
 
+  /// Pad vars
+  /// X_track - X_pad --> X axis of the PRF
+  Float_t _dx[Nclusters][10];
+  /// Fraction of charge Q_pad / Q_cluster --> Y axis of PRF
+  Float_t _qfrac[Nclusters][10];
+  /// time of the pad
+  Int_t   _time[Nclusters][10];
 
+  /** Histograms **/
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*  _PRF_function;
   /// PRF histoes
@@ -67,9 +97,9 @@ class SpatialResolAna: public AnalysisBase {
   // PRF profiling graphs
   TGraphErrors* _PRF_graph;
 
-  TF1*    _PRF_function_2pad;
-  TF1*    _PRF_function_3pad;
-  TF1*    _PRF_function_4pad;
+  // TF1*    _PRF_function_2pad;
+  // TF1*    _PRF_function_3pad;
+  // TF1*    _PRF_function_4pad;
 
   TH2F* _PRF_histo_2pad;
   TH2F* _PRF_histo_3pad;
