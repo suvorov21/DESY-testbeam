@@ -135,6 +135,9 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*> clusters,
     if (int(clusterId) == miss_id)
       continue;
 
+    if (_verbose > 3)
+      std::cout << "Track point\t" << x << "\t" << y << std::endl;
+
     track_gr->SetPoint(track_gr->GetN(), x, y);
     track_gr->SetPointError(track_gr->GetN()-1, 0., y_e);
   } // loop over x

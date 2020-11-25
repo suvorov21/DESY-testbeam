@@ -526,6 +526,7 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
     result.push_back(tr[i]);
   }
 
+  // BUG truncation with neighbours is not working with clusters
   // trancation + neibours
   // auto frac = 0.95;
   // std::vector<Int_t> bad_pads;
@@ -550,6 +551,12 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
   //   if (total_q < q_cut)
   //     result.push_back(col);
   // }
+
+  // sort by X for return
+  sort(result.begin(), result.end(),
+       [&](TCluster* cl1, TCluster* cl2){
+          return cl1->GetX() < cl2->GetX();
+        });
   return result;
 }
 
@@ -605,12 +612,15 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
 
         if ((*it)->GetHits()[0]->GetCol(_invert) -  (*it)->GetHits()[0]->GetRow(_invert) == cons) {
           (*it)->AddHit(pad);
+          // TODO consider AddCharge function?
+          (*it)->SetCharge((*it)->GetCharge() + pad->GetQ());
           break;
         }
       } // loop over track_diag
       if (it == cluster_v.end()) {
         TCluster* cl = new TCluster(pad);
         cl->SetX(geom::GetXposPad(pad, _invert, units::a45));
+        cl->SetCharge(pad->GetQ());
         cluster_v.push_back(cl);
       }
     } // over pads

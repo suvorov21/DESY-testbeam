@@ -544,7 +544,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose >= v_analysis_steps)
       std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
-    if (_diagonal && robust_clusters.size() < 50)
+    if (_diagonal && robust_clusters.size() < 40)
       continue;
 // *******************  STEP 2 *************************************************
 
@@ -593,7 +593,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       }
 
       cluster->SetY(track_pos[clusterId]);
-      cluster->SetCharge(_charge[clusterId]);
+      // cluster->SetCharge(_charge[clusterId]);
 
       if (_verbose >= v_fit_details) {
         for (auto pad:cluster->GetHits()) {
@@ -628,22 +628,26 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     std::vector<TCluster*> clusters_clean;
     if (_diagonal) {
       // average 2 measurements into one
-      for (uint pairIt = 0; pairIt < clusters.size() - 1; pairIt += 2) {
-        float x1 = geom::GetXposPad(clusters[pairIt+0]->GetHits()[0],
+      for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
+        auto cluster1 = robust_clusters[pairIt+0];
+        auto cluster2 = robust_clusters[pairIt+1];
+        if (!cluster1 || !cluster2)
+          continue;
+        float x1 = geom::GetXposPad(cluster1->GetHits()[0],
                                     _invert,
                                     units::a45
                                     );
-        float x2 = geom::GetXposPad(clusters[pairIt+1]->GetHits()[0],
+        float x2 = geom::GetXposPad(cluster2->GetHits()[0],
                                     _invert,
                                     units::a45
                                     );
         float av_x = 0.5 * (x1 + x2);
 
-        float y1 = clusters[pairIt+0]->GetY();
-        float y2 = clusters[pairIt+1]->GetY();
+        float y1 = cluster1->GetY();
+        float y2 = cluster2->GetY();
 
-        float y1_e = clusters[pairIt+0]->GetYE();
-        float y2_e = clusters[pairIt+1]->GetYE();
+        float y1_e = cluster1->GetYE();
+        float y2_e = cluster2->GetYE();
 
         float av_y = y1 * y2_e * y2_e + y2 * y1_e * y1_e;
         av_y /= y1_e * y1_e + y2_e * y2_e;
