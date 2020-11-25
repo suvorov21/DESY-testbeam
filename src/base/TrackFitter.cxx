@@ -9,7 +9,6 @@ TrackFitterBase::TrackFitterBase(TrackShape shape,
                                  bool invert,
                                  bool diagonal,
                                  int verbose,
-                                 float uncertainty,
                                  int it) {
 //******************************************************************************
   _shape         = shape;
@@ -18,8 +17,6 @@ TrackFitterBase::TrackFitterBase(TrackShape shape,
   _diagonal = diagonal;
 
   _verbose    = verbose;
-
-  _uncertainty  = uncertainty;
 
   _iteration  = it;
   _verbose    = verbose;
@@ -56,12 +53,11 @@ TrackFitCern::TrackFitCern(TrackShape shape,
                bool invert,
                bool diagonal,
                int verbose,
-               float uncertainty,
                int it,
                TF1* PRF,
                float fit_bound,
                bool charge_uncertainty
-               ): TrackFitterBase(shape, invert, diagonal, verbose, uncertainty, it) {
+               ): TrackFitterBase(shape, invert, diagonal, verbose, it) {
 //******************************************************************************
   _PRF_function       = PRF;
   _fit_bound          = fit_bound;
@@ -80,7 +76,6 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
 
     for (auto pad:col) {
       auto q      = pad->GetQ();
-      // auto it_y   = pad->GetRow(_invert);
       if (!q)
         continue;
 

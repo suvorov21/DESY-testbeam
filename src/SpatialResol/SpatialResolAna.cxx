@@ -12,7 +12,7 @@
 //******************************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
-  _Prev_iter_name(""),
+  _Prev_iter_name(TString("")),
   _do_linear_fit(false),
   _do_para_fit(false),
   _do_full_track_fit(false),
@@ -47,17 +47,16 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
 
     {"diagonal",        no_argument,    0,      0},         // 13
 
-    {"previous",        required_argument, 0, 'p'},         // 14
+    // {"previous",        required_argument, 0, 'p'},         // 14
     {"help",            no_argument,    0,    'h'},         // 15
 
     {0,                 0,              0,      0}
   };
 
   int index;
-
   optind = 1;
   for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drmst:ca", longopts, &index);
+    int c = getopt_long(argc, argv, "i:o:bv:drmst:cap:", longopts, &index);
     if (c < 0) break;
     switch (c) {
       case 0 :
@@ -73,14 +72,12 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
           _gaus_lorentz_PRF = true;
         if(index == 13)
           _diagonal = true;
-        if (index == 14)
-          _Prev_iter_name = optarg;
         break;
       case 't' : _iteration        = atoi(optarg);  break;
-      case 'c' : _correction       = true;         break;
+      case 'c' : _correction       = true;          break;
+      case 'p' :  _Prev_iter_name  = optarg;        break;
     }
   }
-
   if (_iteration == -1) {
     std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
     std::cout << " Iteration should be defined as a input param" << std::endl;
@@ -435,7 +432,6 @@ bool SpatialResolAna::Initialize() {
                              _invert,
                              _diagonal,
                              _verbose,
-                             _uncertainty,
                              _iteration,
                              _PRF_function,
                              fit_bound_right,
@@ -532,6 +528,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       std::cout << "Clusterization done" << std::endl;
 
     if (_diagonal) {
+      if (clusters.size() < 10)
+        continue;
       // clean first and last column
       sort(clusters.begin(), clusters.end(),
            [&](TCluster* cl1, TCluster* cl2){
@@ -608,10 +606,17 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         std::cout << "X:CoC:Fit\t" << cluster->GetX() << "\t" << CoC << "\t" << cluster->GetY() << std::endl;
 
 
+      // TODO review this mess
       if (cluster->GetHits().size() == 1) {
-        cluster->SetYE(0.001);
+        cluster->SetYE(0.002);
       } else {
-        cluster->SetYE(0.0008);
+        if (_diagonal)
+          cluster->SetYE(0.0008);
+        else
+          if (_iteration)
+            cluster->SetYE(_uncertainty);
+          else
+            cluster->SetYE(0.001);
       }
 
       if (_verbose >= v_residuals) {
@@ -895,9 +900,9 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "PRF fit..................................";
 
   _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
-  _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
-  _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
-  _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
+  // _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
+  // _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
+  // _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
 
   std::cout << "done" << std::endl;
   std::cout << "Process x histoes........................";
@@ -1186,15 +1191,15 @@ bool SpatialResolAna::Draw() {
     if (_cluster_av[colIt] == -999)
       continue;
 
-    gr->SetPoint(gr->GetN(), -scale*_x_av[colIt], scale*_cluster_av[colIt]);
-    gr_f->SetPoint(gr_f->GetN(), -scale*_x_av[colIt], scale*_track_pos[colIt]);
+    gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_cluster_av[colIt]);
+    gr_f->SetPoint(gr_f->GetN(), scale*_x_av[colIt], scale*_track_pos[colIt]);
   }
 
   for (auto colIt = 0; colIt < 70; ++colIt) {
     if (_clust_pos[colIt] == -999)
       continue;
 
-    gr_c->SetPoint(gr_c->GetN(), -scale*_x[colIt], scale*_clust_pos[colIt]);
+    gr_c->SetPoint(gr_c->GetN(), scale*_x[colIt], scale*_clust_pos[colIt]);
   }
 
   gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));

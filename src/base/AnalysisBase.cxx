@@ -51,7 +51,6 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
     {"diagonal",        no_argument,    0,      0},         // 13
 
-    {"previous",        no_argument,    0,    'p'},         // 14
     {"help",            no_argument,    0,    'h'},         // 15
 
     {0,                 0,              0,      0}
@@ -61,7 +60,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // read CLI
   for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drhst:ca", longopts, &index);
+    int c = getopt_long(argc, argv, "i:o:bv:drhst:cap:", longopts, &index);
     if (c < 0) break;
     switch (c) {
       case 0  :

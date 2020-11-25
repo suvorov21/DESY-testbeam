@@ -44,7 +44,6 @@ public:
                   bool invert,
                   bool diagonal,
                   int verbose,
-                  float uncertainty,
                   int it);
   virtual ~TrackFitterBase() {;}
 
@@ -67,9 +66,6 @@ protected:
   /// Fitting function for track going down
   TF1*    _circle_function_dn;
 
-  /// default value of the uncertainty (spatial resolution for prev. step)
-  float _uncertainty;
-
   /// iteration of the fit
   Int_t _iteration;
   /// Fitter verbosity
@@ -86,7 +82,7 @@ protected:
   const float default_error   = 0.001;
   const float one_pad_error   = 0.002;
 
-  const float sigma_pedestal = 9;
+  // const float sigma_pedestal = 9;
 };
 
 class TrackFitCern: public TrackFitterBase {
@@ -95,7 +91,6 @@ public:
                bool invert,
                bool diagonal,
                int verbose,
-               float uncertainty,
                int it,
                TF1* PRF,
                float fit_bound,

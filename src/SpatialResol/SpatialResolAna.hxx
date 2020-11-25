@@ -54,8 +54,7 @@ class SpatialResolAna: public AnalysisBase {
 
   /// output tree
   TTree*  _tree;
-  /// 0putput tree vars
-
+  /// Oputput tree vars
   // Event vars
   /// event number
   Int_t   _ev;
