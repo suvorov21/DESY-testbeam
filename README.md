@@ -51,7 +51,7 @@ Event display for raw events is available in plotters/EventDisplay.C. With this 
 ```
 .x EventDisplay.C("path-to-data-file.root")
 ```
-Please keep in mind that for the cosmic and beam data the data structure was different so you need ta change manually the time binning: `Int_t padAmpl[36][32][510];` for Saclay cosmics and `Int_t padAmpl[36][32][511];` for the beam test data. This is the only change you need. For clearness you can limit the waveform X axis with `WFstart` and `WFend`.
+For clearness of the plots you can limit the waveform X axis with `WFstart` and `WFend`.
 
 ## Data structure
 The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
