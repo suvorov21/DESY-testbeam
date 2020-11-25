@@ -572,8 +572,10 @@ std::vector<TCluster*> AnalysisBase::ColonizeTrack(const TTrack* tr) {
       continue;
     TCluster* cl = new TCluster(col[0]);
     cl->SetX(geom::GetXposPad(col[0], _invert));
+    cl->SetCharge(col[0]->GetQ());
     for (uint i = 1; i < col.size(); ++i) {
       cl->AddHit(col[i]);
+      cl->SetCharge(cl->GetCharge() + col[i]->GetQ());
     } // loop over pads
     cluster_v.push_back(cl);
   } // loop over column
@@ -594,14 +596,6 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
       auto cons = col_id - row_id;
       if (row_id == 0 || row_id == geom::GetMaxRow(_invert))
         continue;
-
-      // BUG block
-      if (cons >= 31 | cons <= -30)
-            continue;
-      if (col_id < 1 || col_id > 34 || row_id < 1 || row_id > 30)
-            continue;
-      // end of block
-
 
       // search if the diagonal is already considered
       std::vector<TCluster*>::iterator it;
