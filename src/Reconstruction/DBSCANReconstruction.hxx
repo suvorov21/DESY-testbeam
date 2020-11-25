@@ -12,6 +12,7 @@
 
 const int MIN_DIST  = 2;
 const int MIN_NODES = 1;
+const int MAX_NODES = 200;
 
 struct Node{
     int  x = -999;  // row
@@ -36,7 +37,7 @@ class DBSCANReconstruction: public ReconstructionBase {
   DBSCANReconstruction();
   virtual ~DBSCANReconstruction() {;}
 
-  virtual bool Initialize();
+  virtual bool Initialize(int verbose);
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
   virtual std::vector<Node> FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
   virtual double MeasureDistance(Node a, Node b);

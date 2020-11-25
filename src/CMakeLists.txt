@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
 # Set name of our project
-project(DESY_testbeam VERSION 1.4)
+project(DESY_testbeam VERSION 1.5)
 
 set(default_build_type "Debug")
 
@@ -37,11 +37,8 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/SpatialResol/)    #---SR analysis
 add_subdirectory(${PROJECT_SOURCE_DIR}/base/)
 
 #---Create  a main program using the library
-add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
+add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
 target_link_libraries(SpatialResol.exe TEvent TBase)
 
 add_executable(dEdx.exe ${PROJECT_SOURCE_DIR}/dEdx/dEdxAna.cxx)
 target_link_libraries(dEdx.exe TEvent TBase)
-
-
-

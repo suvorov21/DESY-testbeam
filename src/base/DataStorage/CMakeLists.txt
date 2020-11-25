@@ -1,6 +1,7 @@
 message(STATUS "TEvent dictionary ...")
 #---Generate dictionaries
 set (EVENT_DICT_HEADERFILES
+    ${PROJECT_SOURCE_DIR}/base/DataStorage/TCluster.hxx
     ${PROJECT_SOURCE_DIR}/base/DataStorage/TEvent.hxx
     ${PROJECT_SOURCE_DIR}/base/DataStorage/TTrack.hxx
     ${PROJECT_SOURCE_DIR}/base/DataStorage/THit.hxx

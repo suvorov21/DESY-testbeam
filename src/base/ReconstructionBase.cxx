@@ -1,6 +1,7 @@
 #include "ReconstructionBase.hxx"
 
-bool ReconstructionBase::Initialize() {
+bool ReconstructionBase::Initialize(int verbose) {
+  (void)verbose;
   std::cout << "WARNING. The default Reconstruction is initialised. The result is always true" << std::endl;
   return true;
 }

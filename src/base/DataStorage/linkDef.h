@@ -15,6 +15,7 @@
 #pragma link C++ class std::vector<THit>+;
 #pragma link C++ class std::vector<std::vector<THit> >+;
 #pragma link C++ class TTrack+;
+#pragma link C++ class TCluster+;
 #pragma link C++ class std::vector<TTrack>+;
 #pragma link C++ class TEvent+;
 
