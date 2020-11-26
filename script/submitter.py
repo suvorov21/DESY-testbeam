@@ -126,7 +126,10 @@ def main():
 
             # fo each iteration
             for i_iter in range(0, n_iter):
-                command += bin_dir + "/" + bin_name + " " + bin_flag  + " ".join(add_flags) + " -t " + str(i_iter)
+                command += bin_dir + "/" + bin_name + " " + bin_flag
+                command += " " + " ".join(add_flags)
+                command += " -t " + str(i_iter)
+
                 if (i_iter == 0 and generate_TEvent):
                     command += " -s "
                 if (not generate_TEvent or i_iter == 0):
