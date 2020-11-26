@@ -575,7 +575,7 @@ std::vector<TCluster*> AnalysisBase::ColonizeTrack(const TTrack* tr) {
     cl->SetCharge(col[0]->GetQ());
     for (uint i = 1; i < col.size(); ++i) {
       cl->AddHit(col[i]);
-      cl->SetCharge(cl->GetCharge() + col[i]->GetQ());
+      cl->AddCharge(col[i]->GetQ());
     } // loop over pads
     cluster_v.push_back(cl);
   } // loop over column
@@ -606,8 +606,7 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
 
         if ((*it)->GetHits()[0]->GetCol(_invert) -  (*it)->GetHits()[0]->GetRow(_invert) == cons) {
           (*it)->AddHit(pad);
-          // TODO consider AddCharge function?
-          (*it)->SetCharge((*it)->GetCharge() + pad->GetQ());
+          (*it)->AddCharge(pad->GetQ());
           break;
         }
       } // loop over track_diag

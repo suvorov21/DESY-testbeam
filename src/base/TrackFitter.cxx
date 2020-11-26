@@ -217,46 +217,6 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*> clusters,
   return fit;
 }
 
-
-// //********************************************************************
-// Double_t TrackFitter::FitCluster(const std::vector<THit*>& col,
-//     const int cluster, double pos, pads_t& pos_in_pad,
-//      TH1F* uncertainty) {
-//   //********************************************************************
-
-//   switch (_type) {
-//     case CERN_like:     return GetClusterPosCERN(col, cluster, pos);
-//     case ILC_like:      return GetClusterPosILC(col, pos);
-//     case Separate_pads: return GetClusterPosInPad(col, cluster,
-//                                                   pos, pos_in_pad,
-//                                                   uncertainty); break;
-//     std::cout << "ERROR. TrackFitter::FitCluster() ";
-//     std::cout << "uknown type " << _type << std::endl;
-//     exit(1);
-//   }
-
-//   return 0.;
-
-// }
-
-// //********************************************************************
-// TF1* TrackFitter::FitTrack(const std::vector<TCluster*> clusters, const int* mult,
-//   const TTrack* track, const double pos, const pads_t pos_in_pad,
-//   const int miss_id) {
-//   //********************************************************************
-//   switch (_type) {
-//     case CERN_like:     return GetTrackFitCERN(clusters, mult, miss_id);
-//     case ILC_like:      return GetTrackFitILC(track, pos, miss_id);
-//     case Separate_pads: return GetTrackFitSeparatePad(pos_in_pad, miss_id);
-
-//     std::cout << "ERROR. TrackFitter::FitTrack() ";
-//     std::cout << "uknown type " << _type << std::endl;
-//     exit(1);
-//   }
-
-//   return NULL;
-// }
-
 // //********************************************************************
 // double TrackFitter::GetClusterPosInPad(const std::vector<THit*>& col,
 //     const int cluster, const double pos,
@@ -613,10 +573,6 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*> clusters,
 //     for (auto col:track->GetCols(_invert)) {
 //       auto it_x = col[0]->GetCol(_invert);
 //       auto x    = geom::GetXpos(it_x, _invert);
-
-//       // TODO this is redefinition of the SpaceResolution::MissColumn()
-//       if (it_x == 0 || it_x == geom::GetMaxColumn(_invert)-1)
-//         continue;
 
 //       if (it_x == miss_id)
 //         continue;

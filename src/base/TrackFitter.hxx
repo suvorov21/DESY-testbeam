@@ -11,12 +11,6 @@
 #include "Geom.hxx"
 #include "TCluster.hxx"
 
-// define the complicated construction of pads in the column
-// TODO make it as class??
-typedef std::vector<std::vector<std::pair< double, std::pair<double, double> > > >  pads_t;
-
-static pads_t v;
-
 /**
  * @brief      This class describes a track fitter.
  * The class provides two main functions for fitting both individual clusters

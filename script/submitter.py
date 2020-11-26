@@ -12,14 +12,14 @@ from itertools import chain
 def main():
     # **********************************************************************************
     #define input
-    n_iter = 10
+    n_iter = 5
     doiter = True
 
     generate_TEvent = True
-    submit = True
-    launch = False
+    submit = False
+    launch = True
 
-    bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build/"
+    bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build_911/"
     bin_name  = "SpatialResol.exe"
     bin_flag  = "-b -r"
 
@@ -34,7 +34,7 @@ def main():
     input_version = ""
 
     outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-    outpt_version = "tree_v2"
+    outpt_version = "phi_test"
     output_post   = ""
 
     # espresso     = 20 minutes
@@ -44,7 +44,7 @@ def main():
     # tomorrow     = 1 day
     # testmatch    = 3 days
     # nextweek     = 1 week
-    job_flavour = "longlunch"
+    job_flavour = "tomorrow"
     log_folder = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/log/"
     # end of input definition
     # **********************************************************************************
@@ -53,7 +53,7 @@ def main():
         print("Submit and launch should not be executed together")
         return 0
 
-    temp = "/temp_1/"
+    temp = "/temp_0/"
 
     parser = argparse.ArgumentParser(description='Submit jobs to condor at LXPLUS')
     parser.add_argument("-f", metavar="f", type=str,

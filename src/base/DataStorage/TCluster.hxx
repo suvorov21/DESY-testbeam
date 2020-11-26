@@ -17,6 +17,7 @@ class TCluster : public TObject{
   }
 
   void SetCharge(Int_t q) {_charge = q;}
+  void AddCharge(Int_t q) {_charge += q;}
 
   // THit& operator[] (unsigned i) {return *fhits[i];}
 

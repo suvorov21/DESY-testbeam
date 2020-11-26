@@ -1,14 +1,5 @@
 #include "SpatialResolAna.hxx"
 
-// TODO enum?
-//! verbosity level
-//! 1 (default) print progress, memory usage, time consumption
-//! 2           print event and track number
-//! 3           print analysis steps
-//! 4           print fit details
-//! 5           print residuals
-//! 6           print PRF details
-
 //******************************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
@@ -168,9 +159,14 @@ bool SpatialResolAna::Initialize() {
                            histo_prev_t->GetYaxis()->GetBinLowEdge(1),
                            histo_prev_t->GetYaxis()->GetBinLowEdge(Nbins) + histo_prev_t->GetYaxis()->GetBinWidth(Nbins)
                            );
-    // TODO add success check
+
     _PRF_time_error = new TGraphErrors();
-    ProfilePRF_X(histo_prev_t, _PRF_time_error, _PRF_time_e);
+    if (!_PRF_time_error || !ProfilePRF_X(histo_prev_t, _PRF_time_error, _PRF_time_e)) {
+      std::cerr << "ERROR. SpatialResolAna::Initialize().";
+      std::cout << "PRF time function is not specified" << std::endl;
+      std::cerr << "Search in " << _Prev_iter_name << std::endl;
+      exit(1);
+    }
     _PRF_time_error->Fit("pol2", "Q");
     _PRF_time_func = _PRF_time_error->GetFunction("pol2");
 
@@ -506,9 +502,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     float charge_max[Nclusters];
     double a_peak_fit[Nclusters];
 
-    pads_t pos_in_pad;
-    pos_in_pad.clear();
-    pos_in_pad.resize(Nclusters);
     int Ndots = 0;
 
     // At the moment ommit first and last column
@@ -601,7 +594,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                        _invert,
                                        _diagonal ? units::a45 : 0);
 
-      // WARNING tmp
       double CoC =  _clust_pos[clusterId];
 
       ++Ndots;
@@ -1134,17 +1126,10 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
     double x = PRF_h->GetXaxis()->GetBinCenter(i);
     double y = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
-    float start = -1.;
-    float end   = -1.;
     float max = temp_h->GetMaximum();
 
-    for (Int_t bin = 0; bin < temp_h->GetXaxis()->GetNbins(); ++bin) {
-      if (start == -1. && temp_h->GetBinContent(bin) >= max / 2.)
-        start = temp_h->GetBinCenter(bin);
-
-      if (end == -1. && start != -1. && temp_h->GetBinContent(bin) <= max / 2.)
-        end = temp_h->GetBinCenter(bin);
-    }
+    auto start  = temp_h->GetBinCenter(temp_h->FindFirstBinAbove(max/2));
+    auto end    = temp_h->GetBinCenter(temp_h->FindLastBinAbove(max/2));
 
     float e = end - start;
 
@@ -1181,20 +1166,11 @@ bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PR
     double y = PRF_h->GetYaxis()->GetBinCenter(i);
     double x = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
-    float start = -1.;
-    float end   = -1.;
     float max = temp_h->GetMaximum();
 
-    // TODO replace with
-    // start = temp.GetBinCenter(temp.FindFirstBinAbove(temp.GetMaximum()/2))
-    // end = temp.GetBinCenter(temp.FindLastBinAbove(temp.GetMaximum()/2))
-    for (Int_t bin = 0; bin < temp_h->GetXaxis()->GetNbins(); ++bin) {
-      if (start == -1. && temp_h->GetBinContent(bin) >= max / 2.)
-        start = temp_h->GetBinCenter(bin);
-
-      if (end == -1. && start != -1. && temp_h->GetBinContent(bin) <= max / 2.)
-        end = temp_h->GetBinCenter(bin);
-    }
+    auto start  = temp_h->GetBinCenter(temp_h->FindFirstBinAbove(max/2));
+    auto end    = temp_h->GetBinCenter(temp_h->FindLastBinAbove(max/2)) +
+                  temp_h->GetBinWidth(temp_h->FindLastBinAbove(max/2));
 
     float e = end - start;
 
@@ -1213,10 +1189,10 @@ Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
     return -1.;
 
   mean = h->GetMean();
-  float max   = h->GetMaximum();
-  float start = h->GetBinLowEdge(h->FindFirstBinAbove(max/2));
-  float end   = h->GetBinLowEdge(h->FindLastBinAbove(max/2)) +
-  h->GetBinWidth(h->FindLastBinAbove(max/2));
+  auto max   = h->GetMaximum();
+  auto start = h->GetBinLowEdge(h->FindFirstBinAbove(max/2));
+  auto end   = h->GetBinLowEdge(h->FindLastBinAbove(max/2)) +
+               h->GetBinWidth(h->FindLastBinAbove(max/2));
 
   return end - start;
 }
