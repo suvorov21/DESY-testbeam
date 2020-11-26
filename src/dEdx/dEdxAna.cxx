@@ -246,8 +246,9 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     sort(QsegmentS.begin(), QsegmentS.end());
     double totQ = 0.;
     Int_t i_max = round(alpha * QsegmentS.size());
-    for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
-    float CT= totQ / (alpha * QsegmentS.size());
+    i_max = std::min(i_max, int(QsegmentS.size()));
+    for (int i = 0; i < i_max; ++i) totQ += QsegmentS[i];
+    float CT = 1.*totQ / i_max;
     _hdEdx->Fill(CT);
 
     _npoints = QsegmentS.size();
