@@ -5,14 +5,9 @@ The package for the DESY beam test data analysis. There are two general method t
 2. macros (**deprecated**)
 
 # HighLevel tool
-For the DESY beam test analysis the HighLevel tool was created. The macros that we use before were good for quick checks. It's easy to create them from scratch and implement some quick analyses. During the long period of analysis we created a lot of macros and made them looking awful. The new flexible tool should allow us to create nice analysis algorithms.
+For the DESY beam test analysis the HighLevel tool was created. The new flexible tool should allow us to create clear analysis algorithms.
 
-The main idea is to separate the routine procedures (e.g. opening files, looping, writing the output etc.) from the analysis itself. So now the analyzer should only define the histos/canvases he want to store and the logic how to fill it.
-
-## Tool structure
-The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
-
-![Tool structure](doc/html/_spatial_resol_ana_8cxx__incl.png)
+The main idea is to separate the routine procedures (e.g. opening files, looping, writing the output etc.) from the analysis itself. So now the analyzer should only define the histos/canvases/trees one wants to store and the logic how to fill it.
 
 ## Compilation
 For the compilation you need to create the build folder
@@ -31,7 +26,44 @@ Then the code can be run with e.g.
 ./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root
 ```
 
-## The road map to start your analysis:
+## Tool structure
+The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
+
+![Tool structure](doc/html/_spatial_resol_ana_8cxx__incl.png)
+
+The work flow can be briefly defined with the following chain:
+1. AnalysisBase open the input file and process the input. Usually it's a 3D array in x, y, t
+2. Your analysis go through initialization: creating histoes and TTree you want in the output
+3. AnalysisBase takes care about loop over events. The range can be specified with `--start` and `--end` flags.
+4. For each event the pattern recognition (reconstruction) is called. The waveform treatment is done at this step. The reconstruction output is a `TEvent` object that contains `TTrack` consists of `THit`. The default one is DBSCAN reconstruction that returns one track per event. The maximum number of pads per track is set to 200 pads that is sufficient to select only single tracks, but may be a subject of change for other analysis.
+5. Successfully reconstructed track goes to `ProcessEvent` function of your analysis.
+6. The Selection can be called inside your analysis to put a cut on angle/number of clusters, etc. Some selection utils are located at `Reconstruction/Selection.cxx`
+7. The further logic of your analysis is applied. The desired vars and histoes are filled.
+8. AnalysisBase takes care of storing your results in the output.
+
+Please find the SpatialResolAna analysis logic description in `/SpatialResol/README.md`. The main steps of the analysis are described in a logic blocks. The steps are commented in the source code as well.
+
+## The road map to perform your analyses
+SpatialResolAna.cxx is supposed to be the main analysis that we are working with. It does track position reconstruction and the charge reconstruction. One can check either all the necessary information is stored in the output TTree. If yes, the analysis can be done with a macroses. If no, please, look through the main user cases below.
+
+### New variables to store
+New variables can be easily implemented in the header file and then added in the Initialization function of any analysis. If you want to add an TObject to store (histo, tree, canvas) add it to `output_vector` and it will be stored automatically.
+
+### Cluster definition
+The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main option are considered:
+1. Column/row clustering
+2. Diagonal clustering
+
+### Fitters tests
+Track fitters are defined at `TrackFitter.cxx` file. There you can define your class that will do a track fitting over the cluster or the track. The joint fitter can be specified there as well.
+
+
+### Contributing to project
+Please check `CONTRIBUTING.md` file with simple suggestions and advices about contribution procedure.
+
+## The road map to start completely new analysis
+You can start a completely new analysis that has nothing in common with the existing ones
+
 1. Create your analysis class inheriting from AnalysisBase. Optionally you can put it in your separate folder.
 2. Add it in the CmakeList.txt for compilation. e.g.
 ```cmake
@@ -44,7 +76,7 @@ target_link_libraries(SpatialResol.exe TEvent TBase)
 6. Enjoy the output!
 
 ## Plotters
-All the macroses for the result plotting are put in plotters/ folder. More information about plotters can be found in `plotters/README.md`
+All the macroses for the result plotting are put in `plotters/` folder. More information about plotters can be found in `plotters/README.md`
 
 ### Event display
 Event display for raw events is available in plotters/EventDisplay.C. With this tool the pattern of the whole event and the particular waveforms can be studied. No selection or pattern recognition is applied at this step. One can start the ROOT interactive session and then run the display with
@@ -84,7 +116,12 @@ Micromegas:
              x
 ```
 
-The time information is stored as a 510 bins array. You have to change this variable manually for DESY beam and Saclay cosmic as the root file format was changed. So, please change src/utils/Geom.hxx with `static const int Nsamples = 510;` for Saclay data and with `static const int Nsamples = 511;` for DESY data. Otherwise you will see an error and the program will exit.
+The time information is stored as a 510 bins array or 511 bins array. The package make an automatic guess which one to use and will exit if the data format is unknown.
+
+
+
+
+
 
 # Working with macros (**DEPRECATED**)
 You could run the analysis with a simple macros (like at CERN analysis). You could find the macros template under macros/TutorialMacro.cxx
