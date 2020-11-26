@@ -137,6 +137,8 @@ bool SpatialResolAna::Initialize() {
       std::cerr << "File name: " << _Prev_iter_name << std::endl;
       exit(1);
     }
+
+    // READ PRF
     auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
     histo_prev->SetName("prev_hsto");
     auto gr = new TGraphErrors();
@@ -155,6 +157,22 @@ bool SpatialResolAna::Initialize() {
       std::cerr << "Search in " << _Prev_iter_name << std::endl;
       exit(1);
     }
+
+    // Read PRF in time
+    std::cout << "1" << std::endl;
+    auto histo_prev_t = (TH2F*)_Prev_iter_file->Get("PRF_histo_time");
+    histo_prev_t->SetName("prev_hsto_time");
+    auto Nbins = histo_prev_t->GetYaxis()->GetNbins();
+    _PRF_time_e = new TH1F("prf_e", "",
+                           Nbins,
+                           histo_prev_t->GetYaxis()->GetBinLowEdge(1),
+                           histo_prev_t->GetYaxis()->GetBinLowEdge(Nbins) + histo_prev_t->GetYaxis()->GetBinWidth(Nbins)
+                           );
+    // TODO add success check
+    _PRF_time_error = new TGraphErrors();
+    ProfilePRF_X(histo_prev_t, _PRF_time_error, _PRF_time_e);
+    _PRF_time_error->Fit("pol2", "Q");
+    _PRF_time_func = _PRF_time_error->GetFunction("pol2");
 
     Double_t mean, sigma;
     sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
@@ -220,6 +238,10 @@ bool SpatialResolAna::Initialize() {
   // PRF for different multiplicities
   auto dir_prf_mult = _file_out->mkdir("prf_mult");
   _output_vector.push_back(dir_prf_mult);
+
+  // PRF in time
+  _PRF_time = new TH2F("PRF_histo_time","", prf_bin, prf_min, prf_max, 100, -20., 80.);
+  _output_vector.push_back(_PRF_time);
 
   _file_out->cd();
   _tree = new TTree("outtree", "");
@@ -435,7 +457,9 @@ bool SpatialResolAna::Initialize() {
                              _iteration,
                              _PRF_function,
                              fit_bound_right,
-                             _charge_uncertainty
+                             _charge_uncertainty,
+                             _PRF_time_func,
+                             _PRF_time_e
                              );
 
   // Initialize timers
@@ -806,6 +830,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                  _qfrac[clusterId][padId]
                                  );
 
+        _PRF_time->Fill(_dx[clusterId][padId], _time[clusterId][padId] - _time[clusterId][0]);
+
         // robust_pads are assumed sorted!!
         ++padId;
       }
@@ -1124,6 +1150,57 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
 
     gr->SetPoint(gr->GetN(), x, y);
     gr->SetPointError(gr->GetN()-1, 0, e/2.);
+  } // end of PRF histo profiling
+
+  return true;
+}
+
+//******************************************************************************
+bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PRF_time_e) {
+//******************************************************************************
+  if (!PRF_h)
+    return false;
+
+  // Float_t threshold = 0.05 * PRF_h->GetMaximum();
+  Float_t threshold = 0.;
+
+  auto start = PRF_h->GetYaxis()->FindBin(0.);
+
+  for (auto i = start-1; i < PRF_h->GetYaxis()->GetNbins(); ++i) {
+
+    TH1D* temp_h = PRF_h->ProjectionX(Form("projections_bin_%i", i), i, i);
+    if (!temp_h)
+      return false;
+
+    if (temp_h->GetMaximum() < threshold)
+      continue;
+
+    for (auto j = temp_h->GetXaxis()->FindBin(0.); j < temp_h->GetXaxis()->GetNbins(); ++j)
+      temp_h->SetBinContent(j, 0.);
+
+    double y = PRF_h->GetYaxis()->GetBinCenter(i);
+    double x = temp_h->GetBinCenter(temp_h->GetMaximumBin());
+
+    float start = -1.;
+    float end   = -1.;
+    float max = temp_h->GetMaximum();
+
+    // TODO replace with
+    // start = temp.GetBinCenter(temp.FindFirstBinAbove(temp.GetMaximum()/2))
+    // end = temp.GetBinCenter(temp.FindLastBinAbove(temp.GetMaximum()/2))
+    for (Int_t bin = 0; bin < temp_h->GetXaxis()->GetNbins(); ++bin) {
+      if (start == -1. && temp_h->GetBinContent(bin) >= max / 2.)
+        start = temp_h->GetBinCenter(bin);
+
+      if (end == -1. && start != -1. && temp_h->GetBinContent(bin) <= max / 2.)
+        end = temp_h->GetBinCenter(bin);
+    }
+
+    float e = end - start;
+
+    gr->SetPoint(gr->GetN(), x, y);
+    gr->SetPointError(gr->GetN()-1,  e/2., 0.);
+    PRF_time_e->Fill(y, e/2);
   } // end of PRF histo profiling
 
   return true;

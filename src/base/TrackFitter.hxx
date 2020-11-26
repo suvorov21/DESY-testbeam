@@ -94,7 +94,10 @@ public:
                int it,
                TF1* PRF,
                float fit_bound,
-               bool charge_uncertainty);
+               bool charge_uncertainty,
+               TF1* PRF_time_func,
+               TH1F* _PRF_time_error
+               );
   virtual ~TrackFitCern() {;}
 
   /// Cluster fitter
@@ -111,6 +114,10 @@ public:
 protected:
   /// Pad Response Function analytical description
   TF1* _PRF_function;
+
+  /// Pad Responce Function in time
+  TF1* _PRF_time_func;
+  TH1F* _PRF_time_error;
 
   /// bounds of the PRF that are reliable. Outside values are not used
   float _fit_bound;

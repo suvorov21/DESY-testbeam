@@ -56,12 +56,17 @@ TrackFitCern::TrackFitCern(TrackShape shape,
                int it,
                TF1* PRF,
                float fit_bound,
-               bool charge_uncertainty
+               bool charge_uncertainty,
+               TF1* PRF_time_func,
+               TH1F* time_errors
                ): TrackFitterBase(shape, invert, diagonal, verbose, it) {
 //******************************************************************************
   _PRF_function       = PRF;
   _fit_bound          = fit_bound;
   _charge_uncertainty = charge_uncertainty;
+
+  _PRF_time_func      = PRF_time_func;
+  _PRF_time_error     = time_errors;
 }
 
 //******************************************************************************
@@ -69,6 +74,16 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
                                   const int cluster,
                                   const double pos) {
 //******************************************************************************
+  auto t_leading = -1;
+  auto maxQ = -1;
+  // WARNING pads should be already sorted
+  for (auto pad:col) {
+    if (pad->GetQ() > maxQ) {
+      maxQ = pad->GetQ();
+      t_leading = pad->GetTime();
+    }
+  }
+
   auto chi2Function_cluster = [&](const Double_t *par) {
     //minimisation function computing the sum of squares of residuals
     // looping at the graph points
@@ -87,7 +102,6 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
         center_pad_y = geom::GetYposPad(pad, _invert);
       }
 
-
       // avoid using pads wich are far away from track
       // limit by PRF fitting range (PRF function robustness)
       if (abs(center_pad_y - pos) > _fit_bound)
@@ -103,6 +117,18 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
       part *= part;
 
       chi2 += part;
+
+      // auto time = pad->GetTime();
+      // if (t_leading < 0 || time - t_leading < 0 || time - t_leading > 80)
+      //   continue;
+
+      // auto x_time = abs(_PRF_time_func->GetX(time - t_leading));
+      // auto dt = _PRF_time_error->GetBinContent(_PRF_time_error->FindBin(time - t_leading));
+
+      // double time_chi = TMath::Power(abs(par[0] - center_pad_y) - x_time, 2);
+      // time_chi /= dt*dt;
+
+      // chi2 += time_chi;
     }
     return chi2;
   };
