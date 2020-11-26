@@ -50,7 +50,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     {"gaus_lorentz",    no_argument,    0,      0},         // 12
 
     {"diagonal",        no_argument,    0,      0},         // 13
-    {"help",            no_argument,    0,    'h'},         // 14
+
+    {"help",            no_argument,    0,    'h'},         // 15
 
     {0,                 0,              0,      0}
   };
@@ -59,7 +60,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // read CLI
   for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drhst:ca", longopts, &index);
+    int c = getopt_long(argc, argv, "i:o:bv:drhst:cap:", longopts, &index);
     if (c < 0) break;
     switch (c) {
       case 0  :
@@ -525,6 +526,7 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
     result.push_back(tr[i]);
   }
 
+  // BUG truncation with neighbours is not working with clusters
   // trancation + neibours
   // auto frac = 0.95;
   // std::vector<Int_t> bad_pads;
@@ -549,6 +551,12 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
   //   if (total_q < q_cut)
   //     result.push_back(col);
   // }
+
+  // sort by X for return
+  sort(result.begin(), result.end(),
+       [&](TCluster* cl1, TCluster* cl2){
+          return cl1->GetX() < cl2->GetX();
+        });
   return result;
 }
 
@@ -564,8 +572,10 @@ std::vector<TCluster*> AnalysisBase::ColonizeTrack(const TTrack* tr) {
       continue;
     TCluster* cl = new TCluster(col[0]);
     cl->SetX(geom::GetXposPad(col[0], _invert));
+    cl->SetCharge(col[0]->GetQ());
     for (uint i = 1; i < col.size(); ++i) {
       cl->AddHit(col[i]);
+      cl->AddCharge(col[i]->GetQ());
     } // loop over pads
     cluster_v.push_back(cl);
   } // loop over column
@@ -587,14 +597,6 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
       if (row_id == 0 || row_id == geom::GetMaxRow(_invert))
         continue;
 
-      // BUG block
-      if (cons >= 31 | cons <= -30)
-            continue;
-      if (col_id < 1 || col_id > 34 || row_id < 1 || row_id > 30)
-            continue;
-      // end of block
-
-
       // search if the diagonal is already considered
       std::vector<TCluster*>::iterator it;
       for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
@@ -604,12 +606,14 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
 
         if ((*it)->GetHits()[0]->GetCol(_invert) -  (*it)->GetHits()[0]->GetRow(_invert) == cons) {
           (*it)->AddHit(pad);
+          (*it)->AddCharge(pad->GetQ());
           break;
         }
       } // loop over track_diag
       if (it == cluster_v.end()) {
         TCluster* cl = new TCluster(pad);
         cl->SetX(geom::GetXposPad(pad, _invert, units::a45));
+        cl->SetCharge(pad->GetQ());
         cluster_v.push_back(cl);
       }
     } // over pads

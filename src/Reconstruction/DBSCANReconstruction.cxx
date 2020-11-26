@@ -109,12 +109,15 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
       int first = 0;
       int last = -9999;
       for(int k=0; k<geom::Nsamples; k++){
-        if(padAmpl[i][j][k] <= 0) continue;
+        int ampl = padAmpl[i][j][k];
+        if(ampl <= 0) continue;
         if (!first)
           first = k;
         last = k;
         WF_v.push_back(std::make_pair(k, padAmpl[i][j][k]));
-        if(padAmpl[i][j][k]>Q) {Q = padAmpl[i][j][k]; t=k;}
+        // take only first max
+        // if (ampl < 0.4*Q ) break;
+        if(ampl > Q) {Q = ampl; t=k;}
       }
 
       int first_HM = 0;

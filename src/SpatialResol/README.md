@@ -1,6 +1,9 @@
 # Analysis Flow
 
 ## initialisation
+Define TTree vars
+
+Define histograms
 
 ## Process Event
 
@@ -17,7 +20,7 @@ else
 #### step 2 ####################################################################
 
 for cluster:clusters
-    get CoC position
+    get centre of charge position
     call fitter for cluster
 
 if diagonal
@@ -48,6 +51,26 @@ for cluster:clusters_clean
 for cluster:clusters
     for pad:cluster
         fill PRF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```
 ### Obsolete

@@ -28,6 +28,7 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Profile PRF with peak and RMS
   bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
+  bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
   /// Initialise PRF with expected params
   TF1* InitializePRF(const TString name);
@@ -47,13 +48,14 @@ class SpatialResolAna: public AnalysisBase {
   };
 
  protected:
+  /// Name of the file from previous iteration
+  TString _Prev_iter_name;
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
 
   /// output tree
   TTree*  _tree;
-  /// 0putput tree vars
-
+  /// Oputput tree vars
   // Event vars
   /// event number
   Int_t   _ev;
@@ -90,6 +92,7 @@ class SpatialResolAna: public AnalysisBase {
   Int_t   _time[Nclusters][10];
 
   /** Histograms **/
+  /** Pad response function block **/
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*  _PRF_function;
   /// PRF histoes
@@ -109,9 +112,21 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _PRF_graph_3pad;
   TGraphErrors* _PRF_graph_4pad;
 
-  /// Fitter class for the track and cluster fitting
-  TrackFitter* _fitter;
+  /// Pad response function in time
+  TH2F* _PRF_time;
 
+  /// analytical PRF time function
+  TF1* _PRF_time_func;
+
+  /// uncertainties of the time profile
+  TGraphErrors* _PRF_time_error;
+
+  TH1F* _PRF_time_e;
+
+  /// Fitter class for the track and cluster fitting
+  TrackFitCern* _fitter;
+
+  /** Switchers **/
   /// Whether to use arc function for track fitting
   bool _do_linear_fit;
   bool _do_para_fit;
