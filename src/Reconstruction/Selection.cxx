@@ -6,10 +6,16 @@
 bool sel::CrossingTrackSelection( const TTrack* track,
                                   bool invert,
                                   int verbose) {
+  if (verbose > 1) {
+    std::cout << sel::GetNonZeroCols(track, invert).size() << "\t";
+    std::cout << sel::GetColsMaxSep(track, invert) << "\t";
+    std::cout << sel::GetColsMaxGap(track, invert) << "\t";
+    std::cout << std::endl;
+  }
 
-  if(sel::GetNonZeroCols(track, invert).size() !=
-    (uint)geom::GetMaxColumn(invert)) return false;
-  if(sel::GetColsMaxSep(track, invert)>8) return false;
+  // if(sel::GetNonZeroCols(track, invert).size() !=
+  //   (uint)geom::GetMaxColumn(invert)) return false;
+  // if(sel::GetColsMaxSep(track, invert)>8) return false;
   if (sel::GetColsMaxGap(track, invert) > 0) return false;
 
   std::vector<double> fit_v = sel::GetFitParams(track, invert);
@@ -17,7 +23,7 @@ bool sel::CrossingTrackSelection( const TTrack* track,
 
   if(fit_v[0]>1.0e6) return false;
 
-  if (abs(fit_v[2]) > sel::horizontal_cut) return false;
+  // if (abs(fit_v[2]) > sel::horizontal_cut) return false;
 
   if (invert)
     if (abs(fit_xz[2] * sel::v_drift_est) > sel::vertical_cut) return false;
