@@ -39,7 +39,7 @@ def main():
 
     outpt_prefix  = bin_dir_script + "/../"
     outpt_version = "output_files"
-    
+    outpt_log     = "/logs"
 
     output_post   = ""
 
@@ -80,6 +80,9 @@ def main():
     if not os.path.exists(outpt_prefix + outpt_version):
         print("Creating the output folder")
         os.mkdir(outpt_prefix + outpt_version)
+    if not os.path.exists(outpt_prefix + outpt_version + outpt_log):
+        print("Creating the log folder")
+        os.mkdir(outpt_prefix + outpt_version + outpt_log)
 
 
     print("Creating tasks")
@@ -157,8 +160,8 @@ def main():
                 #file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
                 file_out.write("source /pbs/software/centos-7-x86_64/root/6.18.00/bin/thisroot.sh\n")
             file_out.write("cd " + bin_dir + "\n")
-            file_out.write("#$ -e " + outpt_prefix+"/"+outpt_version + "\n")
-            file_out.write("#$ -o " + outpt_prefix+"/"+outpt_version + "\n")
+            file_out.write("#$ -e " + outpt_prefix+"/"+outpt_version + outpt_log + "\n")
+            file_out.write("#$ -o " + outpt_prefix+"/"+outpt_version + outpt_log + "\n")
 
             file_out.write(command + "\n")
 
