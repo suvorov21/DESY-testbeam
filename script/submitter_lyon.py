@@ -12,8 +12,8 @@ from itertools import chain
 def main():
     # **********************************************************************************
     #define input
-    n_iter = 5
-    doiter = False
+    n_iter = 3
+    doiter = True
 
     generate_TEvent = True
     submit = True
@@ -24,8 +24,8 @@ def main():
     bin_dir = bin_dir_script + "/../build"
     #print(bin_dir)
 
-    bin_name  = "dEdx.exe"
-    bin_flag  = "-b -r"
+    bin_name  = "SpatialResol.exe"
+    bin_flag  = "-b -r "
 
     input_prefix  = ["/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/v1/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM_2/",
@@ -37,7 +37,7 @@ def main():
     # input_prefix  = ["/eos/user/s/ssuvorov/DESY_testbeam/"]
     input_version = ""
 
-    outpt_prefix  = bin_dir_script + "/../"
+    outpt_prefix  = bin_dir_script + "/.."
     outpt_version = "output_files"
     outpt_log     = "/logs"
 
@@ -50,8 +50,8 @@ def main():
     # tomorrow     = 1 day
     # testmatch    = 3 days
     # nextweek     = 1 week
-    job_flavour = "tomorrow"
-    log_folder = bin_dir_script + "/../log"
+    #job_flavour = "tomorrow"
+    #log_folder = bin_dir_script + "/../log"
     # end of input definition
     # **********************************************************************************
 
@@ -149,7 +149,7 @@ def main():
                 command += " -o " + outpt_prefix+"/"+outpt_version+"/"+ot_file + output_post
                 if doiter:
                     command += "_iter" + str(i_iter)
-                command += ".root; "
+                command += ".root; \n"
                 if not doiter:
                     break
               
@@ -171,9 +171,14 @@ def main():
             launcher.write("chmod 765 ./file_" + str(i) + ".sh\n")
             launcher.write("./file_" + str(i) + ".sh\n")
             #launcher.write("email " + "\"Job done\" " + "\"ot_file\"\n")
+            job = project_path + "/script/" + temp + "file_" + str(i) + ".sh\n"
             if submit:
-               job = project_path + "/script/" + temp + "file_" + str(i) + ".sh\n"
+               #job = project_path + "/script/" + temp + "file_" + str(i) + ".sh\n"
                subprocess.call("qsub  -P P_t2k -l sps=1 -l ct=00:30:00  %s"%job,  shell=True)
+            if launch: 
+               #subprocess.call("chmod 765  " + temp + "file_" + str(i) + ".sh", shell=True)
+               subprocess.call("chmod 765  %s"%job, shell = True)
+               subprocess.call("%s"%job, shell=True)
             i+=1
             
 
