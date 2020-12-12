@@ -90,6 +90,18 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _qfrac[Nclusters][10];
   /// time of the pad
   Int_t   _time[Nclusters][10];
+    
+    // variables for the dEdx analysis
+    Float_t _dEdx;
+    TH1F* _hdEdx;
+    Int_t _pad_charge[Nclusters][10];
+    Int_t _pad_time[Nclusters][10];
+
+    Int_t _pad_x[Nclusters][10];
+    Int_t _pad_y[Nclusters][10];
+
+    Int_t _wf_width[Nclusters][10];
+    Int_t _wf_fwhm[Nclusters][10];
 
   /** Histograms **/
   /** Pad response function block **/
@@ -221,7 +233,7 @@ class SpatialResolAna: public AnalysisBase {
   std::vector<Int_t> _passed_events;
 
   // [units are meters]
-  const float prf_min     = -0.027;
+  const float prf_min     = -0.027;  
   const float prf_max     = 0.027;
   const int   prf_bin     = 180;
 

@@ -242,6 +242,8 @@ bool SpatialResolAna::Initialize() {
   _file_out->cd();
   _tree = new TTree("outtree", "");
   _tree->Branch("ev",           &_ev);
+  _tree->Branch("dEdx",         &_dEdx);
+
   _tree->Branch("angle_yz",     &_angle_yz);
   _tree->Branch("angle_xy",     &_angle_xy);
   _tree->Branch("multiplicity",
@@ -276,8 +278,40 @@ bool SpatialResolAna::Initialize() {
                 &_track_pos,
                 TString::Format("track_pos[%i]/F", Nclusters)
                 );
+    _tree->Branch("pad_charge",
+                    &_pad_charge,
+                    TString::Format("_pad_charge[%i][10]/I", Nclusters)
+                    );
+    _tree->Branch("pad_time",
+                    &_pad_time,
+                    TString::Format("_pad_time[%i][10]/I", Nclusters)
+                    );
+
+    _tree->Branch("wf_width",
+                    &_wf_width,
+                    TString::Format("_wf_width[%i][10]/I", Nclusters)
+                    );
+
+    _tree->Branch("wf_fwhm",
+                    &_wf_fwhm,
+                    TString::Format("_wf_fwhm[%i][10]/I", Nclusters)
+                    );
+
+    _tree->Branch("pad_x",
+                    &_pad_x,
+                    TString::Format("_pad_x[%i][10]/I", Nclusters)
+                    );
+    _tree->Branch("pad_y",
+                    &_pad_y,
+                    TString::Format("_pad_y[%i][10]/I", Nclusters)
+                    );
+    
+    
 
   _output_vector.push_back(_tree);
+
+  _hdEdx  = new TH1F("dEdx","",300,0,5000);
+  _output_vector.push_back(_hdEdx);
 
   _PRF_histo_2pad = new TH2F("PRF_histo_2pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
@@ -518,10 +552,20 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _x[colId]             = -999;
       _x_av[colId]          = -999;
       _cluster_av[colId]    = -999;
+      _dEdx               = -999;
+
       for (auto padId = 0; padId < 10; ++padId) {
         _dx[colId][padId]   = -999;
         _time[colId][padId]   = -999;
         _qfrac[colId][padId] = -999;
+          
+          //dEdx part
+          _pad_charge[colId][padId] = -999;
+          _pad_time[colId][padId] = -999;
+          _pad_x[colId][padId] = -999;
+          _pad_y[colId][padId] = -999;
+          _wf_width[colId][padId] = -999;
+          _wf_fwhm[colId][padId] = -999;
       }
 
       cluster[colId]       = 0;
@@ -764,6 +808,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     }
 
 // ************ STEP 6 *********************************************************
+      
+      std::vector <double> QsegmentS; QsegmentS.clear();
 
     for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
       a_peak_fit[clusterId] = clusters[clusterId]->GetCharge();
@@ -774,6 +820,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       // Fill PRF
       auto robust_pads = GetRobustPadsInColumn(clusters[clusterId]->GetHits());
       int padId = 0;
+      int colQ = 0;
+
       for (auto pad:robust_pads) {
         if (!pad)
           continue;
@@ -796,6 +844,16 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _time[clusterId][padId]    = time;
         _dx[clusterId][padId]    = center_pad_y - track_fit_y;
         _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
+          
+          //dEdx part
+          colQ+= pad->GetQ();
+
+          _pad_charge[clusterId][padId] = q;
+          _pad_time[clusterId][padId] = time;
+          _pad_x[clusterId][padId] = pad->GetCol(_invert);
+          _pad_y[clusterId][padId] = pad->GetRow(_invert);
+          _wf_width[clusterId][padId] = pad->GetWidth();
+          _wf_fwhm[clusterId][padId] = pad->GetFWHM();
 
         if (_verbose >= v_prf) {
           std::cout << "PRF fill\t" << _dx[clusterId][padId] << "\t" << _qfrac[clusterId][padId] << std::endl;
@@ -827,6 +885,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         // robust_pads are assumed sorted!!
         ++padId;
       }
+        if (colQ) QsegmentS.push_back(colQ);
     } // loop over colums
     _sw_partial[4]->Stop();
     for (int i = 0; i < Nclusters; ++i)
@@ -840,6 +899,20 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if(_test_mode) this->DrawSelectionCan(event,trackId);
     if (!_batch)
       Draw();
+
+      //dEdx calculations
+      double alpha = 0.7;
+      sort(QsegmentS.begin(), QsegmentS.end());
+      double totQ = 0.;
+      Int_t i_max = round(alpha * QsegmentS.size());
+      for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
+      float CT= totQ / (alpha * QsegmentS.size());
+      //_hdEdx->Fill(CT);
+
+      //_npoints = QsegmentS.size();
+      _dEdx = CT;
+      _hdEdx->Fill(CT);
+      
   } // loop over tracks
 
   _tree->Fill();
