@@ -2,7 +2,6 @@
 
 import argparse
 import subprocess
-import shlex
 import shutil
 import os
 import random
@@ -30,8 +29,6 @@ def main():
                      "/eos/experiment/neutplatform/t2knd280/ERAM_3/",
                      # "/eos/user/s/ssuvorov/DESY_testbeam/cosmic_strict_v2/"
                      ]
-    # input_prefix  = ["/eos/user/s/ssuvorov/DESY_testbeam/"]
-    input_version = ""
 
     outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
     outpt_version = "phi_test"
@@ -63,13 +60,14 @@ def main():
     args = parser.parse_args()
 
     project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../")
-    if os.path.exists(project_path + "/script/" + temp):
-        print("Rewriting the temp folder ", project_path + "/script/" + temp)
-        shutil.rmtree(project_path + "/script/" + temp)
-        os.mkdir(project_path + "/script/" + temp)
+    script_path = project_path + "/script/" + temp
+    if os.path.exists(script_path):
+        print("Rewriting the temp folder ", script_path)
+        shutil.rmtree(script_path)
+        os.mkdir(script_path)
     else:
-        print("Creating the temp folder ", project_path + "/script/" + temp)
-        os.mkdir(project_path + "/script/" + temp)
+        print("Creating the temp folder ", script_path)
+        os.mkdir(script_path)
 
     if not os.path.exists(outpt_prefix + outpt_version):
         print("Creating the output folder")
@@ -82,9 +80,9 @@ def main():
         # for each input file
         # create a bash script
         if launch:
-            launcher = open(project_path + "/script/" + temp + "all.sh", "w")
+            launcher = open(script_path + "all.sh", "w")
         else:
-            launcher = open(project_path + "/script/" + temp + "all.sh.bu", "w")
+            launcher = open(script_path + "all.sh.bu", "w")
         for line in file_list:
             # skip line if comment-like
             line = line.split('#')[0]
@@ -102,7 +100,7 @@ def main():
                 exit(-1)
 
             # create a file list in case of existing subruns
-            temp_filename = project_path + "/script/" + temp
+            temp_filename = script_path
             temp_filename += str(round(random.random()*1000)) + ".list"
             temp_file = open(temp_filename, "w")
             first_file_name = ""
@@ -112,7 +110,7 @@ def main():
                 if "soft" in root:
                     continue
                 for file in find_file:
-                    if in_file[:21] in file and ".root" in file:
+                    if in_file[:21] in file and ".root" in file[-5:]:
                         temp_file.write(os.path.join(root, file) + "\n")
                         if first_file_name == "":
                             first_file_name = file
@@ -121,7 +119,7 @@ def main():
 
             print(first_file_name, "-->", ot_file)
 
-            file_out = open(project_path + "/script/" + temp + str(i) + ".sh", "w")
+            file_out = open(script_path + str(i) + ".sh", "w")
             command = ""
 
             # fo each iteration
@@ -162,13 +160,13 @@ def main():
         launcher.close()
 
     # create Condor submission file
-    submit_file = open(project_path + "/script/" + temp + "/Submit.sub", "w")
+    submit_file = open(script_path + "/Submit.sub", "w")
 
     submit_file.write("executable              = $(filename)\n")
 
     submit_file.write("arguments               = $(ClusterId)$(ProcId)\n")
     submit_file.write("requirements            = (OpSysAndVer =?= \"CentOS7\")\n")
-    submit_file.write("+job_flavour             = \"" + job_flavour + "\"\n")
+    submit_file.write("+JobFlavour             = \"" + job_flavour + "\"\n")
     submit_file.write("output                  = " + log_folder + "/output/$(ClusterId).$(ProcId).out\n")
     submit_file.write("error                   = " + log_folder + "/error/$(ClusterId).$(ProcId).err\n")
     submit_file.write("log                     = " + log_folder + "/log/$(ClusterId).log\n")
@@ -176,10 +174,14 @@ def main():
 
     submit_file.close()
 
-    os.chdir(project_path + "/script/" + temp)
+    os.chdir(script_path)
     if launch:
         subprocess.run(["chmod", "765", "./all.sh"], check=True)
-        subprocess.run(["/bin/bash", "all.sh"], check=True)
+        subprocess.run(["/bin/bash", "-c",
+                       f". ~/.bashrc; cd {script_path}; . all.sh"
+                       ],
+                       check=True
+                       )
     if submit:
         subprocess.run(["condor_submit",  "Submit.sub"], check=True)
     os.chdir(project_path + "/script/")

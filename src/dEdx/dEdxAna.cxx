@@ -143,19 +143,25 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     // add first digit with a track number
     _ev = event->GetID() + (trkID+1) * 1e8;
     TTrack* itrack = event->GetTracks()[trkID];
-    if(_verbose > 1){
-      std::cout << "sel::GetNonZeroCols(event,trkID).size(): ";
-      std::cout << sel::GetNonZeroCols(itrack, _invert).size() << std::endl;
-      std::cout << "sel::GetColsMaxSep(event,trkID).size():  ";
-      std::cout << sel::GetColsMaxSep(itrack, _invert) << std::endl;
-      std::cout << "sel::GetColsMaxGap(event,trkID).size():  ";
-      std::cout << sel::GetColsMaxGap(itrack, _invert) << std::endl;
-    }
+    std::vector<TCluster*> clusters;
+    clusters = ClusterTrack(itrack, &Clustering::GetConstant, *_clustering);
 
-    if (!sel::CrossingTrackSelection(itrack, _invert, _verbose))
+    if (_verbose > 1)
+      std::cout << "Clusterization done " << clusters.size() <<  std::endl;
+
+    if (!sel::CrossingTrackSelection(clusters,
+                                     _max_mult,
+                                     _cut_gap,
+                                     _max_phi,
+                                     _max_theta,
+                                     _invert,
+                                     _verbose))
       continue;
-    std::vector<double> fit_v = sel::GetFitParams(itrack, _invert);
-    std::vector<double> fit_xz = sel::GetFitParamsXZ(itrack, _invert);
+
+    if (_verbose > 1)
+      std::cout << "Selection done " << clusters.size() <<  std::endl;
+    std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
 
     _angle->Fill(abs(fit_v[2]), abs(fit_xz[2] * sel::v_drift_est));
     _angle_xy = fit_v[2];
@@ -175,6 +181,16 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       _charge[i] = -999;
       _maxcharge_time[i] = -999;
       _maxcharge_frac[i] = -999;
+
+      for (auto j = 0; j < 10; ++j) {
+        _pad_time[j][i]   = -999;
+        _pad_charge[j][i] = -999;
+        _wf_width[j][i]   = -999;
+        _wf_fwhm[j][i]    = -999;
+        _pad_x[j][i]      = -999;
+        _pad_y[j][i]      = -999;
+      }
+
     }
 
     if (_test_mode)

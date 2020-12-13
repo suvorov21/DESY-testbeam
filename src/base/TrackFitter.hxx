@@ -25,9 +25,9 @@
 class TrackFitterBase {
 public:
   /// shape of the track
-  /// 1. linear (pol1)
+  /// 1. Arc (circle)
   /// 2. parabolic (pol2)
-  /// 3. Arc (circle)
+  /// 3. linear (pol1)
   enum TrackShape {
     arc = 0,
     parabola,
@@ -36,17 +36,12 @@ public:
 
   TrackFitterBase(TrackShape shape,
                   bool invert,
-                  bool diagonal,
                   int verbose,
                   int it);
   virtual ~TrackFitterBase() {;}
 
   /// set the shape of the track
   void SetTrackShape(TrackShape shape) {_shape = shape;};
-
-  /// set up if the diagonal slusterisation is used
-  /// it will result in the 45 degree rotaton
-  void SetDiagonal(bool d) {_diagonal = d;}
 
   /// General function for fitting the cluster
   Double_t FitCluster();
@@ -68,8 +63,6 @@ protected:
   /// GEOMETRY
   /// Either inverted geometry (rows/columns) should be used
   bool _invert;
-  /// Either diagonal clustering is used
-  bool _diagonal;
 
   TrackShape _shape;
 
@@ -83,34 +76,39 @@ class TrackFitCern: public TrackFitterBase {
 public:
   TrackFitCern(TrackShape shape,
                bool invert,
-               bool diagonal,
                int verbose,
                int it,
                TF1* PRF,
+               TGraphErrors* PRF_gr,
                float fit_bound,
                bool charge_uncertainty,
                TF1* PRF_time_func,
-               TH1F* _PRF_time_error
+               TH1F* _PRF_time_error,
+               Float_t angle
                );
   virtual ~TrackFitCern() {;}
 
   /// Cluster fitter
   double FitCluster(const std::vector<THit*>& col,
-                    const int cluster,
-                    const double pos
+                    const int& cluster,
+                    const double& pos
                     );
 
   /// Track fitter
-  TF1* FitTrack(const std::vector<TCluster*> clusters,
-                const int miss_id = -1
+  TF1* FitTrack(const std::vector<TCluster*>& clusters,
+                const int& miss_id = -1
                 );
 
 protected:
   /// Pad Response Function analytical description
   TF1* _PRF_function;
 
+  /// PRF uncertainty graph
+  TGraphErrors* _PRF_graph;
+
   /// Pad Responce Function in time
   TF1* _PRF_time_func;
+  /// histogram with errors for time PRF
   TH1F* _PRF_time_error;
 
   /// bounds of the PRF that are reliable. Outside values are not used
@@ -118,6 +116,9 @@ protected:
 
   /// Weather to put into account uncertainty on charge with sqrt(Q)
   bool _charge_uncertainty;
+
+  /// angle of the cluster
+  Float_t _angle;
 
 };
 

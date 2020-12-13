@@ -1,13 +1,16 @@
 #include <algorithm>
+#include <unistd.h>
+#define GetCurrentDir getcwd
 
 #include "TROOT.h"
 
 #include "AnalysisBase.hxx"
 
+//******************************************************************************
 AnalysisBase::AnalysisBase(int argc, char** argv) :
   _file_in_name(""),
   _file_out_name(""),
-  _event_list_file_name(""),
+  _param_file_name(""),
   _start_ID(-1),
   _end_ID(-1),
   _selected(0),
@@ -17,15 +20,24 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _file_in(NULL),
   _file_out(NULL),
   _chain(NULL),
+  _Prev_iter_name(TString("")),
+  _iteration(0),
   _reconstruction(NULL),
+  _max_mult(6),
+  _cut_gap(true),
+  _min_clusters(30),
   _verbose(1),
   _batch(false),
   _test_mode(false),
   _overwrite(false),
   _invert(false),
+  _gaus_lorentz_PRF(false),
+  _do_linear_fit(false),
+  _do_para_fit(false),
   _app(NULL),
   _useCern(false)
 {
+//******************************************************************************
 
   // TODO redefine CLI.
   // now written in an ugly way
@@ -40,18 +52,12 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     {"correction",      no_argument,    0,    'c'},         // 5
     {"start",           required_argument,      0,     0},  // 6
     {"end",             required_argument,      0,     0},  // 7
-    // fitter method
-    {"full_track_fit",  no_argument,    0,      0},         // 8
-    {"separate_pad_fit",no_argument,    0,      0},         // 9
-    // track shape
-    {"linear_fit",      no_argument,    0,      0},         // 10
-    {"para_fit",        no_argument,    0,      0},         // 11
-    // PRF  shape
-    {"gaus_lorentz",    no_argument,    0,      0},         // 12
 
-    {"diagonal",        no_argument,    0,      0},         // 13
+    {"param",           required_argument, 0,   0},         // 8
 
-    {"help",            no_argument,    0,    'h'},         // 15
+    {"prev",            required_argument, 0,   0},         // 9
+
+    {"help",            no_argument,    0,    'h'},         // 10
 
     {0,                 0,              0,      0}
   };
@@ -60,31 +66,32 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 
   // read CLI
   for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drhst:cap:", longopts, &index);
+    int c = getopt_long(argc, argv, "i:o:bv:drhst:cp:", longopts, &index);
     if (c < 0) break;
     switch (c) {
       case 0  :
         if (index == 6) _start_ID         =  atoi(optarg);
         if (index == 7) _end_ID           =  atoi(optarg);
+        if (index == 8) _param_file_name  = optarg;
+        if (index == 9) _Prev_iter_name   = optarg;
+        if (index == 10) help(argv[0]);
         break;
       case 'i' : _file_in_name     = optarg;       break;
       case 'o' : _file_out_name    = optarg;       break;
+      case 't' : _iteration        = atoi(optarg); break;
       case 'b' : _batch            = true;         break;
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
+      case 'p' : _param_file_name = optarg;        break;
       case 'r' :
         _overwrite        = true;
         std::cout << "Output will be overwritten" << std::endl;
-        break;
-      case 'h' : help(argv[0]);                    break;
-      case 'a' :
-        _invert           = true;
-        std::cout << "Inverted geometry is used" << std::endl;
         break;
       case 's' :
         _store_event_tree = true;
         std::cout << "Tree with TEvents will be written" << std::endl;
         break;
+      case 'h' : help(argv[0]);                    break;
       //case '?' : help(argv[0]);
     }
   }
@@ -94,11 +101,38 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     exit(1);
   }
 
+  if (_iteration == -1) {
+    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
+    std::cout << " Iteration should be defined as a input param" << std::endl;
+    exit(1);
+  }
+
   if (!_batch)
     _app = new TApplication("app", &argc, argv);
 }
 
+//******************************************************************************
 bool AnalysisBase::Initialize() {
+//******************************************************************************
+
+  // WARNING
+  // A very dirty adoptation of angles
+  CL_col = new Clustering(0., 0);
+  CL_diag = new Clustering(units::a45, 1);
+  CL_2by1 = new Clustering(units::a2, 2);
+  CL_3by1 = new Clustering(units::a3, 3);
+
+
+  // Read parameter file
+  if (!ReadParamFile()) {
+    std::cerr << "ERROR! AnalysisBase::Initialize(). Parameter file is not read" << std::endl;
+    exit(1);
+  }
+
+  if (_invert) {
+    CL_2by1->angle = units::a2_inv;
+    CL_3by1->angle = units::a3_inv;
+  }
 
   // read the first root file and decide
   // is it a raw file for the reconstruction or a file with TEvent
@@ -133,14 +167,14 @@ bool AnalysisBase::Initialize() {
     _work_with_event_file = true;
   } else if ((TTree*)file->Get("padData")) {
     _useCern = true;
-    tree_name = "padData";
-    std::cout << "Running over CERN data" << std::endl;
-    _tgeom= (TTree*)file->Get("femGeomTree");
-    //std::vector<int> *iPad(0);
-    //std::vector<int> *jPad(0);
-    _tgeom->SetBranchAddress("jPad", &_jPad );
-    _tgeom->SetBranchAddress("iPad", &_iPad );
-    _tgeom->GetEntry(0); // put into memory geometry info
+    // tree_name = "padData";
+    // std::cout << "Running over CERN data" << std::endl;
+    // _tgeom= (TTree*)file->Get("femGeomTree");
+    // //std::vector<int> *iPad(0);
+    // //std::vector<int> *jPad(0);
+    // _tgeom->SetBranchAddress("jPad", &_jPad );
+    // _tgeom->SetBranchAddress("iPad", &_iPad );
+    // _tgeom->GetEntry(0); // put into memory geometry info
   } else {
     std::cerr << "ERROR. AnalysisBase::Initialize. Unknown tree name" << std::endl;
     exit(1);
@@ -178,9 +212,10 @@ bool AnalysisBase::Initialize() {
   }
 
   if (_useCern) {
-
-    _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
-    _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
+    std::cerr << "CERN data format is deprecated" << std::endl;
+    exit(1);
+    // _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
+    // _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
 
   } else if (!_work_with_event_file) {
     TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
@@ -265,7 +300,9 @@ bool AnalysisBase::Initialize() {
   return true;
 }
 
+//******************************************************************************
 bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
+//******************************************************************************
   auto N_events = static_cast<Int_t>(EventList.size());
   if (_test_mode)
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
@@ -294,8 +331,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (N_events < 100)
     denimonator = N_events;
   for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
-    if (_verbose >= v_event_number)
+    if (_verbose >= v_event_number) {
+      std::cout << "*************************************" << std::endl;
       std::cout << "Event " << eventID << std::endl;
+      std::cout << "*************************************" << std::endl;
+    }
 
     if (_verbose == v_progress && (eventID%(N_events/denimonator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
@@ -334,6 +374,10 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
             }
 
             _padAmpl[x][y][t] = q < 0 ? 0 : q;
+            /** REWEIGHT OF THE PAD*/
+            // if (x == 5 && y == 16)
+            //   _padAmpl[x][y][t] *= 0.95;
+            /** */
 
           }
         }
@@ -377,15 +421,18 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   return true;
 }
 
+//******************************************************************************
 bool AnalysisBase::ProcessEvent(const TEvent* event) {
+//******************************************************************************
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
   return true;
 }
 
+//******************************************************************************
 bool AnalysisBase::WriteOutput() {
-
+//******************************************************************************
   //if(_test_mode) return true;
   if (!_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
@@ -422,7 +469,9 @@ bool AnalysisBase::WriteOutput() {
 // TODO
 // make the inheritance possible
 // e.g. draw events here but also draw some analysi specific stuff in the analysis
+//******************************************************************************
 void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
+//******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
@@ -480,7 +529,9 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   delete event3D;
 }
 
+//******************************************************************************
 std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
+//******************************************************************************
   std::vector<THit*> result;
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
@@ -512,7 +563,9 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   return result;
 }
 
+//******************************************************************************
 std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
+//******************************************************************************
   std::vector<TCluster*> result;
   // sort clusters in increasing order
   sort(tr.begin(), tr.end(), [](TCluster* cl1,
@@ -560,30 +613,11 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
   return result;
 }
 
-std::vector<TCluster*> AnalysisBase::ColonizeTrack(const TTrack* tr) {
-  std::vector<TCluster*> cluster_v;
-
-  for (auto col:tr->GetCols(_invert)) {
-    if (!col[0])
-      continue;
-    // skip first and last column
-    auto it = col[0]->GetCol(_invert);
-    if (it == 0 || it == geom::GetMaxColumn(_invert))
-      continue;
-    TCluster* cl = new TCluster(col[0]);
-    cl->SetX(geom::GetXposPad(col[0], _invert));
-    cl->SetCharge(col[0]->GetQ());
-    for (uint i = 1; i < col.size(); ++i) {
-      cl->AddHit(col[i]);
-      cl->AddCharge(col[i]->GetQ());
-    } // loop over pads
-    cluster_v.push_back(cl);
-  } // loop over column
-
-  return cluster_v;
-}
-
-std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
+//******************************************************************************
+std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
+                                                  int (Clustering::*f)(int, int),
+                                                  Clustering& cl) {
+//******************************************************************************
   std::vector<TCluster*> cluster_v;
   for (auto col:tr->GetCols(_invert)) {
     // skip first and last column
@@ -593,28 +627,40 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
     for (auto pad:col) {
       auto col_id = pad->GetCol(_invert);
       auto row_id = pad->GetRow(_invert);
-      auto cons = col_id - row_id;
+
+      auto cons = (cl.*f)(row_id, col_id);
+      // skip first and last row
       if (row_id == 0 || row_id == geom::GetMaxRow(_invert))
         continue;
 
       // search if the diagonal is already considered
       std::vector<TCluster*>::iterator it;
       for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
-        if (!(*it)->GetHits()[0]) {
+        if (!((*(*it))[0])) {
           continue;
         }
 
-        if ((*it)->GetHits()[0]->GetCol(_invert) -  (*it)->GetHits()[0]->GetRow(_invert) == cons) {
+        auto cluster_col = (*(*it))[0]->GetCol(_invert);
+        auto cluster_row = (*(*it))[0]->GetRow(_invert);
+        if ((cl.*f)(cluster_row, cluster_col) == cons) {
           (*it)->AddHit(pad);
           (*it)->AddCharge(pad->GetQ());
+          /** update X position */
+          auto x_pad = geom::GetXposPad(pad, _invert, cl.angle);
+          auto mult  = (*it)->GetSize();
+          auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
+          (*it)->SetX(x_new);
+          /** */
+
           break;
         }
-      } // loop over track_diag
+      } // loop over track clusters
+      // add new cluster
       if (it == cluster_v.end()) {
-        TCluster* cl = new TCluster(pad);
-        cl->SetX(geom::GetXposPad(pad, _invert, units::a45));
-        cl->SetCharge(pad->GetQ());
-        cluster_v.push_back(cl);
+        TCluster* first_cluster = new TCluster(pad);
+        first_cluster->SetX(geom::GetXposPad(pad, _invert, cl.angle));
+        first_cluster->SetCharge(pad->GetQ());
+        cluster_v.push_back(first_cluster);
       }
     } // over pads
   } // over cols diagonalise track
@@ -622,20 +668,117 @@ std::vector<TCluster*> AnalysisBase::DiagonolizeTrack(const TTrack* tr) {
   return cluster_v;
 }
 
+//******************************************************************************
+//******************************************************************************
+// ***** Functions below are utils: params reading, progress dump **************
+//******************************************************************************
+//******************************************************************************
+
+//******************************************************************************
+bool AnalysisBase::ReadParamFile() {
+//******************************************************************************
+  char *homePath(getenv("SOFTDIR"));
+
+  if (_param_file_name == ""){
+    _param_file_name = std::string(homePath) + "/params/default.ini";
+  }
+  std::cout << "*****************************************" << std::endl;
+  std::cout << "Read parameters from " << _param_file_name << std::endl;
+  std::ifstream cFile (_param_file_name);
+  if (cFile.is_open()) {
+    std::string line;
+    while(getline(cFile, line)) {
+      line.erase(std::remove_if(line.begin(),
+                                line.end(),
+                                isspace
+                                ),
+                line.end()
+                );
+
+      if(line[0] == '#' || line.empty())
+        continue;
+      auto delimiterPos = line.find("=");
+      auto name = line.substr(0, delimiterPos);
+      auto value = line.substr(delimiterPos + 1);
+      // std::cout << name << " " << value << '\n';
+      if (name == "cluster") {
+        if (value == "column") {
+          _clustering = CL_col;
+        } else if (value == "diag") {
+          _clustering = CL_diag;
+          std::cout << "Diagonal cluster is used" << std::endl;
+        } else if (value == "2by1") {
+          _clustering = CL_2by1;
+        } else if (value == "3by1") {
+          _clustering = CL_3by1;
+        }
+      } else if (name  == "invert") {
+        if (value == "1") {
+          _invert = true;
+          std::cout << "Inverted geometry used" << std::endl;
+        }
+      } else if (name == "prf_shape") {
+        if (value == "gaus_lorentz") {
+          _gaus_lorentz_PRF = true;
+          std::cout << "PRF is fit with Gaussian-Lorentzian" << std::endl;
+        } else {
+          std::cout << "PRF is fit with 4th degree polinom" << std::endl;
+        }
+      } else if (name == "track_shape") {
+        if (value == "parabola") {
+          _do_para_fit = true;
+          std::cout << "Parabola track fit is used" << std::endl;
+        } else if (value == "linear") {
+          _do_linear_fit = true;
+          std::cout << "Linear track fit is used" << std::endl;
+        } else {
+          std::cout << "Arc track fit is used" << std::endl;
+        }
+      } else if (name == "max_mult") {
+        _max_mult = TString(value).Atoi();
+      } else if (name == "cut_gap") {
+        if (value == "0") {
+          _cut_gap = false;
+        }
+      } else if (name == "cluster_min") {
+        _min_clusters = TString(value).Atoi();
+      } else if (name == "max_phi") {
+        _max_phi = TString(value).Atof();
+      } else if (name == "max_theta") {
+        _max_theta = TString(value).Atof();
+      }
+    }
+  } else {
+    return false;
+  }
+  std::cout << "*****************************************" << std::endl;
+  return true;
+}
+
+//******************************************************************************
 void AnalysisBase::help(const std::string& name) {
+//******************************************************************************
   std::cout << name << " usage\n" << std::endl;
   std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
   std::cout << "   -o <output_path>     : output files path" << std::endl;
+  std::cout << std::endl;
+  std::cout << "   --start     <i>      :start from event i" << std::endl;
+  std::cout << "   --end       <i>      :end with event i" << std::endl;
+  std::cout << "   -t <interation>      : iteration number" << std::endl;
+  std::cout << std::endl;
+  std::cout << "   --param, p  <file>   : parameter file to use" << std::endl;
+  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
   std::cout << "   -b                   : run in batch mode" << std::endl;
-  std::cout << "   -v <verbose_lvel>    : verbosity level" << std::endl;
+  std::cout << "   -v <verbose_level>   : verbosity level" << std::endl;
   std::cout << "   -d                   : test mode. run over first 30 events" << std::endl;
   std::cout << "   -h                   : print ROOT help" << std::endl;
   std::cout << "   -m                   : print " << name << " help" << std::endl;
   exit(1);
 }
 
-void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
-{
+//******************************************************************************
+void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set) {
+//******************************************************************************
     vm_usage     = 0.0;
     resident_set = 0.0;
 
@@ -655,7 +798,9 @@ void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
     resident_set = rss * page_size_kb;
 }
 
+//******************************************************************************
 void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
+//******************************************************************************
   double real, virt;
   process_mem_usage(virt, real);
   double CPUtime  = _sw_event->CpuTime();

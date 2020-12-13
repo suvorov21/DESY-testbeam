@@ -8,7 +8,7 @@
 //! It contains vector of hits associated with this cluster.
 class TCluster : public TObject{
  public:
-  void AddHit(THit* hit) {fhits.push_back(hit);};
+  void AddHit(THit* hit) {_hits.push_back(hit);};
   void SetX(Float_t x) {_x = x;}
   void SetY(Float_t y) {_y = y;}
   void SetYE(Float_t ye) {_y_error = ye;}
@@ -19,9 +19,22 @@ class TCluster : public TObject{
   void SetCharge(Int_t q) {_charge = q;}
   void AddCharge(Int_t q) {_charge += q;}
 
-  // THit& operator[] (unsigned i) {return *fhits[i];}
+  /// Get vector of hits
+  std::vector<THit*> GetHits() const {return _hits;}
+  /// Get size of the cluster == number of hits
+  Ssiz_t GetSize() const {return _hits.size();}
+  /// array operator
+  THit* operator[](size_t n) { return _hits[n]; }
 
-  std::vector<THit*> GetHits()                const     {return fhits;}
+  /// loop iterator starting point
+  typename std::vector<THit*>::iterator begin() {
+    return _hits.begin();
+  }
+
+  /// loop iterator end
+  typename std::vector<THit*>::iterator end() {
+    return _hits.end();
+  }
 
   Float_t GetX() {return _x;}
   Float_t GetY() {return _y;}
@@ -30,13 +43,13 @@ class TCluster : public TObject{
   Int_t GetCharge() {return _charge;}
 
   TCluster(){_x = -999; _y = -999; _y_error = -999;}
-  TCluster(THit* pad) {fhits.push_back(pad);}
+  TCluster(THit* pad) {_hits.push_back(pad);}
   virtual ~TCluster();
 
   ClassDef (TCluster,1);
 
  private:
-  std::vector<THit*> fhits;               // all hits.
+  std::vector<THit*> _hits;               // all hits.
   Float_t _x;
   Float_t _y;
   Float_t _y_error;

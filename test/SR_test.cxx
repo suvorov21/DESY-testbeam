@@ -9,34 +9,56 @@
 float GetAverage(TGraphErrors* h, float& RMS, float& mean_e);
 
 int main(int argc, char** argv) {
-  if (argc < 2) {
+  if (argc < 3) {
     std::cerr << "ERROR! SR_test::main(): no input " << std::endl;
     exit(1);
   }
 
+  int limit = atoi(argv[2]);
+
   std::cout << "SR_test. Open file " << argv[1] << std::endl;
   auto f = new TFile(argv[1], "READ");
-  TGraphErrors* resol_final = (TGraphErrors*)f->Get("resol_final");
+  auto resol_total = (TH1F*)f->Get("resol_total");
 
-  if (!resol_final->GetN()) {
-    std::cerr << "ERROR! SR_test::main(): no entries in resol_final" << std::endl;
+  if (!resol_total || !resol_total->GetEntries()) {
+    std::cerr << "ERROR! SR_test::main(): no entries in resol_total" << std::endl;
     exit(1);
   }
 
-  float RMS, mean_e;
-  float mean = GetAverage(resol_final, RMS, mean_e);
+  resol_total->Fit("gaus");
+  if (!resol_total->GetFunction("gaus")) {
+    std::cerr << "ERROR! SR_test::main(): resol_total fit fail" << std::endl;
+    exit(1);
+  }
 
-  if (1.e6 * mean > 600) {
+  auto sigma = resol_total->GetFunction("gaus")->GetParameter(2);
+  if (1.e6 * sigma > limit) {
     std::cerr << "ERROR! SR_test::main(): too large spatial resolution"
-    << "\t" << 1.e6 * mean << std::endl;
+    << "\t" << 1.e6 * sigma << std::endl;
     exit(1);
   }
 
-  if (1.e6 * RMS > 150) {
-    std::cerr << "ERROR! SR_test::main(): too large SR RMS"
-    << "\t" << 1.e6 * RMS << std::endl;
-    exit(1);
-  }
+  // TGraphErrors* resol_final = (TGraphErrors*)f->Get("resol_final");
+
+  // if (!resol_final->GetN()) {
+  //   std::cerr << "ERROR! SR_test::main(): no entries in resol_final" << std::endl;
+  //   exit(1);
+  // }
+
+  // float RMS, mean_e;
+  // float mean = GetAverage(resol_final, RMS, mean_e);
+
+  // if (1.e6 * mean > limit) {
+  //   std::cerr << "ERROR! SR_test::main(): too large spatial resolution"
+  //   << "\t" << 1.e6 * mean << std::endl;
+  //   exit(1);
+  // }
+
+  // if (1.e6 * RMS > 150) {
+  //   std::cerr << "ERROR! SR_test::main(): too large SR RMS"
+  //   << "\t" << 1.e6 * RMS << std::endl;
+  //   exit(1);
+  // }
 
   std::cout << "SR_test::main(): test passed" << std::endl;
   return 0;

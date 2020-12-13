@@ -152,12 +152,6 @@ std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<No
   auto it_max = std::max_element(nodes.begin(), nodes.end(),
                        [](const Node& n1, const Node& n2) { return n1.c < n2.c; });
   int numClusters = (it_max == nodes.end()) ? -1 : (*it_max).c;
-  if (_verbose > 2) {
-    std::cout << "numClusters = " << numClusters << std::endl;
-    for (auto n:nodes)
-      std::cout << n.c << " ";
-    std::cout << std::endl;
-  }
   int acceptedClusters = 0;
   for(int i=0; i<=numClusters; i++){
     Cluster cluster;
@@ -166,9 +160,6 @@ std::vector<Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<No
       // TODO make it a vector
       cluster.nodes[cluster.size] = n.id;
       cluster.size++;
-    }
-    if (_verbose > 2) {
-      std::cout << "cluster id:n\t" << i << "\t" << cluster.size << std::endl;
     }
     if(cluster.size >= minNodes && cluster.size <= MAX_NODES){
       acceptedClusters++;
