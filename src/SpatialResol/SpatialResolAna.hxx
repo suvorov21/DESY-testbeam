@@ -28,6 +28,7 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Profile PRF with peak and RMS
   bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
+  /// Profile PRF along X axis
   bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
   /// Initialise PRF with expected params
@@ -35,6 +36,7 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Get mean and FWHM for the histo
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
+  Double_t GetFWHM(const TH1F* h);
 
   /// Draw the histograms of interest
   bool Draw();
@@ -48,8 +50,6 @@ class SpatialResolAna: public AnalysisBase {
   };
 
  protected:
-  /// Name of the file from previous iteration
-  TString _Prev_iter_name;
   /// Previous iteration output to extract PRF
   TFile*  _Prev_iter_file;
 
@@ -64,6 +64,18 @@ class SpatialResolAna: public AnalysisBase {
   /// angle w.r.t. MM
   Float_t _angle_yz;
 
+  /// Number of robust clusters in event
+  Int_t _rob_clusters;
+
+  /// track fit quality Chi2/NDF
+  Float_t _quality;
+  /// momentum
+  Float_t _mom;
+  /// angle
+  Float_t _sin_alpha;
+  /// offset
+  Float_t _offset;
+
   /// Cluster vars
   /// Position of the cluster
   Float_t _clust_pos[Nclusters];
@@ -72,7 +84,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Position of the "clean" cluster
   /** e.g. average 2 neighbour diagonals **/
   Float_t _cluster_av[Nclusters];
-  /// X position of the evareged cluster
+  /// X position of the avareged cluster
   Float_t _x_av[Nclusters];
   /// Position of the track
   Float_t _track_pos[Nclusters];
@@ -83,6 +95,9 @@ class SpatialResolAna: public AnalysisBase {
   /// multiplicity of the cluster
   Int_t   _multiplicity[Nclusters];
 
+  /// Track analytical fit function for plotting
+  TF1* _track_fit_func;
+
   /// Pad vars
   /// X_track - X_pad --> X axis of the PRF
   Float_t _dx[Nclusters][10];
@@ -90,18 +105,23 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _qfrac[Nclusters][10];
   /// time of the pad
   Int_t   _time[Nclusters][10];
-    
-    // variables for the dEdx analysis
-    Float_t _dEdx;
-    TH1F* _hdEdx;
-    Int_t _pad_charge[Nclusters][10];
-    Int_t _pad_time[Nclusters][10];
 
-    Int_t _pad_x[Nclusters][10];
-    Int_t _pad_y[Nclusters][10];
+  /** variables for the dEdx analysis */
+  /// dE/dx
+  Float_t _dEdx;
+  TH1F* _hdEdx;
+  Int_t _pad_charge[Nclusters][10];
+  Int_t _pad_time[Nclusters][10];
 
-    Int_t _wf_width[Nclusters][10];
-    Int_t _wf_fwhm[Nclusters][10];
+  /// pad X position == column
+  Int_t _pad_x[Nclusters][10];
+  /// pad Y position === row
+  Int_t _pad_y[Nclusters][10];
+
+  /// Waveform width
+  Int_t _wf_width[Nclusters][10];
+  /// Waveform width at half maximum
+  Int_t _wf_fwhm[Nclusters][10];
 
   /** Histograms **/
   /** Pad response function block **/
@@ -139,9 +159,6 @@ class SpatialResolAna: public AnalysisBase {
   TrackFitCern* _fitter;
 
   /** Switchers **/
-  /// Whether to use arc function for track fitting
-  bool _do_linear_fit;
-  bool _do_para_fit;
   /// Whether to use full track fitting
   bool _do_full_track_fit;
 
@@ -156,15 +173,6 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Whether to assign uncertainty to charge
   bool _charge_uncertainty;
-
-  /// Whether to use Gaussian lorentzian PRf fit over polynomial
-  bool _gaus_lorentz_PRF;
-
-  /// whether to select diagonal; clusters
-  bool _diagonal;
-
-  /// iteration number. Starting from 0
-  Int_t   _iteration;
 
   TH1F*   _mom_reco;
   TH1F*   _pos_reco;
@@ -233,7 +241,7 @@ class SpatialResolAna: public AnalysisBase {
   std::vector<Int_t> _passed_events;
 
   // [units are meters]
-  const float prf_min     = -0.027;  
+  const float prf_min     = -0.027;
   const float prf_max     = 0.027;
   const int   prf_bin     = 180;
 
@@ -241,6 +249,8 @@ class SpatialResolAna: public AnalysisBase {
   const float resol_max   = 0.004;
   const int   resol_bin   = 200.;
 
+  /// space limit for the PRF usage
+  /// pads that are far away are supposed to be unreliable
   const float fit_bound_left  = -0.025;
   const float fit_bound_right =  0.025;
 };

@@ -1,8 +1,8 @@
 # DESY beam test analysis package
 
-The package for the DESY beam test data analysis. There are two general method to perform your analysis:
-1. so-called HighLLevel tool (recommended and supported)
-2. macros (**deprecated**)
+![](doc/desy.png)
+
+The package for the DESY beam test data analysis. Code doxygen documentation is available at [pages](https://t2k-beamtest.gitlab.io/desy_testbeam).
 
 # HighLevel tool
 For the DESY beam test analysis the HighLevel tool was created. The new flexible tool should allow us to create clear analysis algorithms.
@@ -21,30 +21,38 @@ cmake ../src
 make
 ```
 
+Before running the code please specify the `SOFTDIR` environment variable that will point to the package root folder. You can do it with:
+```bash
+source setup.sh
+```
+
 Then the code can be run with e.g.
 ```bash
-./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root
+./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b
 ```
 
 ## Tool structure
 The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
 
-![Tool structure](doc/html/_spatial_resol_ana_8cxx__incl.png)
+![Tool structure](doc/doc_html__spatial_resol_ana_8cxx__incl.png)
 
 The work flow can be briefly defined with the following chain:
 1. AnalysisBase open the input file and process the input. Usually it's a 3D array in x, y, t
 2. Your analysis go through initialization: creating histoes and TTree you want in the output
-3. AnalysisBase takes care about loop over events. The range can be specified with `--start` and `--end` flags.
-4. For each event the pattern recognition (reconstruction) is called. The waveform treatment is done at this step. The reconstruction output is a `TEvent` object that contains `TTrack` consists of `THit`. The default one is DBSCAN reconstruction that returns one track per event. The maximum number of pads per track is set to 200 pads that is sufficient to select only single tracks, but may be a subject of change for other analysis.
-5. Successfully reconstructed track goes to `ProcessEvent` function of your analysis.
+3. AnalysisBase takes care about loop over events with AnalysisBase::Loop(). The range can be specified with `--start` and `--end` flags.
+4. For each event the pattern recognition (reconstruction) is called. The waveform treatment is done at this step. The reconstruction output is a `TEvent` object that contains `TTrack` consists of `THit`. The default one is DBSCANReconstruction that returns one track per event. The maximum number of pads per track is set to 200 pads that is sufficient to select only single tracks, but may be a subject of change for other analysis.
+5. Successfully reconstructed track goes to `ProcessEvent()` function of your analysis.
 6. The Selection can be called inside your analysis to put a cut on angle/number of clusters, etc. Some selection utils are located at `Reconstruction/Selection.cxx`
 7. The further logic of your analysis is applied. The desired vars and histoes are filled.
-8. AnalysisBase takes care of storing your results in the output.
+8. AnalysisBase::WriteOutput() takes care of storing your results in the output.
 
-Please find the SpatialResolAna analysis logic description in `/SpatialResol/README.md`. The main steps of the analysis are described in a logic blocks. The steps are commented in the source code as well.
+Please find the SpatialResolAna analysis logic description in a [dedicated readme file](src/SpatialResol/README.md). The main steps of the analysis are described in a logic blocks. The steps are commented in the source code as well.
 
 ## The road map to perform your analyses
-SpatialResolAna.cxx is supposed to be the main analysis that we are working with. It does track position reconstruction and the charge reconstruction. One can check either all the necessary information is stored in the output TTree. If yes, the analysis can be done with a macroses. If no, please, look through the main user cases below.
+SpatialResolAna.cxx is supposed to be the main analysis that we are working with. It does track position reconstruction and the charge reconstruction. One can check if all the necessary information is stored in the output TTree. If yes, the analysis can be done with a macroses. If no, please, look through the main user cases below.
+
+### Parameter file
+The parameter file is used to define the fitters, selection, etc. The default one is `param/default.ini`. Any other parameter file could be used, with flag `--param other_file.ini` during analysis execution.
 
 ### New variables to store
 New variables can be easily implemented in the header file and then added in the Initialization function of any analysis. If you want to add an TObject to store (histo, tree, canvas) add it to `output_vector` and it will be stored automatically.
@@ -53,9 +61,15 @@ New variables can be easily implemented in the header file and then added in the
 The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main option are considered:
 1. Column/row clustering
 2. Diagonal clustering
+3. 2by1 cluster
+4. 3by1 cluster
+They could be switched in the parameter file
 
-### Fitters tests
-Track fitters are defined at `TrackFitter.cxx` file. There you can define your class that will do a track fitting over the cluster or the track. The joint fitter can be specified there as well.
+### Track fitters
+Track fitters are defined at `TrackFitter.cxx` file. That's how the position in the particular cluster is reconstructed. Afterwards clusters are fir together into track. One can define its own class that will do a position fitting with any algorithm one want to test.
+
+### Robust pads and columns to use
+In the analysis one can work only with THit and TCluster that are "robust". E.g. clusters with larger charge can be truncated; only 2 pads in the cluster can be used and so on. Functions AnalysisBase::GetRobustPadsInColumn() and AnalysisBase::GetRobustCols() may contain conditions to select certain clusters and pads. By default, no additional conditions are applied.
 
 
 ### Contributing to project

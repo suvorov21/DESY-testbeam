@@ -1,9 +1,8 @@
 *.exe
 *.o
-doc/*
+doc/html/
 log/*
-/Doxyfile
-build/*
+build*
 
 /bin/eventdict.cxx
 /bin/eventdict_rdict.pcm

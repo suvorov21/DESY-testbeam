@@ -6,7 +6,8 @@ stages:
   # test run with basic analysis
   - test
   # doxygen
-  # - analyse
+  - docs
+  - deploy
 
 compile_gcc:
   stage: build
@@ -22,6 +23,17 @@ compile_gcc:
       - ./build/dEdx.exe
       - gcc.log
 
+build_tests:
+  stage: build
+  before_script:
+    - cd test/
+  script:
+    - make all
+  artifacts:
+    paths:
+      - test/SR_test.exe
+      - test/dEdx_test.exe
+
 # run tests using the binary built before
 SpatialResol_raw_test:
   stage: test
@@ -29,24 +41,39 @@ SpatialResol_raw_test:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
+    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
-    - cd test/; make SR_test;
-    - ./SR_test.exe ../Spatial_test_iter0.root; ./SR_test.exe ../Spatial_test_iter1.root;
+    - ./test/SR_test.exe Spatial_test_iter0.root 400;
+    - ./test/SR_test.exe Spatial_test_iter1.root 300;
 
-# SpatialResol_pad_test:
-#   stage: test
-#   before_script:
-#     - yum -y install wget
-#     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-#     - mv download input.root
-#   script:
-#     - ./build/SpatialResol.exe --separate_pad_fit -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-#     - ./build/SpatialResol.exe --separate_pad_fit -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
-#     - ./build/SpatialResol.exe --separate_pad_fit -b -t 2 -i input.root -o Spatial_test_iter2.root -v 1
-#     - cd test/; make SR_test;
-#     - ./SR_test.exe ../Spatial_test_iter2.root;
+Spatial_resol_slope:
+  stage: test
+  before_script:
+    - yum -y install wget
+    - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
+    - mv download input.root
+    - sed -i '18s@.*@cluster = diag@' params/default.ini
+    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
+  script:
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./test/SR_test.exe Spatial_test_iter1.root 550;
+
+Spatial_resol_inclined:
+  stage: test
+  before_script:
+    - yum -y install wget
+    - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
+    - mv download input.root
+    - sed -i '29s@.*@max_mult = 7@' params/default.ini
+    - sed -i '23s@.*@invert  = 1@' params/default.ini
+    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
+  script:
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./test/SR_test.exe Spatial_test_iter1.root 700;
 
 dEdx_raw_test:
   stage: test
@@ -54,27 +81,48 @@ dEdx_raw_test:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
+    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
-    - cd test/; make dEdx_test;
-    - ./dEdx_test.exe ../dEdx_test.root;
+    - ./test/dEdx_test.exe dEdx_test.root;
 
 dEdx_TEvent_test:
   stage: test
   before_script:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mkdir input; mkdir output;
-    - mv download input/input.root
+    - mkdir raw/
+    - mv download raw/input.root
+    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/dEdx.exe -b -i input/input.root -o output/dEdx_test.root -v 1 -s
-    - ./build/dEdx.exe -b -i output/input.root -o output/dEdx_test_v2.root -v 1
-    - cd test/; make dEdx_test;
-    - ./dEdx_test.exe ../output/dEdx_test_v2.root;
+    - ./build/dEdx.exe -b -i raw/input.root -o ./dEdx_test.root -v 1 -s
+    - ./build/dEdx.exe -b -i ./input.root -o ./dEdx_test_v2.root -v 1
+    - ./test/dEdx_test.exe ./dEdx_test_v2.root;
 
-# docs:
-#   stage: analyse
-#   when: manual
-#   image: hrektts/docker-doxygen
-#   before_script:
+# documentation, etc.
+docs:
+  image: rightmesh/ubuntu-doxygen:5.0
+  stage: docs
+  # when: manual
+  before_script:
+    - sed -i '37s@.*@![Tool structure](d5/da3/_spatial_resol_ana_8hxx__incl.png)@' README.md
+  script:
+    - doxygen Doxyfile
+  artifacts:
+    paths:
+      - doc/html
+  only:
+  - develop
+
+pages:
+  stage: deploy
+  script:
+    - mkdir .public
+    - cp -r doc/html/* .public/
+    - mv .public public
+  artifacts:
+    paths:
+      - public
+  only:
+    - develop
 

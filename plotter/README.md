@@ -1,3 +1,5 @@
+# Plotters
+
 # Event display
 Event display can be run with
 ```
@@ -24,6 +26,3 @@ If Java script is not working, specify `%jsroot off` in the cell.
 
 To make it working specify proper address in the ~/.jupyter/jupyter_notebook_config.py, e.g.
 `c.NotebookApp.extra_static_paths=['/Users/suvorov/SOFT/CERN/ROOT/root-6.18.04-buildi_py3/js/']`
-
-
-

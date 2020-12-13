@@ -3,83 +3,15 @@
 //******************************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
-  _Prev_iter_name(TString("")),
-  _do_linear_fit(false),
-  _do_para_fit(false),
+  _Prev_iter_file(NULL),
+  _tree(NULL),
   _do_full_track_fit(false),
   _do_separate_pad_fit(false),
   // WARNING
   _correction(false),
   _gaussian_residuals(true),
-  _charge_uncertainty(true),
-  _gaus_lorentz_PRF(false),
-  _diagonal(false),
-  _iteration(-1){
+  _charge_uncertainty(true) {
 //******************************************************************************
-
-  // read CLI
-  const struct option longopts[] = {
-    {"input",           no_argument,    0,    'i'},         // 0
-    {"output",          no_argument,    0,    'o'},         // 1
-    {"batch",           no_argument,    0,    'b'},         // 2
-    {"verbose",         no_argument,    0,    'v'},         // 3
-    {"rewrite",         no_argument,    0,    'r'},         // 4
-    {"correction",      no_argument,    0,    'c'},         // 5
-    {"start",           required_argument,      0,     0},  // 6
-    {"end",             required_argument,      0,     0},  // 7
-    // fitter method
-    {"full_track_fit",  no_argument,    0,      0},         // 8
-    {"separate_pad_fit",no_argument,    0,      0},         // 9
-    // track shape
-    {"linear_fit",      no_argument,    0,      0},         // 10
-    {"para_fit",        no_argument,    0,      0},         // 11
-    // PRF  shape
-    {"gaus_lorentz",    no_argument,    0,      0},         // 12
-
-    {"diagonal",        no_argument,    0,      0},         // 13
-
-    // {"previous",        required_argument, 0, 'p'},         // 14
-    {"help",            no_argument,    0,    'h'},         // 15
-
-    {0,                 0,              0,      0}
-  };
-
-  int index;
-  optind = 1;
-  for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drmst:cap:", longopts, &index);
-    if (c < 0) break;
-    switch (c) {
-      case 0 :
-        if (index == 8)
-          _do_full_track_fit = true;
-        if (index == 9)
-          _do_separate_pad_fit = true;
-        if (index == 10)
-          _do_linear_fit = true;
-        if (index == 11)
-          _do_para_fit = true;
-        if (index == 12)
-          _gaus_lorentz_PRF = true;
-        if(index == 13)
-          _diagonal = true;
-        break;
-      case 't' : _iteration        = atoi(optarg);  break;
-      case 'c' : _correction       = true;          break;
-      case 'p' :  _Prev_iter_name  = optarg;        break;
-    }
-  }
-  if (_iteration == -1) {
-    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
-    std::cout << " Iteration should be defined as a input param" << std::endl;
-    exit(1);
-  }
-
-  if (_do_separate_pad_fit && _do_full_track_fit) {
-    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
-    std::cout << " Incorrect input params definintion" << std::endl;
-    exit(1);
-  }
 }
 
 //******************************************************************************
@@ -111,6 +43,16 @@ bool SpatialResolAna::Initialize() {
   if (_do_full_track_fit)
     _PRF_function->FixParameter(0, 1.);
 
+  // Initialize graph for PRF profiling
+  _PRF_graph = new TGraphErrors();
+  _PRF_graph->SetName("PRF_graph");
+  _PRF_graph_2pad = new TGraphErrors();
+  _PRF_graph_2pad->SetName("PRF_graph_2pad");
+  _PRF_graph_3pad = new TGraphErrors();
+  _PRF_graph_3pad->SetName("PRF_graph_3pad");
+  _PRF_graph_4pad = new TGraphErrors();
+  _PRF_graph_4pad->SetName("PRF_graph_4pad");
+
   // load information from previous iteration
   if (_iteration) {
     if (_Prev_iter_name.Length() == 0) {
@@ -132,14 +74,18 @@ bool SpatialResolAna::Initialize() {
     // READ PRF
     auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
     histo_prev->SetName("prev_hsto");
-    auto gr = new TGraphErrors();
-    if (!ProfilePRF(histo_prev, gr)) {
+    if (!ProfilePRF(histo_prev, _PRF_graph)) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
       std::cerr << "PRF can not be profiled" << std::endl;
       exit(1);
     }
-    gr->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
-    _PRF_function = gr->GetFunction("PRF_function");
+    // kind of magic that works.
+    // More fits betterr result
+    // seems that the tolerance is wronng somewhere in ROOT
+    for (auto i = 0; i < 3; ++i)
+      _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+    // TODO think about memory control
+    _PRF_function = (TF1*)_PRF_graph->GetFunction("PRF_function")->Clone("PRF_function");
     auto uncertainty_graph = (TH1F*)_Prev_iter_file->Get("resol_total");
 
     if (!_PRF_function || !uncertainty_graph) {
@@ -150,7 +96,6 @@ bool SpatialResolAna::Initialize() {
     }
 
     // Read PRF in time
-    std::cout << "1" << std::endl;
     auto histo_prev_t = (TH2F*)_Prev_iter_file->Get("PRF_histo_time");
     histo_prev_t->SetName("prev_hsto_time");
     auto Nbins = histo_prev_t->GetYaxis()->GetNbins();
@@ -167,7 +112,9 @@ bool SpatialResolAna::Initialize() {
       std::cerr << "Search in " << _Prev_iter_name << std::endl;
       exit(1);
     }
-    _PRF_time_error->Fit("pol2", "Q");
+    histo_prev_t->Fit("pol2", "Q");
+    _PRF_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
+    _PRF_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
     _PRF_time_func = _PRF_time_error->GetFunction("pol2");
 
     Double_t mean, sigma;
@@ -221,16 +168,6 @@ bool SpatialResolAna::Initialize() {
   // Initialise histoes and graphs
   _PRF_histo = new TH2F("PRF_histo","", prf_bin, prf_min, prf_max, 150,0.,1.5);
 
-  // Initialize graph for PRF profiling
-  _PRF_graph = new TGraphErrors();
-  _PRF_graph->SetName("PRF_graph");
-  _PRF_graph_2pad = new TGraphErrors();
-  _PRF_graph_2pad->SetName("PRF_graph_2pad");
-  _PRF_graph_3pad = new TGraphErrors();
-  _PRF_graph_3pad->SetName("PRF_graph_3pad");
-  _PRF_graph_4pad = new TGraphErrors();
-  _PRF_graph_4pad->SetName("PRF_graph_4pad");
-
   // PRF for different multiplicities
   auto dir_prf_mult = _file_out->mkdir("prf_mult");
   _output_vector.push_back(dir_prf_mult);
@@ -246,6 +183,14 @@ bool SpatialResolAna::Initialize() {
 
   _tree->Branch("angle_yz",     &_angle_yz);
   _tree->Branch("angle_xy",     &_angle_xy);
+
+  _tree->Branch("rob_clusters", &_rob_clusters);
+
+  _tree->Branch("quality",      &_quality);
+  _tree->Branch("mom",          &_mom);
+  _tree->Branch("sina",         &_sin_alpha);
+  _tree->Branch("offset",       &_offset);
+
   _tree->Branch("multiplicity",
                 &_multiplicity,
                 TString::Format("multiplicity[%i]/I", Nclusters)
@@ -278,35 +223,33 @@ bool SpatialResolAna::Initialize() {
                 &_track_pos,
                 TString::Format("track_pos[%i]/F", Nclusters)
                 );
-    _tree->Branch("pad_charge",
-                    &_pad_charge,
-                    TString::Format("_pad_charge[%i][10]/I", Nclusters)
-                    );
-    _tree->Branch("pad_time",
-                    &_pad_time,
-                    TString::Format("_pad_time[%i][10]/I", Nclusters)
-                    );
+  _tree->Branch("pad_charge",
+                &_pad_charge,
+                TString::Format("_pad_charge[%i][10]/I", Nclusters)
+                );
+  _tree->Branch("pad_time",
+                &_pad_time,
+                TString::Format("_pad_time[%i][10]/I", Nclusters)
+                );
 
-    _tree->Branch("wf_width",
-                    &_wf_width,
-                    TString::Format("_wf_width[%i][10]/I", Nclusters)
-                    );
+  _tree->Branch("wf_width",
+                &_wf_width,
+                TString::Format("_wf_width[%i][10]/I", Nclusters)
+                );
 
-    _tree->Branch("wf_fwhm",
-                    &_wf_fwhm,
-                    TString::Format("_wf_fwhm[%i][10]/I", Nclusters)
-                    );
+  _tree->Branch("wf_fwhm",
+                &_wf_fwhm,
+                TString::Format("_wf_fwhm[%i][10]/I", Nclusters)
+                );
 
-    _tree->Branch("pad_x",
-                    &_pad_x,
-                    TString::Format("_pad_x[%i][10]/I", Nclusters)
-                    );
-    _tree->Branch("pad_y",
-                    &_pad_y,
-                    TString::Format("_pad_y[%i][10]/I", Nclusters)
-                    );
-    
-    
+  _tree->Branch("pad_x",
+                &_pad_x,
+                TString::Format("_pad_x[%i][10]/I", Nclusters)
+                );
+  _tree->Branch("pad_y",
+                &_pad_y,
+                TString::Format("_pad_y[%i][10]/I", Nclusters)
+                );
 
   _output_vector.push_back(_tree);
 
@@ -482,14 +425,15 @@ bool SpatialResolAna::Initialize() {
 
   _fitter = new TrackFitCern(shape,
                              _invert,
-                             _diagonal,
                              _verbose,
                              _iteration,
                              _PRF_function,
+                             _PRF_graph,
                              fit_bound_right,
                              _charge_uncertainty,
                              _PRF_time_func,
-                             _PRF_time_e
+                             _PRF_time_e,
+                             _clustering->angle
                              );
 
   // Initialize timers
@@ -516,20 +460,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose >= v_event_number)
       std::cout << "Track id = " << trackId << std::endl;
 
-    if (!sel::CrossingTrackSelection(track, _invert, _verbose))
-      continue;
-
-    std::vector<double> fit_v = sel::GetFitParams(track, _invert);
-    std::vector<double> fit_xz = sel::GetFitParamsXZ(track, _invert);
-
-    _angle_xy = fit_v[2];
-    _angle_yz = fit_xz[2] * sel::v_drift_est;
-
     _ev = event->GetID();
 
-    _store_event = true;
+    _quality    = -999.;
+    _mom        = -999.;
+    _sin_alpha  = -999.;
+    _offset     = -999.;
+    _rob_clusters = -999;
 
-    int cluster[Nclusters];
     int cluster_N[Nclusters];
     double track_pos[Nclusters];
     double cluster_mean[Nclusters];
@@ -555,10 +493,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _dEdx               = -999;
 
       for (auto padId = 0; padId < 10; ++padId) {
-        _dx[colId][padId]   = -999;
-        _time[colId][padId]   = -999;
+        _dx[colId][padId]    = -999;
+        _time[colId][padId]  = -999;
         _qfrac[colId][padId] = -999;
-          
+
           //dEdx part
           _pad_charge[colId][padId] = -999;
           _pad_time[colId][padId] = -999;
@@ -568,7 +506,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           _wf_fwhm[colId][padId] = -999;
       }
 
-      cluster[colId]       = 0;
       cluster_N[colId]     = 0;
       charge_max[colId]    = 0;
       track_pos[colId]     = -999.;
@@ -580,33 +517,53 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 // *******************  STEP 1 *************************************************
 
     std::vector<TCluster*> clusters;
-    if (_diagonal)
-      clusters = DiagonolizeTrack(track);
-    else
-      clusters = ColonizeTrack(track);
+    clusters = ClusterTrack(track, &Clustering::GetConstant, *_clustering);
 
     if (_verbose >= v_analysis_steps)
-      std::cout << "Clusterization done" << std::endl;
+      std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
-    if (_diagonal) {
-      if (clusters.size() < 10)
+    std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
+
+    _angle_xy = fit_v[2];
+    _angle_yz = fit_xz[2] * sel::v_drift_est;
+
+    // selection
+    if (!sel::CrossingTrackSelection(clusters,
+                                     _max_mult,
+                                     _cut_gap,
+                                     _max_phi,
+                                     _max_theta,
+                                     _invert,
+                                     _verbose
+                                     ))
+      continue;
+
+    // if not a column clustering
+    if (_clustering->n_pads > 0) {
+      if (clusters.size() < 5)
         continue;
-      // clean first and last column
+      // clean first and last cluster
       sort(clusters.begin(), clusters.end(),
            [&](TCluster* cl1, TCluster* cl2){
               return cl1->GetX() < cl2->GetX();
             });
-      clusters.erase(clusters.begin());
+      clusters.erase(clusters.begin(), clusters.begin() + 1);
       clusters.erase(clusters.end()-1);
     }
+    // cut on the number of clusters
+    if (clusters.size() < uint(_min_clusters))
+      continue;
     // truncation
     auto robust_clusters = GetRobustCols(clusters);
 
     if (_verbose >= v_analysis_steps)
       std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
-    if (_diagonal && robust_clusters.size() < 40)
-      continue;
+    _rob_clusters = robust_clusters.size();
+
+    /// decide that track is accepted by selection
+    _store_event = true;
 // *******************  STEP 2 *************************************************
 
     if (_verbose >= v_analysis_steps)
@@ -614,7 +571,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
       auto cluster = robust_clusters[clusterId];
-      if (!cluster->GetHits()[0])
+      if (!(&cluster[0]))
         continue;
 
       // loop over rows
@@ -629,14 +586,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
         _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
                                                           _invert,
-                                                          _diagonal ? units::a45 : 0);
+                                                          _clustering->angle);
         _charge[clusterId] += pad->GetQ();
       } // loop over pads
 
       _clust_pos[clusterId] /= _charge[clusterId];
-      _x[clusterId] = geom::GetXposPad(robust_pads[0],
-                                       _invert,
-                                       _diagonal ? units::a45 : 0);
+      _x[clusterId] = cluster->GetX();
 
       double CoC =  _clust_pos[clusterId];
 
@@ -656,7 +611,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       cluster->SetCharge(_charge[clusterId]);
 
       if (_verbose >= v_fit_details) {
-        for (auto pad:cluster->GetHits()) {
+        for (auto pad:*cluster) {
           std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
         }
         std::cout << std::endl;
@@ -667,16 +622,32 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
       // TODO review this mess
-      if (cluster->GetHits().size() == 1) {
+      if (cluster->GetSize() == 1) {
         cluster->SetYE(0.002);
       } else {
-        if (_diagonal)
+        // if not a column clustering
+        if (_clustering->n_pads > 0)
           cluster->SetYE(0.0008);
-        else
+        else {
+          /** DEV VERSION */
+          // auto half_size = 0.5 * geom::dy;
+          // auto dx_from_side = fmod(abs(cluster->GetY()), geom::dy);
+          // if (dx_from_side > half_size)
+          //   dx_from_side -= half_size;
+          // else
+          //   dx_from_side = half_size - dx_from_side;
+          // auto dy = 200 - 100 * dx_from_side / half_size;
+          // dy *= 1e-6;
+          // cluster->SetYE(dy);
+          /** END OF DEV */
+
+          /** OLD VERSION below */
           if (_iteration)
             cluster->SetYE(_uncertainty);
           else
             cluster->SetYE(0.001);
+
+        }
       }
 
       if (_verbose >= v_residuals) {
@@ -686,21 +657,16 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     } // loop over clusters
 
     std::vector<TCluster*> clusters_clean;
-    if (_diagonal) {
+    // if not a column clustering
+    if (_clustering->n_pads > 0) {
       // average 2 measurements into one
       for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
         auto cluster1 = robust_clusters[pairIt+0];
         auto cluster2 = robust_clusters[pairIt+1];
         if (!cluster1 || !cluster2)
           continue;
-        float x1 = geom::GetXposPad(cluster1->GetHits()[0],
-                                    _invert,
-                                    units::a45
-                                    );
-        float x2 = geom::GetXposPad(cluster2->GetHits()[0],
-                                    _invert,
-                                    units::a45
-                                    );
+        float x1 = cluster1->GetX();
+        float x2 = cluster2->GetX();
         float av_x = 0.5 * (x1 + x2);
 
         float y1 = cluster1->GetY();
@@ -735,6 +701,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     TF1* fit = NULL;
     fit = _fitter->FitTrack(clusters_clean);
+    _track_fit_func = fit;
 
     if (!fit)
       continue;
@@ -743,8 +710,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (fit && _do_full_track_fit)
       fit = (TF1*)fit->Clone();
 
-    double quality = fit->GetChisquare() / fit->GetNDF();
-    _Chi2_track->Fill(quality);
+    _quality = fit->GetChisquare() / fit->GetNDF();
+    _Chi2_track->Fill(_quality);
 
     if (_verbose >= v_analysis_steps)
       std::cout << "Track fit done" << std::endl;
@@ -759,6 +726,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _mom_reco->Fill(mom);
       _pos_reco->Fill(fit->GetParameter(2));
       _ang_reco->Fill(fit->GetParameter(1));
+
+      _mom        = mom;
+      _sin_alpha  = fit->GetParameter(1);
+      _offset     = fit->GetParameter(2);
     }
 
 //****************** STEP 4 ****************************************************
@@ -792,9 +763,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (_verbose >= v_residuals) {
         std::cout << "Residuals id:x:cluster:track\t" << clusterId << "\t";
         std::cout << _x_av[clusterId] << "\t";
-        std::cout << clusters_clean[clusterId]->GetY() << "\t";
+        std::cout << cluster->GetY() << "\t";
         std::cout << track_fit_y << "\t";
-        std::cout << (clusters_clean[clusterId]->GetY() - track_fit_y)*1e6;
+        std::cout << (cluster->GetY() - track_fit_y)*1e6;
         std::cout << std::endl;
       }
 
@@ -808,17 +779,18 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     }
 
 // ************ STEP 6 *********************************************************
-      
+
       std::vector <double> QsegmentS; QsegmentS.clear();
 
     for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
-      a_peak_fit[clusterId] = clusters[clusterId]->GetCharge();
+      auto cluster = clusters[clusterId];
+      a_peak_fit[clusterId] = cluster->GetCharge();
 
       // don't fill PRF for multiplicity of 1
-      if (clusters[clusterId]->GetHits().size() == 1)
+      if (cluster->GetSize() == 1)
         continue;
       // Fill PRF
-      auto robust_pads = GetRobustPadsInColumn(clusters[clusterId]->GetHits());
+      auto robust_pads = GetRobustPadsInColumn(cluster->GetHits());
       int padId = 0;
       int colQ = 0;
 
@@ -829,22 +801,25 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         auto q    = pad->GetQ();
         auto time = pad->GetTime();
 
-        double x = geom::GetXposPad(pad, _invert, _diagonal ? units::a45 : 0);
+        double x = geom::GetXposPad(pad, _invert, _clustering->angle);
+        // double x = cluster->GetX();
         double center_pad_y = geom::GetYposPad(pad,
                                                _invert,
-                                               _diagonal ? units::a45 : 0
+                                               _clustering->angle
                                                );
 
         double track_fit_y    = fit->Eval(x);
 
-        /// WARNING only 9 first pads are used
+        /// WARNING only 10 first pads are used
         if (padId > 9)
           continue;
 
-        _time[clusterId][padId]    = time;
+        // Pad characteristics
+        // time, position wrt track, charge, col/row
+        _time[clusterId][padId]  = time;
         _dx[clusterId][padId]    = center_pad_y - track_fit_y;
         _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
-          
+
           //dEdx part
           colQ+= pad->GetQ();
 
@@ -855,8 +830,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           _wf_width[clusterId][padId] = pad->GetWidth();
           _wf_fwhm[clusterId][padId] = pad->GetFWHM();
 
+        _pad_x[clusterId][padId] = pad->GetCol(_invert);
+        _pad_y[clusterId][padId] = pad->GetRow(_invert);
+
         if (_verbose >= v_prf) {
-          std::cout << "PRF fill\t" << _dx[clusterId][padId] << "\t" << _qfrac[clusterId][padId] << std::endl;
+          std::cout << "PRF fill\t" << _dx[clusterId][padId];
+          std::cout << "\t" << _qfrac[clusterId][padId] << std::endl;
         }
 
         // fill PRF
@@ -880,13 +859,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                  _qfrac[clusterId][padId]
                                  );
 
-        _PRF_time->Fill(_dx[clusterId][padId], _time[clusterId][padId] - _time[clusterId][0]);
+        if (padId > 0)
+          _PRF_time->Fill(_dx[clusterId][padId], _time[clusterId][padId] - _time[clusterId][0]);
 
         // robust_pads are assumed sorted!!
         ++padId;
       }
         if (colQ) QsegmentS.push_back(colQ);
-    } // loop over colums
+    } // loop over columns
     _sw_partial[4]->Stop();
     for (int i = 0; i < Nclusters; ++i)
       if (fit1[i] && _correction) {
@@ -894,88 +874,30 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         fit1[i] = NULL;
       }
 
-    delete fit;
-
     if(_test_mode) this->DrawSelectionCan(event,trackId);
     if (!_batch)
       Draw();
+    delete fit;
 
-      //dEdx calculations
-      double alpha = 0.7;
-      sort(QsegmentS.begin(), QsegmentS.end());
-      double totQ = 0.;
-      Int_t i_max = round(alpha * QsegmentS.size());
-      for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
-      float CT= totQ / (alpha * QsegmentS.size());
-      //_hdEdx->Fill(CT);
+    //dEdx calculations
+    double alpha = 0.7;
+    sort(QsegmentS.begin(), QsegmentS.end());
+    double totQ = 0.;
+    Int_t i_max = round(alpha * QsegmentS.size());
+    for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
+    float CT= totQ / (alpha * QsegmentS.size());
+    //_hdEdx->Fill(CT);
 
-      //_npoints = QsegmentS.size();
-      _dEdx = CT;
-      _hdEdx->Fill(CT);
-      
+    //_npoints = QsegmentS.size();
+    _dEdx = CT;
+    _hdEdx->Fill(CT);
+    _tree->Fill();
   } // loop over tracks
-
-  _tree->Fill();
 
   if (_store_event)
     _passed_events.push_back(event->GetID());
 
   return true;
-}
-
-//******************************************************************************
-TCanvas* SpatialResolAna::DrawSelectionCan(const TEvent* event, int trkID) {
-//******************************************************************************
-  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
-                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
-  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
-
-  for (auto x = 0; x < geom::nPadx; ++x) {
-    for (auto y = 0; y < geom::nPady; ++y) {
-      auto max = 0;
-      for (auto t = 0; t < geom::Nsamples; ++t) {
-        if (_padAmpl[x][y][t] > max) {
-          max = _padAmpl[x][y][t];
-        }
-      } // over t
-      if (max)
-        MM->Fill(x, y, max);
-    }
-  }
-
-  // sel hits
-  for (auto h:event->GetTracks()[trkID]->GetHits()){
-    if(!h->GetQ()) continue;
-    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
-    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
-  }
-
-  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
-  canv->Divide(3,1);
-  canv->cd(1);
-  if (MM->Integral())
-    MM->Draw("colz");
-  //_PRF_histo->Draw("COLZ");
-  canv->cd(2);
-  MMsel->Draw("COLZ");
-
-  canv->cd(3);
-  event3D->Draw("x:y:z:c","","box2");
-  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
-  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
-  htemp->GetYaxis()->SetLimits(0,geom::nPady);
-  htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");
-  canv->Update();
-  return canv;
-  //canv->WaitPrimitive();
-  /*delete htemp;
-  delete canv;
-
-  delete MM;
-  delete MMsel;
-  delete event3D;*/
 }
 
 //******************************************************************************
@@ -994,7 +916,9 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
   std::cout << "PRF fit..................................";
 
-  _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+  // MAGIC
+  for (auto i = 0; i < 3; ++i)
+    _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
   // _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
   // _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
   // _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
@@ -1184,12 +1108,14 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
   if (!PRF_h)
     return false;
 
+  gr->Set(0);
+
   // Float_t threshold = 0.05 * PRF_h->GetMaximum();
   Float_t threshold = 0.;
 
   for (auto i = 1; i < PRF_h->GetXaxis()->GetNbins(); ++i) {
 
-    TH1D* temp_h = PRF_h->ProjectionY(Form("projections_bin_%i", i), i, i);
+    TH1F* temp_h = (TH1F*)PRF_h->ProjectionY(Form("projections_bin_%i", i), i, i);
     if (!temp_h)
       return false;
 
@@ -1199,15 +1125,8 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
     double x = PRF_h->GetXaxis()->GetBinCenter(i);
     double y = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
-    float max = temp_h->GetMaximum();
-
-    auto start  = temp_h->GetBinCenter(temp_h->FindFirstBinAbove(max/2));
-    auto end    = temp_h->GetBinCenter(temp_h->FindLastBinAbove(max/2));
-
-    float e = end - start;
-
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1, 0, e/2.);
+    gr->SetPointError(gr->GetN()-1, 0, GetFWHM(temp_h)/2.);
   } // end of PRF histo profiling
 
   return true;
@@ -1220,13 +1139,13 @@ bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PR
     return false;
 
   // Float_t threshold = 0.05 * PRF_h->GetMaximum();
-  Float_t threshold = 0.;
+  Float_t threshold = 1.;
 
   auto start = PRF_h->GetYaxis()->FindBin(0.);
 
-  for (auto i = start-1; i < PRF_h->GetYaxis()->GetNbins(); ++i) {
+  for (auto i = start+1; i < PRF_h->GetYaxis()->GetNbins(); ++i) {
 
-    TH1D* temp_h = PRF_h->ProjectionX(Form("projections_bin_%i", i), i, i);
+    TH1F* temp_h = (TH1F*)PRF_h->ProjectionX(Form("projections_bin_%i", i), i, i);
     if (!temp_h)
       return false;
 
@@ -1239,20 +1158,19 @@ bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PR
     double y = PRF_h->GetYaxis()->GetBinCenter(i);
     double x = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
-    float max = temp_h->GetMaximum();
-
-    auto start  = temp_h->GetBinCenter(temp_h->FindFirstBinAbove(max/2));
-    auto end    = temp_h->GetBinCenter(temp_h->FindLastBinAbove(max/2)) +
-                  temp_h->GetBinWidth(temp_h->FindLastBinAbove(max/2));
-
-    float e = end - start;
-
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1,  e/2., 0.);
-    PRF_time_e->Fill(y, e/2);
+    gr->SetPointError(gr->GetN()-1,  GetFWHM(temp_h)/2., 0.);
+    PRF_time_e->Fill(y, GetFWHM(temp_h)/2);
   } // end of PRF histo profiling
 
   return true;
+}
+
+//******************************************************************************
+Double_t SpatialResolAna::GetFWHM(const TH1F* h) {
+//******************************************************************************
+  auto mean = 0.;
+  return GetFWHM(h, mean);
 }
 
 //******************************************************************************
@@ -1313,9 +1231,12 @@ TF1* SpatialResolAna::InitializePRF(const TString name) {
 bool SpatialResolAna::Draw() {
   std::cout << "Draw event " << _ev << std::endl;
   TCanvas c("c_SR", "c_SR", 800, 600);
+  TCanvas c2("c_resid", "c_resid", 800, 0, 800, 600);
   TGraphErrors* gr = new TGraphErrors();
   TGraphErrors* gr_f = new TGraphErrors();
   TGraphErrors* gr_c = new TGraphErrors();
+  TGraphErrors* gr_res_cl = new TGraphErrors();
+  TGraphErrors* gr_res_av = new TGraphErrors();
   auto scale = 1.e3;
   for (auto colIt = 0; colIt < 70; ++colIt) {
     if (_cluster_av[colIt] == -999)
@@ -1323,6 +1244,10 @@ bool SpatialResolAna::Draw() {
 
     gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_cluster_av[colIt]);
     gr_f->SetPoint(gr_f->GetN(), scale*_x_av[colIt], scale*_track_pos[colIt]);
+
+    gr_res_av->SetPoint(gr_res_av->GetN(),
+                        scale*_x_av[colIt],
+                        scale*(_cluster_av[colIt] - _track_pos[colIt]));
   }
 
   for (auto colIt = 0; colIt < 70; ++colIt) {
@@ -1330,8 +1255,16 @@ bool SpatialResolAna::Draw() {
       continue;
 
     gr_c->SetPoint(gr_c->GetN(), scale*_x[colIt], scale*_clust_pos[colIt]);
+
+    double track_pos = 0.;
+    if (_track_fit_func)
+      track_pos = _track_fit_func->Eval(_x[colIt]);
+    gr_res_cl->SetPoint(gr_res_cl->GetN(),
+                        scale*_x[colIt],
+                        scale*(_clust_pos[colIt] - track_pos));
   }
 
+  c.cd();
   gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));
   gr_c->GetYaxis()->SetTitle("Reference Y, [mm]");
   gr_c->GetXaxis()->SetTitle("Reference X, [mm]");
@@ -1344,7 +1277,20 @@ bool SpatialResolAna::Draw() {
   gr_f->SetLineColor(kRed);
   gr_f->Draw("same l");
   c.Update();
-  c.WaitPrimitive();
+
+
+  c2.cd();
+  gPad->SetGrid();
+  gr_res_cl->SetMarkerStyle(kPlus);
+  gr_res_cl->GetYaxis()->SetTitle("Track Y, [mm]");
+  gr_res_cl->GetXaxis()->SetTitle("Track X, [mm]");
+  gr_res_cl->Draw("ap");
+
+  gr_res_av->Draw("p same");
+  c2.Update();
+
+
+  c2.WaitPrimitive();
   return true;
 }
 
@@ -1355,5 +1301,61 @@ int main(int argc, char** argv) {
   if (!ana->WriteOutput())              return -1;
 
   return 0;
+}
+
+
+//******************************************************************************
+TCanvas* SpatialResolAna::DrawSelectionCan(const TEvent* event, int trkID) {
+//******************************************************************************
+  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
+                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
+  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      auto max = 0;
+      for (auto t = 0; t < geom::Nsamples; ++t) {
+        if (_padAmpl[x][y][t] > max) {
+          max = _padAmpl[x][y][t];
+        }
+      } // over t
+      if (max)
+        MM->Fill(x, y, max);
+    }
+  }
+
+  // sel hits
+  for (auto h:event->GetTracks()[trkID]->GetHits()){
+    if(!h->GetQ()) continue;
+    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
+    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
+  }
+
+  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  canv->Divide(3,1);
+  canv->cd(1);
+  if (MM->Integral())
+    MM->Draw("colz");
+  //_PRF_histo->Draw("COLZ");
+  canv->cd(2);
+  MMsel->Draw("COLZ");
+
+  canv->cd(3);
+  event3D->Draw("x:y:z:c","","box2");
+  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
+  htemp->GetYaxis()->SetLimits(0,geom::nPady);
+  htemp->GetZaxis()->SetLimits(0,500);
+  htemp->SetTitle("");
+  canv->Update();
+  return canv;
+  //canv->WaitPrimitive();
+  /*delete htemp;
+  delete canv;
+
+  delete MM;
+  delete MMsel;
+  delete event3D;*/
 }
 

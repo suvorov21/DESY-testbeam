@@ -11,7 +11,7 @@ def main():
 
     multithread = False
 
-    TEvent = False
+    TEvent = True
     Niter = 10
 
     split = 10
@@ -39,6 +39,7 @@ def main():
 
     if multithread:
         import ROOT
+        input_file = input_path+input_name
         f = ROOT.TFile(input_file, 'READ')
         try:
             Nentries = f.tree.GetEntries()
