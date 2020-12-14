@@ -25,7 +25,7 @@ struct Node{
     int whm = -999; // WF WHM
 };
 
-struct Cluster{
+struct DB_Cluster{
     int size = 0;
     int id   = -999;      // cluster ID
     // TODO make it a vector to prevent overflow
@@ -38,14 +38,29 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual ~DBSCANReconstruction() {;}
 
   virtual bool Initialize(int verbose);
-  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
-  virtual std::vector<Node> FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
+  virtual bool SelectEvent(
+                const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                TEvent* event
+                );
+  /// Initial fill of nodes
+  virtual std::vector<Node> FillNodes(
+                const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
   virtual double MeasureDistance(Node a, Node b);
+  /// Merge nodes into clusters
   virtual std::vector<Node> FindClusters(std::vector<Node> nodes);
-  virtual std::vector<Cluster> FindClustersLargerThan(std::vector<Node> nodes, int minNodes);
-  virtual std::vector <Node> UpdateNodes(std::vector <Cluster> clusters, std::vector <Node> nodes);
+  /// Search for large enough clusters
+  virtual std::vector<DB_Cluster> FindClustersLargerThan(std::vector<Node> nodes,
+                                                         int minNodes
+                                                         );
+  /// Assotiate nodes with clusters
+  virtual std::vector <Node> UpdateNodes(std::vector <DB_Cluster> clusters,
+                                         std::vector <Node> nodes);
   virtual void DrawNodes(std::vector<Node> nodes);
-  virtual bool FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, TEvent* event);
+
+  /// Fill the output TEvent from clusters of nodes
+  virtual bool FillOutput(std::vector<Node> nodes,
+                          std::vector<DB_Cluster> clusters,
+                          TEvent* event);
 
  private:
 
