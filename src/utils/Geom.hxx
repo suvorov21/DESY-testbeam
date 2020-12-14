@@ -75,8 +75,11 @@ namespace units {
     const float a45     =   0.83612313;
     const float a2      =   1.1465425;
     const float a3      =   1.2783096;
+    const float a32     =   1.0287271;
+
     const float a2_inv  =   1.0652823;
     const float a3_inv  =   1.2173058;
+    const float a32_inv =   0.93503353;
 }
 
 #endif

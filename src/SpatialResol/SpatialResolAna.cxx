@@ -540,7 +540,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       continue;
 
     // if not a column clustering
-    if (_clustering->n_pads > 0) {
+    if (_clustering->coeff > 0.01) {
       if (clusters.size() < 5)
         continue;
       // clean first and last cluster
@@ -626,7 +626,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         cluster->SetYE(0.002);
       } else {
         // if not a column clustering
-        if (_clustering->n_pads > 0)
+        if (_clustering->coeff > 0.01)
           cluster->SetYE(0.0008);
         else {
           /** DEV VERSION */
@@ -658,7 +658,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     std::vector<TCluster*> clusters_clean;
     // if not a column clustering
-    if (_clustering->n_pads > 0) {
+    if (_clustering->coeff > 0.01) {
       // average 2 measurements into one
       for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
         auto cluster1 = robust_clusters[pairIt+0];

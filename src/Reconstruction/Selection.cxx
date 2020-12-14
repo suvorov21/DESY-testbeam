@@ -14,16 +14,16 @@ bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
 //******************************************************************************
 
   auto m_max = sel::GetMaxMultiplicity(track);
-  auto n_gap = sel::GetNoGap(track, invert);
+  auto no_gap = sel::GetNoGap(track, invert);
   if (verbose > 1) {
     std::cout << "SELECTION " << std::endl;
     std::cout << "Max mult\t" << m_max << " < " << max_mult << std::endl;
-    std::cout << "Gap\t" << n_gap << std::endl;
+    std::cout << "No gap\t" << no_gap << std::endl;
     std::cout << "Linear Phi\t" << GetLinearPhi(track, invert) << std::endl;
     std::cout << "Linear theta\t" << GetLinearTheta(track, invert) << std::endl;
   }
   if (m_max > max_mult) return false;
-  if (!n_gap && cut_gap) return false;
+  if (!no_gap && cut_gap) return false;
 
   if (max_phi > 0 && abs(GetLinearPhi(track, invert)) > max_phi) return false;
   if (max_theta > 0 && abs(GetLinearTheta(track, invert)) > max_theta) return false;

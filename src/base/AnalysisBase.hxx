@@ -27,19 +27,22 @@ class TCluster;
 class Clustering {
 public:
   Clustering(Float_t a,
-             Int_t np
-             ):angle(a), n_pads(np){;}
+             Float_t coef
+             ):angle(a), coeff(coef){;}
   virtual ~Clustering(){;};
   /// angle of a reference frame rotation
   Float_t angle;
   /// number of pads in a row. E.g. 1by1, 2by1, 3by1
-  Int_t n_pads;
+  // Int_t n_pads;
+  /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
+  Float_t coeff;
   /// Function of row and column that is constant for a given cluster
   int GetConstant(int row, int col) {
-    if (n_pads == 0)
+    if (abs(coeff) < 0.01)
       return col;
-    else
-      return (col - n_pads*row) / (n_pads);
+    else {
+      return (round(coeff * col - row));
+    }
   }
 };
 
@@ -93,6 +96,7 @@ class AnalysisBase {
   Clustering* CL_diag;
   Clustering* CL_2by1;
   Clustering* CL_3by1;
+  Clustering* CL_3by2;
 
   /// An actual clustering precedure
   Clustering* _clustering;

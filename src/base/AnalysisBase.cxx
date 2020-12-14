@@ -117,11 +117,11 @@ bool AnalysisBase::Initialize() {
 
   // WARNING
   // A very dirty adoptation of angles
-  CL_col = new Clustering(0., 0);
-  CL_diag = new Clustering(units::a45, 1);
-  CL_2by1 = new Clustering(units::a2, 2);
-  CL_3by1 = new Clustering(units::a3, 3);
-
+  CL_col = new Clustering(0., 0.);
+  CL_diag = new Clustering(units::a45, 1.);
+  CL_2by1 = new Clustering(units::a2, 1./2.);
+  CL_3by1 = new Clustering(units::a3, 1./3.);
+  CL_3by2 = new Clustering(units::a32, 2./3.);
 
   // Read parameter file
   if (!ReadParamFile()) {
@@ -132,6 +132,7 @@ bool AnalysisBase::Initialize() {
   if (_invert) {
     CL_2by1->angle = units::a2_inv;
     CL_3by1->angle = units::a3_inv;
+    CL_3by2->angle = units::a32_inv;
   }
 
   // read the first root file and decide
@@ -716,6 +717,11 @@ bool AnalysisBase::ReadParamFile() {
           _clustering = CL_2by1;
         } else if (value == "3by1") {
           _clustering = CL_3by1;
+        } else if (value == "3by2") {
+          _clustering = CL_3by2;
+        } else {
+          std::cerr << "ERROR. Unknown clustering " << value << std::endl;
+          return false;
         }
       } else if (name  == "invert") {
         if (value == "1") {
@@ -726,8 +732,11 @@ bool AnalysisBase::ReadParamFile() {
         if (value == "gaus_lorentz") {
           _gaus_lorentz_PRF = true;
           std::cout << "PRF is fit with Gaussian-Lorentzian" << std::endl;
-        } else {
+        } else if (value == "pol4") {
           std::cout << "PRF is fit with 4th degree polinom" << std::endl;
+        } else {
+          std::cerr << "ERROR. Unknown PRF function " << value << std::endl;
+          return false;
         }
       } else if (name == "track_shape") {
         if (value == "parabola") {
@@ -736,8 +745,11 @@ bool AnalysisBase::ReadParamFile() {
         } else if (value == "linear") {
           _do_linear_fit = true;
           std::cout << "Linear track fit is used" << std::endl;
-        } else {
+        } else if (value == "arc") {
           std::cout << "Arc track fit is used" << std::endl;
+        } else {
+          std::cerr << "ERROR. Unknown track shape " << value << std::endl;
+          return false;
         }
       } else if (name == "max_mult") {
         _max_mult = TString(value).Atoi();
