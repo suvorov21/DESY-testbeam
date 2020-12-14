@@ -8,7 +8,7 @@
 const double alpha = 0.625;
 
 
-/// Spatial resolution analysis
+/// dE/dx resolution analysis
 class dEdxAna: public AnalysisBase {
  public:
   dEdxAna(int argc, char** argv);

@@ -679,6 +679,11 @@ bool AnalysisBase::ReadParamFile() {
 //******************************************************************************
   char *homePath(getenv("SOFTDIR"));
 
+  if (getenv("SOFTDIR") == NULL) {
+    std::cerr << "SOFTDIR varaible is not specified!" << std::endl;
+    std::cerr << "Consider sourcing setup.sh" << std::endl;
+    return false;
+  }
   if (_param_file_name == ""){
     _param_file_name = std::string(homePath) + "/params/default.ini";
   }

@@ -63,10 +63,11 @@ The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main
 2. Diagonal clustering
 3. 2by1 cluster
 4. 3by1 cluster
+
 They could be switched in the parameter file
 
 ### Track fitters
-Track fitters are defined at `TrackFitter.cxx` file. That's how the position in the particular cluster is reconstructed. Afterwards clusters are fir together into track. One can define its own class that will do a position fitting with any algorithm one want to test.
+Track fitters are defined at `TrackFitter.cxx` file. That's how the position in the particular cluster is reconstructed. Afterwards clusters are fit together into track. One can define its own class that will do a position fitting with any algorithm one want to test.
 
 ### Robust pads and columns to use
 In the analysis one can work only with THit and TCluster that are "robust". E.g. clusters with larger charge can be truncated; only 2 pads in the cluster can be used and so on. Functions AnalysisBase::GetRobustPadsInColumn() and AnalysisBase::GetRobustCols() may contain conditions to select certain clusters and pads. By default, no additional conditions are applied.
@@ -75,7 +76,7 @@ In the analysis one can work only with THit and TCluster that are "robust". E.g.
 ### Contributing to project
 Please check `CONTRIBUTING.md` file with simple suggestions and advices about contribution procedure.
 
-## The road map to start completely new analysis
+## The road map to start a completely new analysis
 You can start a completely new analysis that has nothing in common with the existing ones
 
 1. Create your analysis class inheriting from AnalysisBase. Optionally you can put it in your separate folder.
