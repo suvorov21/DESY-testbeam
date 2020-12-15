@@ -782,6 +782,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       std::vector <double> QsegmentS; QsegmentS.clear();
 
+    // PRF is filled for all the clusters!
     for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
       auto cluster = clusters[clusterId];
       a_peak_fit[clusterId] = cluster->GetCharge();
