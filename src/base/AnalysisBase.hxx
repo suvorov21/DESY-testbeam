@@ -32,8 +32,6 @@ public:
   virtual ~Clustering(){;};
   /// angle of a reference frame rotation
   Float_t angle;
-  /// number of pads in a row. E.g. 1by1, 2by1, 3by1
-  // Int_t n_pads;
   /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
   Float_t coeff;
   /// Function of row and column that is constant for a given cluster
@@ -41,7 +39,7 @@ public:
     if (abs(coeff) < 0.01)
       return col;
     else {
-      return (round(coeff * col - row));
+      return (floor(coeff * col - row));
     }
   }
 };
