@@ -144,6 +144,7 @@ def main():
 
             # create a bash file with a job
             file_out.write("#!/bin/bash\n")
+            file_out.write("cd " + bin_dir + "\n")
             if submit:
                 file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
                 file_out.write("source /afs/cern.ch/work/s/ssuvorov/public/ROOT/root-6.18.00-build_gcc73/bin/thisroot.sh\n")
