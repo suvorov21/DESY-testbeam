@@ -123,13 +123,13 @@ bool SpatialResolAna::Initialize() {
     if (_individual_column_PRF) {
       auto tree = (TTree*)_Prev_iter_file->Get("outtree");
       _PRF_function_arr = new TF1*[36];
-      for (auto colId = 0; colId < _clustering->n_pads; ++colId) {
+      for (auto colId = 0; colId < geom::GetMaxColumn(_invert); ++colId) {
         _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", true);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
         TString s = TString().Itoa(_clustering->n_pads, 10);
         TString r = TString().Itoa(colId, 10);
-        tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
+        tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
         TGraphErrors* gr_tmp = new TGraphErrors();
         ProfilePRF(tmp, gr_tmp);
         for (auto i = 0; i < 3; ++i)
@@ -487,7 +487,7 @@ bool SpatialResolAna::Initialize() {
     _fitter->SetComplicatedPatternPRF(true);
   }
 
-  if (_individual_column_PRF) {
+  if (_individual_column_PRF && _iteration) {
     _fitter->SetPRFarr(_PRF_function_arr, 36);
     _fitter->SetIndividualPRF(true);
   }

@@ -711,13 +711,16 @@ bool AnalysisBase::ReadParamFile() {
       if (name == "cluster") {
         if (value == "column") {
           _clustering = CL_col;
+          std::cout << "Column cluster is used" << std::endl;
         } else if (value == "diag") {
           _clustering = CL_diag;
           std::cout << "Diagonal cluster is used" << std::endl;
         } else if (value == "2by1") {
           _clustering = CL_2by1;
+          std::cout << "2by1 cluster is used" << std::endl;
         } else if (value == "3by1") {
           _clustering = CL_3by1;
+          std::cout << "3by1 cluster is used" << std::endl;
         // } else if (value == "3by2") {
         //   _clustering = CL_3by2;
         } else {

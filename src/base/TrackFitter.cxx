@@ -100,15 +100,21 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
       if (abs(center_pad_y - pos) > _fit_bound)
         continue;
 
+      TF1* PRF_tmp = _PRF_function;
+
       if (_PRF_size && _complicated_pattern_PRF) {
         auto prf_it = abs(colId % _PRF_size);
-        _PRF_function = _PRF_arr[prf_it];
+        PRF_tmp = _PRF_arr[prf_it];
       }
 
       if (_PRF_size && _individual_column_PRF)
-        _PRF_function = _PRF_arr[colId];
+        PRF_tmp = _PRF_arr[colId];
 
-      double part = (a - _PRF_function->Eval(center_pad_y - par[0]));
+      if (!PRF_tmp) {
+        std::cerr << "ERROR in TrackFitCern::FitCluster(). PRF is NULL" << std::endl;
+      }
+
+      double part = (a - PRF_tmp->Eval(center_pad_y - par[0]));
 
       if (_charge_uncertainty) {
         /** Poisson fluctuations only */
@@ -261,9 +267,8 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
 //******************************************************************************
 void TrackFitCern::SetPRFarr(TF1* f[], const int n) {
 //******************************************************************************
-  _PRF_arr = new TF1*[3];
+  _PRF_arr = new TF1*[n];
   for (auto i = 0; i < n; ++i) {
-    std::cout << i << "\t" << f[i]->GetName() <<  std::endl;
     _PRF_arr[i] = f[i];
   }
 
