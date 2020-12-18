@@ -59,9 +59,10 @@ TrackFitCern::TrackFitCern(TrackShape shape,
                _PRF_time_error(time_errors),
                _fit_bound(fit_bound),
                _charge_uncertainty(charge_uncertainty),
-               _angle(angle) {
+               _angle(angle),
+               _PRF_size(0) {
 //******************************************************************************
-  ;
+  _ax = new TAxis(50, -0.035, 0.015);
 }
 
 //******************************************************************************
@@ -86,6 +87,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
 
     for (auto pad:col) {
       auto q      = pad->GetQ();
+      auto colId  = pad->GetCol(_invert);
       if (!q)
         continue;
 
@@ -98,7 +100,15 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
       if (abs(center_pad_y - pos) > _fit_bound)
         continue;
 
-      double part = (a - _PRF_function->Eval(par[0] - center_pad_y));
+      if (_PRF_size && _complicated_pattern_PRF) {
+        auto prf_it = abs(colId % _PRF_size);
+        _PRF_function = _PRF_arr[prf_it];
+      }
+
+      if (_PRF_size && _individual_column_PRF)
+        _PRF_function = _PRF_arr[colId];
+
+      double part = (a - _PRF_function->Eval(center_pad_y - par[0]));
 
       if (_charge_uncertainty) {
         /** Poisson fluctuations only */
@@ -167,7 +177,15 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
   (void)ok;
   const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
 
-  return result_cluster.GetParams()[0];
+  auto fix = 0.;
+  /** DEV Try to fix a bias with correction */
+  // auto bin = _ax->FindBin(result_cluster.GetParams()[0]);
+
+  // if (bin > 0 && bin < 51)
+  //   fix = _corr[col[0]->GetCol()][bin-1];
+  /** */
+
+  return result_cluster.GetParams()[0] - fix;
 }
 
 //******************************************************************************
@@ -238,4 +256,16 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     return NULL;
 
   return fit;
+}
+
+//******************************************************************************
+void TrackFitCern::SetPRFarr(TF1* f[], const int n) {
+//******************************************************************************
+  _PRF_arr = new TF1*[3];
+  for (auto i = 0; i < n; ++i) {
+    std::cout << i << "\t" << f[i]->GetName() <<  std::endl;
+    _PRF_arr[i] = f[i];
+  }
+
+  _PRF_size = n;
 }

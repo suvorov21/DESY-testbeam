@@ -80,7 +80,7 @@ bool SpatialResolAna::Initialize() {
       exit(1);
     }
     // kind of magic that works.
-    // More fits betterr result
+    // More fits better result
     // seems that the tolerance is wronng somewhere in ROOT
     for (auto i = 0; i < 3; ++i)
       _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
@@ -93,6 +93,50 @@ bool SpatialResolAna::Initialize() {
       std::cout << "PRF function or resolution is not specified" << std::endl;
       std::cerr << "Search in " << _Prev_iter_name << std::endl;
       exit(1);
+    }
+
+    if (_clustering->n_pads > 0 && _individual_column_PRF) {
+      std::cerr << "ERROR. Conflicting options" << std::endl;
+      exit(1);
+    }
+
+    // Read PRF for complicated patterns
+    if (_clustering->n_pads > 1) {
+      auto tree = (TTree*)_Prev_iter_file->Get("outtree");
+      _PRF_function_arr = new TF1*[3];
+      for (auto rest = 0; rest < _clustering->n_pads; ++rest) {
+        _PRF_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
+
+        TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+        TString s = TString().Itoa(_clustering->n_pads, 10);
+        TString r = TString().Itoa(rest, 10);
+        tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
+        TGraphErrors* gr_tmp = new TGraphErrors();
+        ProfilePRF(tmp, gr_tmp);
+        for (auto i = 0; i < 3; ++i)
+          gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
+
+        _PRF_function_arr[rest] = (TF1*)gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", rest));
+      }
+    }
+
+    if (_individual_column_PRF) {
+      auto tree = (TTree*)_Prev_iter_file->Get("outtree");
+      _PRF_function_arr = new TF1*[36];
+      for (auto colId = 0; colId < _clustering->n_pads; ++colId) {
+        _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", true);
+
+        TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+        TString s = TString().Itoa(_clustering->n_pads, 10);
+        TString r = TString().Itoa(colId, 10);
+        tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
+        TGraphErrors* gr_tmp = new TGraphErrors();
+        ProfilePRF(tmp, gr_tmp);
+        for (auto i = 0; i < 3; ++i)
+          gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
+
+        _PRF_function_arr[colId] = (TF1*)gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", colId));
+      }
     }
 
     // Read PRF in time
@@ -436,6 +480,18 @@ bool SpatialResolAna::Initialize() {
                              _clustering->angle
                              );
 
+  if (_clustering->n_pads > 1 && _iteration) {
+    std::cout << _PRF_function_arr[0]->GetName() << std::endl;
+    std::cout << _PRF_function_arr[1]->GetName() << std::endl;
+    _fitter->SetPRFarr(_PRF_function_arr, _clustering->n_pads);
+    _fitter->SetComplicatedPatternPRF(true);
+  }
+
+  if (_individual_column_PRF) {
+    _fitter->SetPRFarr(_PRF_function_arr, 36);
+    _fitter->SetIndividualPRF(true);
+  }
+
   // Initialize timers
   _sw_partial[2] = new TStopwatch();
   _sw_partial[2]->Reset();
@@ -522,12 +578,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose >= v_analysis_steps)
       std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
-    std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
-    std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
-
-    _angle_xy = fit_v[2];
-    _angle_yz = fit_xz[2] * sel::v_drift_est;
-
     // selection
     if (!sel::CrossingTrackSelection(clusters,
                                      _max_mult,
@@ -539,8 +589,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                      ))
       continue;
 
+    std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
+    std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
+
+    _angle_xy = fit_v[2];
+    _angle_yz = fit_xz[2] * sel::v_drift_est;
+
     // if not a column clustering
-    if (_clustering->coeff > 0.01) {
+    if (_clustering->n_pads > 0) {
       if (clusters.size() < 5)
         continue;
       // clean first and last cluster
@@ -626,7 +682,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         cluster->SetYE(0.002);
       } else {
         // if not a column clustering
-        if (_clustering->coeff > 0.01)
+        if (_clustering->n_pads > 0)
           cluster->SetYE(0.0008);
         else {
           /** DEV VERSION */
@@ -658,7 +714,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     std::vector<TCluster*> clusters_clean;
     // if not a column clustering
-    if (_clustering->coeff > 0.01) {
+    if (_clustering->n_pads > 0) {
       // average 2 measurements into one
       for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
         auto cluster1 = robust_clusters[pairIt+0];
@@ -821,18 +877,16 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _dx[clusterId][padId]    = center_pad_y - track_fit_y;
         _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
 
-          //dEdx part
-          colQ+= pad->GetQ();
+        //dEdx part
+        colQ+= pad->GetQ();
 
-          _pad_charge[clusterId][padId] = q;
-          _pad_time[clusterId][padId] = time;
-          _pad_x[clusterId][padId] = pad->GetCol(_invert);
-          _pad_y[clusterId][padId] = pad->GetRow(_invert);
-          _wf_width[clusterId][padId] = pad->GetWidth();
-          _wf_fwhm[clusterId][padId] = pad->GetFWHM();
-
+        _pad_charge[clusterId][padId] = q;
+        _pad_time[clusterId][padId] = time;
         _pad_x[clusterId][padId] = pad->GetCol(_invert);
         _pad_y[clusterId][padId] = pad->GetRow(_invert);
+        _wf_width[clusterId][padId] = pad->GetWidth();
+        _wf_fwhm[clusterId][padId] = pad->GetFWHM();
+
 
         if (_verbose >= v_prf) {
           std::cout << "PRF fill\t" << _dx[clusterId][padId];
@@ -1190,7 +1244,7 @@ Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
 }
 
 //******************************************************************************
-TF1* SpatialResolAna::InitializePRF(const TString name) {
+TF1* SpatialResolAna::InitializePRF(const TString name, bool shift) {
 //******************************************************************************
   TF1* func;
   if (_gaus_lorentz_PRF) {
@@ -1209,22 +1263,34 @@ TF1* SpatialResolAna::InitializePRF(const TString name) {
     return func;
   }
 
+  TString formula;
+  if (!shift)
+    formula = "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)";
+  else
+    formula = "[0]*(1+[1]*(x-[5])*(x-[5]) + [2] * (x-[5])*(x-[5])*(x-[5])*(x-[5])) / (1+[3]*(x-[5])*(x-[5])+[4]*(x-[5])*(x-[5])*(x-[5])*(x-[5]))";
+
   func  = new TF1(name,
-    "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)",
+    formula,
     prf_min, prf_max);
   func->SetParName(0, "Const");
   func->SetParName(1, "a2");
   func->SetParName(2, "a4");
   func->SetParName(3, "b2");
   func->SetParName(4, "b4");
+  if (shift)
+    func->SetParName(5, "shift");
 
   double co = 0.85436010;
   double a2 = -1919.1462;
   double a4 = 17575063.;
   double b2 = 627.88307;
   double b4 = 1.0339875e+09;
+  double s = 0.;
 
-  func->SetParameters(co, a2, a4, b2, b4);
+  if (!shift)
+    func->SetParameters(co, a2, a4, b2, b4);
+  else
+    func->SetParameters(co, a2, a4, b2, b4, s);
 
   return func;
 }
