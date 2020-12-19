@@ -91,7 +91,7 @@ float sel::GetLinearTheta(const std::vector<TCluster*> &track,
                           bool invert) {
 //******************************************************************************
   std::vector <double> par = sel::GetFitParamsXZ(track, invert);
-  return par[2];
+  return par[2] * sel::v_drift_est;
 }
 
 //******************************************************************************
@@ -137,6 +137,7 @@ std::vector <double> sel::GetFitParamsXZ(const std::vector<TCluster*> &track,
                                          bool invert) {
 //******************************************************************************
   std::vector <double> params;
+  for (auto i = 0; i < 3; ++i) params.push_back(-999);
 
   TH2F* MM = new TH2F("MM", "MM",
                       geom::nPadx, 0, geom::nPadx,
@@ -172,9 +173,9 @@ std::vector <double> sel::GetFitParamsXZ(const std::vector<TCluster*> &track,
     quality = fit->GetChisquare() / fit->GetNDF();
     double b = fit->GetParameter(0);
     double k = fit->GetParameter(1);
-    params.push_back(quality);
-    params.push_back(b);
-    params.push_back(k);
+    params[0] = quality;
+    params[1] = b;
+    params[2] = k;
   }
 
   delete MM;
