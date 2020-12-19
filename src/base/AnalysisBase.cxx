@@ -118,10 +118,10 @@ bool AnalysisBase::Initialize() {
 
   // WARNING
   // A very dirty adoptation of angles
-  CL_col = new Clustering(0., 0.);
-  CL_diag = new Clustering(units::a45, 1.);
-  CL_2by1 = new Clustering(units::a2, 2.);
-  CL_3by1 = new Clustering(units::a3, 3.);
+  CL_col = new Clustering(0., 0);
+  CL_diag = new Clustering(units::a45, 1);
+  CL_2by1 = new Clustering(units::a2, 2);
+  CL_3by1 = new Clustering(units::a3, 3);
   // CL_3by2 = new Clustering(units::a32, 2./3.);
 
   // Read parameter file

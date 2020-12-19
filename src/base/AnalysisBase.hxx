@@ -28,7 +28,7 @@ class Clustering {
 public:
   Clustering(Float_t a,
              int n_pads
-             ):angle(a), n_pads(n_pads), coeff(1./n_pads){;}
+             ):angle(a), n_pads(n_pads) {coeff = (n_pads == 0)?0.001:1./n_pads;}
   virtual ~Clustering(){;};
   /// angle of a reference frame rotation
   Float_t angle;
