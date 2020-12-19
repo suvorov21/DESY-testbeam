@@ -1287,11 +1287,12 @@ TF1* SpatialResolAna::InitializePRF(const TString name, bool shift) {
   double b4 = 1.0339875e+09;
   double s = 0.;
 
-  if (!shift)
+  if (!shift) {
     func->SetParameters(co, a2, a4, b2, b4);
-  else
-    func->SetParameters(co, a2, a4, b2, b4, s);
+    return func;
+  }
 
+  func->SetParameters(co, a2, a4, b2, b4, s);
   return func;
 }
 

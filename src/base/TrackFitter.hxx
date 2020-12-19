@@ -48,6 +48,11 @@ public:
   /// General function for fitting the whole track
   TF1* FitTrack();
 
+  TrackFitterBase(const TrackFitterBase& fit) {
+    (void)fit;
+    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);
+  }
+
 
 protected:
   /// Fitting function for track going up
@@ -104,6 +109,11 @@ public:
 
   void SetComplicatedPatternPRF(bool v) {_complicated_pattern_PRF = v;}
   void SetIndividualPRF(bool v) {_individual_column_PRF = v;}
+
+  TrackFitCern(const TrackFitCern& fit):TrackFitterBase(fit) {(void)fit;
+    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+  bool operator==(const TrackFitCern* fit){(void)fit;
+    std::cerr << "Comparison is depricated" << std::endl; exit(1);}
 
 protected:
   /// Pad Response Function analytical description

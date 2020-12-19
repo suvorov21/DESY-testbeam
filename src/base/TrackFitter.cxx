@@ -112,6 +112,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
 
       if (!PRF_tmp) {
         std::cerr << "ERROR in TrackFitCern::FitCluster(). PRF is NULL" << std::endl;
+        return 1e6;
       }
 
       double part = (a - PRF_tmp->Eval(center_pad_y - par[0]));
