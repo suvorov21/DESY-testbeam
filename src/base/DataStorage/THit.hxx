@@ -14,6 +14,7 @@ class THit : public TObject{
   void SetQ(int Q)        {fq = Q;}
   void SetWidth(int w)    {fw = w;}
   void SetWHM(int whm)    {fwhm = whm;}
+  void SetWF_v(std::vector<std::pair<int,int>> wf_v){fwf_v = wf_v;}
 
   int GetRow(bool invert = false)    const;
   int GetCol(bool invert = false)    const;
@@ -21,14 +22,16 @@ class THit : public TObject{
   int GetQ()      const   {return fq;}
   int GetWidth()  const   {return fw;}
   int GetFWHM()   const   {return fwhm;}
+  std::vector<std::pair<int, int>> GetWF_v(){return fwf_v;}
 
-  THit(int col, int row, int time, int q, int w = 0, int whm = 0){
+  THit(int col, int row, int time, int q, std::vector<std::pair<int,int>> wf_v, int w = 0, int whm = 0){
     fr = row;
     fc = col;
     ft = time;
     fq = q;
     fw = w;
     fwhm = whm;
+    fwf_v = wf_v;
   }
 
   THit(){
@@ -36,6 +39,7 @@ class THit : public TObject{
     fc  = -999;
     ft  = -999;
     fq  = 0;
+    fwf_v.clear();
   }
   virtual ~THit() {;}
 
@@ -48,6 +52,7 @@ class THit : public TObject{
   int  fq;
   int  fw;
   int  fwhm;
+  std::vector<std::pair<int,int>> fwf_v;
 };
 
 #endif

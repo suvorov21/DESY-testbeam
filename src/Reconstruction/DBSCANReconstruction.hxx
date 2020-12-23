@@ -1,3 +1,4 @@
+
 #ifndef SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 #define SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 
@@ -23,6 +24,8 @@ struct Node{
     int id = -999;  // node ID
     int  w = -999;  // WF width
     int whm = -999; // WF WHM
+    std::vector<std::pair<int, int>> wf_v; //WF
+
 };
 
 struct Cluster{
