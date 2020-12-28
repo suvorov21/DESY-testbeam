@@ -117,7 +117,7 @@ def main():
 
             temp_file.close()
 
-            print(first_file_name, "--> ", , f'{outpt_version}/{ot_file}', " with ", "".join(add_flags))
+            print(first_file_name, "--> ", f'{outpt_version}/{ot_file}', " with ", "".join(add_flags))
 
             file_out = open(script_path + str(i) + ".sh", "w")
             command = ""
