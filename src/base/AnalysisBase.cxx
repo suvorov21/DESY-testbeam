@@ -544,6 +544,13 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
     if (!q)
       continue;
 
+    /** cross-talk candidate */
+    // if (i > 0 &&
+    //     pad->GetTime() - col[0]->GetTime() < 4 &&
+    //     1.*q / col[0]->GetQ() < 0.08)
+    //   continue;
+    /** */
+
     // not more then 3 pads
     // if (i > 1)
     //   continue;

@@ -890,7 +890,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
         if (_verbose >= v_prf) {
           std::cout << "PRF fill\t" << _dx[clusterId][padId];
-          std::cout << "\t" << _qfrac[clusterId][padId] << std::endl;
+          std::cout << "\t" << _qfrac[clusterId][padId];
+          std::cout << "\t" << _time[clusterId][padId] - _time[clusterId][0] << std::endl;
         }
 
         // fill PRF
