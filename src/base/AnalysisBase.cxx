@@ -33,6 +33,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _invert(false),
   _gaus_lorentz_PRF(false),
   _individual_column_PRF(false),
+  _PRF_free_centre(false),
   _do_linear_fit(false),
   _do_para_fit(false),
   _app(NULL),
@@ -753,6 +754,11 @@ bool AnalysisBase::ReadParamFile() {
         if (value == "1") {
           _individual_column_PRF = true;
           std::cout << "Individual PRF for each column is used" << std::endl;
+        }
+      } else if (name == "prf_centre_freedom") {
+        if (value == "1") {
+          _PRF_free_centre = true;
+          std::cout << "PRF centre position is a free parameter of the fit" << std::endl;
         }
       } else if (name == "track_shape") {
         if (value == "parabola") {

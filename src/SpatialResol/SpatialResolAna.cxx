@@ -35,7 +35,7 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_gr_prev = NULL;
   _uncertainty_vs_prf_histo   = NULL;
 
-  _PRF_function = InitializePRF("PRF_function");
+  _PRF_function = InitializePRF("PRF_function", _PRF_free_centre);
   // _PRF_function_2pad = InitializePRF("PRF_function_2pad");
   // _PRF_function_3pad = InitializePRF("PRF_function_3pad");
   // _PRF_function_4pad = InitializePRF("PRF_function_4pad");
@@ -124,7 +124,7 @@ bool SpatialResolAna::Initialize() {
       auto tree = (TTree*)_Prev_iter_file->Get("outtree");
       _PRF_function_arr = new TF1*[36];
       for (auto colId = 0; colId < geom::GetMaxColumn(_invert); ++colId) {
-        _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", true);
+        _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", _PRF_free_centre);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
         TString s = TString().Itoa(_clustering->n_pads, 10);
