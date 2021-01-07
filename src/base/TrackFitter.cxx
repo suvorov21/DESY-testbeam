@@ -14,19 +14,26 @@ TrackFitterBase::TrackFitterBase(TrackShape shape,
                                  _invert(invert),
                                  _shape(shape) {
 //******************************************************************************
-  _circle_function_up = new TF1("circle_up",
-    "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]",
-    -0.5, 0.5);
-  _circle_function_up->SetParName(0, "radius");
-  _circle_function_up->SetParName(1, "sin(alpha)");
-  _circle_function_up->SetParName(2, "target");
+  // _circle_function_up = new TF1("circle_up",
+  //   "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]",
+  //   -0.5, 0.5);
+  // _circle_function_up->SetParName(0, "radius");
+  // _circle_function_up->SetParName(1, "sin(alpha)");
+  // _circle_function_up->SetParName(2, "target");
 
-  _circle_function_dn = new TF1("circle_dn",
-    "sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) - [0] * sqrt(1-[1]*[1]) + [2]",
+  // _circle_function_dn = new TF1("circle_dn",
+  //   "sqrt([0]*[0] - TMath::Power(x+0.198 + [1] * [0], 2)) - [0] * sqrt(1-[1]*[1]) + [2]",
+  //   -0.5, 0.5);
+  // _circle_function_dn->SetParName(0, "radius");
+  // _circle_function_dn->SetParName(1, "sin(alpha)");
+  // _circle_function_dn->SetParName(2, "target");
+
+  _circle_function = new TF1("circle",
+    "-TMath::Sign(1, [0]) * sqrt(1./[0]*1./[0] - TMath::Power(x+0.198 - [1] * 1./[0], 2)) + 1./[0] * sqrt(1-[1]*[1]) + [2]",
     -0.5, 0.5);
-  _circle_function_dn->SetParName(0, "radius");
-  _circle_function_dn->SetParName(1, "sin(alpha)");
-  _circle_function_dn->SetParName(2, "target");
+  _circle_function->SetParName(0, "radius");
+  _circle_function->SetParName(1, "sin(alpha)");
+  _circle_function->SetParName(2, "target");
 }
 
 Double_t TrackFitterBase::FitCluster() {
@@ -231,30 +238,54 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     track_gr->Fit("pol1", opt);
     fit = (TF1*)track_gr->GetFunction("pol1")->Clone();
   } else if (_shape == arc) {
+    // Float_t q_up, q_down;
+    // q_up = q_down = 1.e9;
+    // _circle_function_dn->SetParameters(80., 0, 0.);
+    // track_gr->Fit("circle_dn", opt);
+    // fit = track_gr->GetFunction("circle_dn");
+    // if (fit)
+    //   q_down = fit->GetChisquare() / fit->GetNDF();
+
+    // _circle_function_up->SetParameters(80., 0, 0.);
+    // track_gr->Fit("circle_up", opt);
+    // fit = track_gr->GetFunction("circle_up");
+    // if (fit)
+    //   q_up = fit->GetChisquare() / fit->GetNDF();
+
+    // if (q_up > q_down)
+    //   func = "circle_dn";
+    // else
+    //   func = "circle_up";
+
+    // track_gr->Fit(func, "Q");
+    // if (!track_gr->GetFunction(func))
+    //   return NULL;
+    // fit = (TF1*)track_gr->GetFunction(func)->Clone();
+
     Float_t q_up, q_down;
     q_up = q_down = 1.e9;
-    _circle_function_dn->SetParameters(80., 0, 0.);
-    track_gr->Fit("circle_dn", opt);
-    fit = track_gr->GetFunction("circle_dn");
-    if (fit)
-      q_down = fit->GetChisquare() / fit->GetNDF();
+    _circle_function->SetParameters(1./80., 0, 0.);
+    track_gr->Fit("circle", opt);
+    TF1* fit_up = (TF1*)track_gr->GetFunction("circle")->Clone();
+    if (fit_up)
+      q_up = fit_up->GetChisquare() / fit_up->GetNDF();
 
-    _circle_function_up->SetParameters(80., 0, 0.);
-    track_gr->Fit("circle_up", opt);
-    fit = track_gr->GetFunction("circle_up");
-    if (fit)
-      q_up = fit->GetChisquare() / fit->GetNDF();
+    _circle_function->SetParameters(-1./80., 0, 0.);
+    track_gr->Fit("circle", opt);
+    TF1* fit_dn = (TF1*)track_gr->GetFunction("circle")->Clone();
+    if (fit_dn)
+      q_down = fit_dn->GetChisquare() / fit_dn->GetNDF();
+
+    if (!track_gr->GetFunction("circle"))
+      return NULL;
 
     if (q_up > q_down)
-      func = "circle_dn";
+      fit = (TF1*)fit_dn->Clone();
     else
-      func = "circle_up";
+      fit = (TF1*)fit_up->Clone();
 
-    track_gr->Fit(func, "Q");
-    if (!track_gr->GetFunction(func))
-      return NULL;
-    fit = (TF1*)track_gr->GetFunction(func)->Clone();
-
+    delete fit_up;
+    delete fit_dn;
   }
 
   delete track_gr;

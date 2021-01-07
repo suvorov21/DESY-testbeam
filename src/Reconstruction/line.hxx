@@ -1,6 +1,8 @@
 #ifndef LINE
 #define LINE
 
+#include <iostream>
+
 #include "TVector3.h"
 
 /// Class describing the line gometry. Used in crossing reconstruction
@@ -8,7 +10,7 @@ class TLine_att {
 public:
   /// a constructor given two dots
   TLine_att(const TVector3& dot1, const TVector3& dot2, bool vertical = false) {
-    float k, a, b, c;
+    double k, a, b, c;
     if (!vertical) {
       k = dot2.Y() - dot1.Y();
 
@@ -29,7 +31,7 @@ public:
     pos = dot1;
   }
 
-  float GetDistance(const TVector3& dot) {
+  double GetDistance(const TVector3& dot) {
     TVector3 hyp = dot - pos;
 
     float cos = hyp.Dot(dir);
@@ -44,7 +46,7 @@ public:
 
     TVector3 norm_point = pos + dir * (dir.Dot(hyp));
 
-    return hyp - norm_point;
+    return dot - norm_point;
   }
 
   float GetDistX(const TVector3& dot) {
@@ -83,6 +85,12 @@ public:
 
   /// a default destructor
   virtual ~TLine_att() {};
+
+  void Print() {
+    std::cout << "TLine_att: pos:dir" << std::endl;
+    pos.Print();
+    dir.Print();
+  }
 private:
 
   TVector3 pos;

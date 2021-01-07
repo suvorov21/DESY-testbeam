@@ -1,4 +1,7 @@
+#include "TVector3.h"
+
 #include "SpatialResolAna.hxx"
+#include "line.hxx"
 
 //******************************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
@@ -777,8 +780,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // in case of arc fitting fill the momentum histo
     // TODO review mess
     if (!_do_linear_fit && !_do_para_fit) {
-      float mom = fit->GetParameter(0) * units::B * units::clight / 1.e9;
-      if (func.CompareTo("circle_dn") == 0) mom *= -1.;
+      float mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
+      // if (func.CompareTo("circle_dn") == 0) mom *= -1.;
       _mom_reco->Fill(mom);
       _pos_reco->Fill(fit->GetParameter(2));
       _ang_reco->Fill(fit->GetParameter(1));
@@ -786,6 +789,45 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _mom        = mom;
       _sin_alpha  = fit->GetParameter(1);
       _offset     = fit->GetParameter(2);
+    }
+
+    if (_do_para_fit) {
+      // pol2 := [p0]+[p1]*x+[p2]*pow(x,2)
+
+      double x1 = clusters_clean[0]->GetX();
+      TVector3 start(x1, fit->Eval(x1), 0.);
+      double x2 = (*(clusters_clean.end()-1))->GetX();
+      TVector3 end(x2, fit->Eval(x2), 0.);
+      TLine_att line(start, end);
+
+      double a = fit->GetParameter(2);;
+      double b = fit->GetParameter(1);
+      // double c = fit->GetParameter(0);
+
+      double x0 = - b * (x2-x1) + a*x2*x2 + b*x2 - a*x1*x1 - b*x1 ;
+      x0 /= 2*a*(x2-x1);
+      TVector3 max_sag(x0, fit->Eval(x0), 0.);
+      double sag = line.GetDistVec(max_sag).Mag();
+      double L = (end - start).Mag();
+
+      if (abs(sag) > 1e-10) {
+        _mom = L*L /8/sag + sag / 2;
+        _mom *= units::B * units::clight / 1.e9;
+        if (a < 0)
+          _mom *= -1;
+      }
+
+      _sin_alpha = TMath::Sin(TMath::ATan(fit->Derivative(x1)));
+      _offset    = start.Y();
+
+      if (_verbose > v_analysis_steps) {
+        std::cout << "start:end:max\t" << start.X() << ", " << start.Y();
+        std::cout << "\t" << end.X() << ", " << end.Y();
+        std::cout << "\t" << max_sag.X() << ", " << max_sag.Y() << std::endl;
+        std::cout << "Line at x0\t" << line.EvalX(max_sag.X()).Y() << std::endl;
+        std::cout << "Sagitta:\t" << sag << "\tLength:\t" << L << std::endl;
+        std::cout << "mom:\t" << _mom << std::endl;
+      }
     }
 
 //****************** STEP 4 ****************************************************

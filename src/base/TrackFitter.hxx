@@ -55,10 +55,13 @@ public:
 
 
 protected:
-  /// Fitting function for track going up
-  TF1*    _circle_function_up;
-  /// Fitting function for track going down
-  TF1*    _circle_function_dn;
+  // /// Fitting function for track going up
+  // TF1*    _circle_function_up;
+  // /// Fitting function for track going down
+  // TF1*    _circle_function_dn;
+
+  /// Arc function used for track fitting
+  TF1* _circle_function;
 
   /// iteration of the fit
   Int_t _iteration;
