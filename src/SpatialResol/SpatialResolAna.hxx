@@ -123,7 +123,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Waveform width at half maximum
   Int_t _wf_fwhm[Nclusters][10];
 
-  Int_t _pad_wf_t[Nclusters][10][520];
+  //Int_t _pad_wf_t[Nclusters][10][520];
   Int_t _pad_wf_q[Nclusters][10][520];
 
   /** Histograms **/

@@ -251,10 +251,10 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_y[%i][10]/I", Nclusters)
                 );
 
-  _tree->Branch("pad_wf_t",
-                &_pad_wf_t,
-                TString::Format("_pad_wf_t[%i][10][520]/I", Nclusters)
-                );
+  //_tree->Branch("pad_wf_t",
+  //              &_pad_wf_t,
+  //              TString::Format("_pad_wf_t[%i][10][520]/I", Nclusters)
+  //              );
 
   _tree->Branch("pad_wf_q",
                 &_pad_wf_q,
@@ -516,7 +516,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           _wf_fwhm[colId][padId] = -999;
 
        for (auto nSmp = 0; nSmp < 520; ++nSmp) {
-	    _pad_wf_t[colId][padId][nSmp] = -999;
+	    //_pad_wf_t[colId][padId][nSmp] = -999;
 	    _pad_wf_q[colId][padId][nSmp] = -999;
          
       	}
@@ -587,7 +587,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       std::cout << "start cluster fit" << std::endl;
       
     std::vector <double> QsegmentS; QsegmentS.clear();
-    std::vector<std::pair<int,int>> pad_wf_v; //WF
+    std::vector <int> pad_wf_v; //WF
 
     //if (robust_clusters.size() < 30) continue;
           //continue;
@@ -636,8 +636,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
           for (auto tz = 0; tz < pad_wf_v.size(); ++tz) {
-	    _pad_wf_t[clusterId][padId][tz] = pad_wf_v[tz].first;
-	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz].second;
+	    //_pad_wf_t[clusterId][padId][tz] = pad_wf_v[tz].first;
+	    //if(pad_wf_v[tz].first == tz)
+	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz]; //.second;
           }
 
         ++padId;
