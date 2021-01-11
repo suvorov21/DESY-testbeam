@@ -62,6 +62,9 @@ def main():
     project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../")
     script_path = project_path + "/script/" + temp
     if os.path.exists(script_path):
+        resp = input('Temp folder with this name exists. Rewrite: (y/n): ')
+        if resp != 'y':
+            return 1
         print("Rewriting the temp folder ", script_path)
         shutil.rmtree(script_path)
         os.mkdir(script_path)
