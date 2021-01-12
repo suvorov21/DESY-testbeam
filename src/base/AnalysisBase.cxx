@@ -373,7 +373,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
               q = _padAmpl[x][y][t] - 250;
             }
 
-            _padAmpl[x][y][t] = q < 0 ? 0 : q;
+            // _padAmpl[x][y][t] = q < 0 ? 0 : q;
+            _padAmpl[x][y][t] = q < -249 ? 0 : q;
             /** REWEIGHT OF THE PAD*/
             // if (x == 5 && y == 16)
             //   _padAmpl[x][y][t] *= 0.95;

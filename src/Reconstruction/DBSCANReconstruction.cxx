@@ -153,8 +153,8 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
 }
 
 std::vector<int> DBSCANReconstruction::FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n){
-  //std::vector<std::pair<int, int>> wf_v; 
-  /*std::vector<std::vector<int>> wf_v; 
+  //std::vector<std::pair<int, int>> wf_v;
+  /*std::vector<std::vector<int>> wf_v;
 
   for(int i=0; i<geom::nPadx; i++){
     for(int j=0; j<geom::nPady; j++){
@@ -184,11 +184,11 @@ std::vector<int> DBSCANReconstruction::FillWFs(const Int_t padAmpl[geom::nPadx][
   }*/
 
 
-      std::vector<int> wf_v; 
+      std::vector<int> wf_v;
 
       for(int k=0; k<geom::Nsamples; k++){
-        int ampl = padAmpl[n.x][n.y][k];
-        if(ampl <= 0) continue;
+        // int ampl = padAmpl[n.x][n.y][k];
+        // if(ampl <= 0) continue;
         wf_v.push_back(padAmpl[n.x][n.y][k]);
       }
 
