@@ -146,6 +146,10 @@ std::vector<Node> DBSCANReconstruction::FillNodes(
   }
   if (_verbose > 2)
     std::cout << "Filed " << nodes.size() << " nodes" << std::endl;
+
+  if (nodes.size() > MAX_NODES_TOT) {
+    nodes.erase(nodes.begin(), nodes.end());
+  }
   return nodes;
 }
 
@@ -168,8 +172,12 @@ std::vector<DB_Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector
       clusters.push_back(cluster);
     }
   }
-  if (_verbose > 2)
-    std::cout << "Found larger " << clusters.size() << " nodes" << std::endl;
+  if (_verbose > 2) {
+    std::cout << "Found larger " << clusters.size() << " nodes";
+    for(uint i = 0; i < clusters.size(); ++i)
+      std::cout << "\t" << clusters[i].size;
+    std::cout << std::endl;
+  }
   return clusters;
 }
 

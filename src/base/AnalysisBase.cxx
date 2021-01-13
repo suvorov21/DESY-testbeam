@@ -632,7 +632,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
   for (auto col:tr->GetCols(_invert)) {
     // skip first and last column
     auto it = col[0]->GetCol(_invert);
-    if (it == 0 || it == geom::GetMaxColumn(_invert))
+    if (it == 0 || it == geom::GetMaxColumn(_invert)-1)
       continue;
     for (auto pad:col) {
       auto col_id = pad->GetCol(_invert);
@@ -640,7 +640,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
 
       auto cons = (cl.*f)(row_id, col_id);
       // skip first and last row
-      if (row_id == 0 || row_id == geom::GetMaxRow(_invert))
+      if (row_id == 0 || row_id == geom::GetMaxRow(_invert)-1)
         continue;
 
       // search if the diagonal is already considered
