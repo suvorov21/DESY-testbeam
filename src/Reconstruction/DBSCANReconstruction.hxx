@@ -13,6 +13,7 @@
 const int MIN_DIST  = 2;
 const int MIN_NODES = 1;
 const int MAX_NODES = 200;
+const int MAX_NODES_TOT = 300;
 
 struct Node{
     int  x = -999;  // row
