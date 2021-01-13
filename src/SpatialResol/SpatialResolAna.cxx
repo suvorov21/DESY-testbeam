@@ -126,7 +126,7 @@ bool SpatialResolAna::Initialize() {
     if (_individual_column_PRF) {
       auto tree = (TTree*)_Prev_iter_file->Get("outtree");
       _PRF_function_arr = new TF1*[36];
-      for (auto colId = 0; colId < geom::GetMaxColumn(_invert); ++colId) {
+      for (auto colId = 0; colId < geom::GetNColumn(_invert); ++colId) {
         _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", _PRF_free_centre);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);

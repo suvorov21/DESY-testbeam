@@ -36,16 +36,13 @@ float geom::GetXpos(int it_x, bool invert) {
     return geom::y_pos[it_x];
 }
 
-int geom::GetMaxColumn(bool invert) {
+int geom::GetNColumn(bool invert) {
   if (!invert)
-    return nPadx - 1;
+    return nPadx;
   else
-    return nPady - 1;
+    return nPady;
 }
 
-int geom::GetMaxRow(bool invert) {
-  if (!invert)
-    return nPady - 1;
-  else
-    return nPadx - 1;
+int geom::GetNRow(bool invert) {
+  return GetNColumn(!invert);
 }

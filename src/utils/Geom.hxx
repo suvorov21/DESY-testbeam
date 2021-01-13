@@ -60,9 +60,9 @@ namespace geom
     float GetXpos(int it_x, bool invert = false);
 
     /// return max index (!!) of a column
-    int GetMaxColumn(bool invert = false);
+    int GetNColumn(bool invert = false);
     /// return a max index (!!) of a row
-    int GetMaxRow(bool invert = false);
+    int GetNRow(bool invert = false);
 }
 
 namespace units {
