@@ -215,6 +215,10 @@ class AnalysisBase {
   /// Maximum angle (abs(tan)) w.r.t. MM plane
   Float_t _max_theta;
 
+
+  ///Store the wfs
+  bool _to_store_wf;
+
   /// T2K plotting style
   TStyle* _t2kstyle;
 

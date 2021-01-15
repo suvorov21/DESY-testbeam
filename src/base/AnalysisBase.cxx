@@ -35,7 +35,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _do_linear_fit(false),
   _do_para_fit(false),
   _app(NULL),
-  _useCern(false)
+  _useCern(false),
+  _to_store_wf(true)
 {
 //******************************************************************************
 
@@ -373,7 +374,10 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
               q = _padAmpl[x][y][t] - 250;
             }
 
-            _padAmpl[x][y][t] = q < 0 ? 0 : q;
+            //_padAmpl[x][y][t] = q < 0 ? 0 : q;
+            _padAmpl[x][y][t] = q < -249 ? 0 : q;
+
+
             /** REWEIGHT OF THE PAD*/
             // if (x == 5 && y == 16)
             //   _padAmpl[x][y][t] *= 0.95;
@@ -751,6 +755,11 @@ bool AnalysisBase::ReadParamFile() {
         _max_phi = TString(value).Atof();
       } else if (name == "max_theta") {
         _max_theta = TString(value).Atof();
+//switch to WF storage
+      } else if (name == "to_store_wf") {
+        if (value == "0") {
+          _to_store_wf = false;
+        }
       }
     }
   } else {

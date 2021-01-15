@@ -256,7 +256,7 @@ bool SpatialResolAna::Initialize() {
   //              TString::Format("_pad_wf_t[%i][10][520]/I", Nclusters)
   //              );
 
-  _tree->Branch("pad_wf_q",
+  if (_to_store_wf) _tree->Branch("pad_wf_q",
                 &_pad_wf_q,
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
                 );
@@ -632,7 +632,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   
         //if (_pad_charge[clusterId][padId] <= 0) continue;
 
-         pad_wf_v = pad->GetWF_v();
+         if (_to_store_wf){
+
+          pad_wf_v = pad->GetWF_v();
 
 
           for (auto tz = 0; tz < pad_wf_v.size(); ++tz) {
@@ -640,7 +642,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 	    //if(pad_wf_v[tz].first == tz)
 	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz]; //.second;
           }
-
+	}
         ++padId;
 
 

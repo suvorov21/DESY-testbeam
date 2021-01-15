@@ -139,11 +139,9 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
         node.w = last - first;
         node.whm = last_HM - first_HM;
         node.id = nodes.size();
-        //node.wf_v = WF_v;
         nodes.push_back(node);
       }
 
-      //if(Q) wf_v = WF_v;
 
     }
   }
@@ -153,46 +151,15 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
 }
 
 std::vector<int> DBSCANReconstruction::FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n){
-  //std::vector<std::pair<int, int>> wf_v; 
-  /*std::vector<std::vector<int>> wf_v; 
-
-  for(int i=0; i<geom::nPadx; i++){
-    for(int j=0; j<geom::nPady; j++){
-      int Q = 0;
-      int t = 0;
-      std::vector<int> WF_v;
-      //WF_v.reserve(600);
-      int first = 0;
-      int last = -9999;
-      for(int k=0; k<geom::Nsamples; k++){
-        int ampl = padAmpl[i][j][k];
-        if(ampl <= 0) continue;
-        if (!first)
-          first = k;
-        last = k;
-        WF_v.push_back(padAmpl[i][j][k]);
-
-        // take only first max
-        // if (ampl < 0.4*Q ) break;
-        if(ampl > Q) {Q = ampl; t=k;}
-      }
-        //WF_v.push_back(-1);
-
-      if(Q) wf_v.push_back(WF_v);
-
-    }
-  }*/
-
 
       std::vector<int> wf_v; 
+      //wf_v.reserve(600);
 
       for(int k=0; k<geom::Nsamples; k++){
-        int ampl = padAmpl[n.x][n.y][k];
-        if(ampl <= 0) continue;
+        //int ampl = padAmpl[n.x][n.y][k];
+        //if(ampl <= 0) continue;
         wf_v.push_back(padAmpl[n.x][n.y][k]);
       }
-
-      //wf_v = WF_v;
 
   //if (_verbose > 2)
     //std::cout << "Filed " << nodes.size() << " nodes" << std::endl;
@@ -291,8 +258,6 @@ bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPa
     for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
       std::vector<int> wf_v = FillWFs(padAmpl,n);
-      //THit *hit = new THit(n.x,n.y,n.t,n.q,n.wf_v,n.w,n.whm);
-      //THit *hit = new THit(n.x,n.y,n.t,n.q,n.w,n.whm);
       THit *hit = new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm);
       usedHits[i] = 1;
       if(n.c == (int)trkID){
@@ -306,7 +271,6 @@ bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPa
     Node n = nodes[i];
     std::vector<int> wf_v = FillWFs(padAmpl,n);
     if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm));
-    //if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q,n.w,n.whm));
   }
 
 
@@ -320,7 +284,6 @@ bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nP
 
   std::vector<Node> nodes = FindClusters(FillNodes(padAmpl));
   std::vector<Cluster> clusters = FindClustersLargerThan(nodes,15);
-  //std::vector<std::vector<int>> WF_vec = FillWFs(padAmpl);
   std::vector<Node> new_nodes = UpdateNodes(clusters,nodes);
 
   //if(nodes.size()) DrawNodes(new_nodes);
