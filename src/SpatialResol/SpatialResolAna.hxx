@@ -159,6 +159,10 @@ class SpatialResolAna: public AnalysisBase {
 
   TH1F* _PRF_time_e;
 
+  /// WARNING TEMP
+  Float_t _fit_up[Nclusters];
+  Float_t _fit_bt[Nclusters];
+
   /// Fitter class for the track and cluster fitting
   TrackFitCern* _fitter;
 

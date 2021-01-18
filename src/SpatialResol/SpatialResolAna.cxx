@@ -1,4 +1,6 @@
 #include "TVector3.h"
+#include "Math/Functor.h"
+#include "Fit/Fitter.h"
 
 #include "SpatialResolAna.hxx"
 #include "line.hxx"
@@ -303,6 +305,17 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
                 );
 
+  // WARNING TEMP
+  _tree->Branch("fit_up",
+                &_fit_up,
+                TString::Format("fit_up[%i]/F", Nclusters)
+                );
+
+  _tree->Branch("fit_bt",
+                &_fit_bt,
+                TString::Format("fit_bt[%i]/F", Nclusters)
+                );
+
   _output_vector.push_back(_tree);
 
   _hdEdx  = new TH1F("dEdx","",300,0,5000);
@@ -556,6 +569,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _cluster_av[colId]    = -999;
       _dEdx               = -999;
 
+      // WARNING TMP
+      _fit_up[colId]        = -999.;
+      _fit_bt[colId]        = -999.;
+
       for (auto padId = 0; padId < 10; ++padId) {
         _dx[colId][padId]    = -999;
         _time[colId][padId]  = -999;
@@ -714,6 +731,54 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                                    _clust_pos[clusterId]
                                                    );
         _clust_pos[clusterId] = track_pos[clusterId];
+        // WARNING temp
+        auto it_main = std::max_element((*cluster).begin(), (*cluster).end(),
+                                        [](const THit* n1, const THit* n2) { return n1->GetQ() < n2->GetQ(); });
+        auto main_row = (*it_main)->GetRow(_invert);
+        auto it_up = std::find_if((*cluster).begin(), (*cluster).end(),
+                                      [&](const THit* h1) { return h1->GetRow(_invert) == main_row + 1; });
+        auto it_bt = std::find_if((*cluster).begin(), (*cluster).end(),
+                                      [&](const THit* h1) { return h1->GetRow(_invert) == main_row - 1; });
+
+        // for (auto ii = 0; ii < cluster->GetSize(); ++ii)
+        //   std::cout << (*cluster)[ii]->GetRow(_invert) << "   ";
+        // std::cout << std::endl;
+
+        if (it_up != (*cluster).end() && it_bt != (*cluster).end()) {
+          // std::cout << main_row << "\t" << (*it_up)->GetRow() << "\t" << (*it_bt)->GetRow() << std::endl;
+          Float_t r_up = 1.*(*it_up)->GetQ() / (*it_main)->GetQ();
+          Float_t r_bt = 1.*(*it_bt)->GetQ() / (*it_main)->GetQ();
+          if (r_up > _PRF_function->GetMinimum() && r_bt > _PRF_function->GetMinimum()) {
+            // r_up = PRF(x-x_pad) / PRF(x - x_pad+1)
+            auto minimisator = [&](const Double_t *par) {
+              if (par[1])
+                return abs(r_up - _PRF_function->Eval(geom::GetYposPad((*it_up)) - par[0]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
+              else
+                return abs(r_bt - _PRF_function->Eval(geom::GetYposPad((*it_bt)) - par[0]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
+            };
+            ROOT::Math::Functor fcn_cluster(minimisator,2);
+            ROOT::Fit::Fitter  fitter_cluster;
+
+            double pStart[2] = {geom::GetYposPad((*it_main)), true};
+            fitter_cluster.SetFCN(fcn_cluster, pStart);
+            bool ok = fitter_cluster.FitFCN();
+            (void)ok;
+            const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
+            if (ok && r_up > 0.04)
+              _fit_up[clusterId] = result_cluster.GetParams()[0];
+
+            // if (_fit_up[clusterId] > -0.009 && _fit_up[clusterId] < -0.0087)
+            //   std::cout << r_up << "\t" << _fit_up[clusterId] << "\t" << _PRF_function->Eval(geom::GetYposPad((*it_up)) - _fit_up[clusterId]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - _fit_up[clusterId]) << std::endl;
+
+            pStart[0] = geom::GetYposPad((*it_main));
+            pStart[1] = false;
+            fitter_cluster.SetFCN(fcn_cluster, pStart);
+            ok = fitter_cluster.FitFCN();
+            const ROOT::Fit::FitResult & result_cluster2 = fitter_cluster.Result();
+            if (ok && r_bt > 0.04)
+              _fit_bt[clusterId] = result_cluster2.GetParams()[0];
+          }
+        }
       } else {
         track_pos[clusterId] = _clust_pos[clusterId];
       }

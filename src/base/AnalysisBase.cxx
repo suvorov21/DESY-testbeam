@@ -324,8 +324,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   _sw_partial[1]->Reset();
 
   if (_verbose >= v_progress) {
-    std::cout << "Input file..............................." << _file_in_name << std::endl;
-    std::cout << "output file.............................." << _file_out_name << std::endl;
+    std::cout << "Input file............................... " << _file_in_name << std::endl;
+    std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << N_events << "\r[";
     _sw_event->Start(0);
