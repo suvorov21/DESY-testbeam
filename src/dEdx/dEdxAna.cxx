@@ -74,6 +74,16 @@ bool dEdxAna::Initialize() {
                   TString::Format("_pad_y[10][%i]/I", geom::nPadx)
                   );
 
+  outtree->Branch("pad_wf_t",
+                &_pad_wf_t,
+                TString::Format("_pad_wf_t[10][%i][520]/I", geom::nPadx)
+                );
+
+  outtree->Branch("pad_wf_q",
+                &_pad_wf_q,
+                TString::Format("_pad_wf_q[10][%i][520]/I", geom::nPadx)
+                );
+
   _output_vector.push_back(outtree);
 
   /**
@@ -189,6 +199,14 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
         _wf_fwhm[j][i]    = -999;
         _pad_x[j][i]      = -999;
         _pad_y[j][i]      = -999;
+
+      	for (auto nSmp = 0; nSmp < 520; ++nSmp) {
+	    _pad_wf_t[j][i][nSmp] = -999;
+	    _pad_wf_q[j][i][nSmp] = -999;
+         
+      	}
+
+
       }
 
     }
@@ -239,7 +257,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
                                           THit* x2) {
                                             return x1->GetQ() > x2->GetQ();
                                           });
-
+      std::vector<std::pair<int, int>> pad_wf_v;
       for (uint pad_id = 0; pad_id < 10; pad_id++) {
         if (pad_id < Qpads.size()) {
           _pad_time[pad_id][it_x]   = Qpads[pad_id]->GetTime();
@@ -248,6 +266,19 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
           _wf_fwhm[pad_id][it_x]    = Qpads[pad_id]->GetFWHM();
           _pad_x[pad_id][it_x]      = Qpads[pad_id]->GetCol(_invert);
           _pad_y[pad_id][it_x]      = Qpads[pad_id]->GetRow(_invert);
+          pad_wf_v.clear();
+          //pad_wf_v = Qpads[pad_id]->GetWF_v();
+
+          //for (auto tz = 0; tz < 520; ++tz) {
+          //for (auto tz = 0; tz < pad_wf_v.size(); ++tz) {
+          //for (auto pad_wfc:pad_wf_v) {
+            //if (pad_wf_v[tz].second <= 0) continue;
+	    //_pad_wf_t[pad_id][it_x][tz] = pad_wf_v[tz].first;
+	    //_pad_wf_q[pad_id][it_x][tz] = pad_wf_v[tz].second;
+            //tz++;
+          //}
+
+
         } else {
           _pad_time[pad_id][it_x]   = -9999;
           _pad_charge[pad_id][it_x] = -9999;
