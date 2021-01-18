@@ -32,7 +32,7 @@ class SpatialResolAna: public AnalysisBase {
   bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
   /// Initialise PRF with expected params
-  TF1* InitializePRF(const TString name);
+  TF1* InitializePRF(const TString name, bool shift=false);
 
   /// Get mean and FWHM for the histo
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
@@ -130,6 +130,7 @@ class SpatialResolAna: public AnalysisBase {
   /** Pad response function block **/
   /// PRF function from the previous step. Used for Chi2 fit
   TF1*  _PRF_function;
+  TF1**  _PRF_function_arr;
   /// PRF histoes
   TH2F* _PRF_histo;
   // PRF profiling graphs
@@ -157,6 +158,10 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _PRF_time_error;
 
   TH1F* _PRF_time_e;
+
+  /// WARNING TEMP
+  Float_t _fit_up[Nclusters];
+  Float_t _fit_bt[Nclusters];
 
   /// Fitter class for the track and cluster fitting
   TrackFitCern* _fitter;

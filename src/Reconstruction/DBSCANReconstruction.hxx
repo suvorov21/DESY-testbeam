@@ -28,9 +28,7 @@ struct Node{
 
 };
 
-
-
-struct Cluster{
+struct DB_Cluster{
     int size = 0;
     int id   = -999;      // cluster ID
     // TODO make it a vector to prevent overflow
@@ -47,11 +45,21 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual std::vector<Node> FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
   virtual std::vector<int> FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n);
   virtual double MeasureDistance(Node a, Node b);
+  /// Merge nodes into clusters
   virtual std::vector<Node> FindClusters(std::vector<Node> nodes);
-  virtual std::vector<Cluster> FindClustersLargerThan(std::vector<Node> nodes, int minNodes);
-  virtual std::vector <Node> UpdateNodes(std::vector <Cluster> clusters, std::vector <Node> nodes);
+  /// Search for large enough clusters
+  virtual std::vector<DB_Cluster> FindClustersLargerThan(std::vector<Node> nodes,
+                                                         int minNodes
+                                                         );
+  /// Assotiate nodes with clusters
+  virtual std::vector <Node> UpdateNodes(std::vector <DB_Cluster> clusters,
+                                         std::vector <Node> nodes);
   virtual void DrawNodes(std::vector<Node> nodes);
-  virtual bool FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], std::vector<Node> nodes, std::vector<Cluster> clusters, TEvent* event);
+  /// Store the output in TEven format
+  virtual bool FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                          std::vector<Node> nodes,
+                          std::vector<DB_Cluster> clusters,
+                          TEvent* event);
 
  private:
 

@@ -32,6 +32,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _overwrite(false),
   _invert(false),
   _gaus_lorentz_PRF(false),
+  _individual_column_PRF(false),
+  _PRF_free_centre(false),
   _do_linear_fit(false),
   _do_para_fit(false),
   _app(NULL),
@@ -122,7 +124,7 @@ bool AnalysisBase::Initialize() {
   CL_diag = new Clustering(units::a45, 1);
   CL_2by1 = new Clustering(units::a2, 2);
   CL_3by1 = new Clustering(units::a3, 3);
-
+  // CL_3by2 = new Clustering(units::a32, 2./3.);
 
   // Read parameter file
   if (!ReadParamFile()) {
@@ -133,6 +135,7 @@ bool AnalysisBase::Initialize() {
   if (_invert) {
     CL_2by1->angle = units::a2_inv;
     CL_3by1->angle = units::a3_inv;
+    // CL_3by2->angle = units::a32_inv;
   }
 
   // read the first root file and decide
@@ -321,8 +324,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   _sw_partial[1]->Reset();
 
   if (_verbose >= v_progress) {
-    std::cout << "Input file..............................." << _file_in_name << std::endl;
-    std::cout << "output file.............................." << _file_out_name << std::endl;
+    std::cout << "Input file............................... " << _file_in_name << std::endl;
+    std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << N_events << "\r[";
     _sw_event->Start(0);
@@ -545,6 +548,13 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
     if (!q)
       continue;
 
+    /** cross-talk candidate */
+    // if (i > 0 &&
+    //     pad->GetTime() - col[0]->GetTime() < 4 &&
+    //     1.*q / col[0]->GetQ() < 0.08)
+    //   continue;
+    /** */
+
     // not more then 3 pads
     // if (i > 1)
     //   continue;
@@ -625,7 +635,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
   for (auto col:tr->GetCols(_invert)) {
     // skip first and last column
     auto it = col[0]->GetCol(_invert);
-    if (it == 0 || it == geom::GetMaxColumn(_invert)-1)
+    if (it == 0 || it == geom::GetNColumn(_invert)-1)
       continue;
     for (auto pad:col) {
       auto col_id = pad->GetCol(_invert);
@@ -633,7 +643,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
 
       auto cons = (cl.*f)(row_id, col_id);
       // skip first and last row
-      if (row_id == 0 || row_id == geom::GetMaxRow(_invert)-1)
+      if (row_id == 0 || row_id == geom::GetNRow(_invert)-1)
         continue;
 
       // search if the diagonal is already considered
@@ -680,14 +690,14 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
 //******************************************************************************
 bool AnalysisBase::ReadParamFile() {
 //******************************************************************************
-  char *homePath(getenv("SOFTDIR"));
 
-  if (getenv("SOFTDIR") == NULL) {
-    std::cerr << "SOFTDIR varaible is not specified!" << std::endl;
-    std::cerr << "Consider sourcing setup.sh" << std::endl;
-    return false;
-  }
   if (_param_file_name == ""){
+    char *homePath(getenv("SOFTDIR"));
+    if (getenv("SOFTDIR") == NULL) {
+      std::cerr << "SOFTDIR varaible is not specified!" << std::endl;
+      std::cerr << "Consider sourcing setup.sh" << std::endl;
+      return false;
+    }
     _param_file_name = std::string(homePath) + "/params/default.ini";
   }
   std::cout << "*****************************************" << std::endl;
@@ -712,13 +722,21 @@ bool AnalysisBase::ReadParamFile() {
       if (name == "cluster") {
         if (value == "column") {
           _clustering = CL_col;
+          std::cout << "Column cluster is used" << std::endl;
         } else if (value == "diag") {
           _clustering = CL_diag;
           std::cout << "Diagonal cluster is used" << std::endl;
         } else if (value == "2by1") {
           _clustering = CL_2by1;
+          std::cout << "2by1 cluster is used" << std::endl;
         } else if (value == "3by1") {
           _clustering = CL_3by1;
+          std::cout << "3by1 cluster is used" << std::endl;
+        // } else if (value == "3by2") {
+        //   _clustering = CL_3by2;
+        } else {
+          std::cerr << "ERROR. Unknown clustering " << value << std::endl;
+          return false;
         }
       } else if (name  == "invert") {
         if (value == "1") {
@@ -729,8 +747,21 @@ bool AnalysisBase::ReadParamFile() {
         if (value == "gaus_lorentz") {
           _gaus_lorentz_PRF = true;
           std::cout << "PRF is fit with Gaussian-Lorentzian" << std::endl;
-        } else {
+        } else if (value == "pol4") {
           std::cout << "PRF is fit with 4th degree polinom" << std::endl;
+        } else {
+          std::cerr << "ERROR. Unknown PRF function " << value << std::endl;
+          return false;
+        }
+      }  else if (name == "individual_prf") {
+        if (value == "1") {
+          _individual_column_PRF = true;
+          std::cout << "Individual PRF for each column is used" << std::endl;
+        }
+      } else if (name == "prf_centre_freedom") {
+        if (value == "1") {
+          _PRF_free_centre = true;
+          std::cout << "PRF centre position is a free parameter of the fit" << std::endl;
         }
       } else if (name == "track_shape") {
         if (value == "parabola") {
@@ -739,8 +770,11 @@ bool AnalysisBase::ReadParamFile() {
         } else if (value == "linear") {
           _do_linear_fit = true;
           std::cout << "Linear track fit is used" << std::endl;
-        } else {
+        } else if (value == "arc") {
           std::cout << "Arc track fit is used" << std::endl;
+        } else {
+          std::cerr << "ERROR. Unknown track shape " << value << std::endl;
+          return false;
         }
       } else if (name == "max_mult") {
         _max_mult = TString(value).Atoi();

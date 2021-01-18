@@ -62,6 +62,9 @@ def main():
     project_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/../")
     script_path = project_path + "/script/" + temp
     if os.path.exists(script_path):
+        resp = input('Temp folder with this name exists. Rewrite: (y/n): ')
+        if resp != 'y':
+            return 1
         print("Rewriting the temp folder ", script_path)
         shutil.rmtree(script_path)
         os.mkdir(script_path)
@@ -117,7 +120,7 @@ def main():
 
             temp_file.close()
 
-            print(first_file_name, "-->", ot_file)
+            print(first_file_name, "--> ", f'{outpt_version}/{ot_file}', " with ", "".join(add_flags))
 
             file_out = open(script_path + str(i) + ".sh", "w")
             command = ""
@@ -144,10 +147,11 @@ def main():
 
             # create a bash file with a job
             file_out.write("#!/bin/bash\n")
+            file_out.write("cd " + bin_dir + "\n")
             if submit:
                 file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
                 file_out.write("source /afs/cern.ch/work/s/ssuvorov/public/ROOT/root-6.18.00-build_gcc73/bin/thisroot.sh\n")
-            file_out.write("cd " + bin_dir + "\n")
+                file_out.write("source ../setup.sh\n")
             file_out.write(command + "\n")
 
             file_out.close()

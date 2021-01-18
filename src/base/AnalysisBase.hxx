@@ -27,19 +27,22 @@ class TCluster;
 class Clustering {
 public:
   Clustering(Float_t a,
-             Int_t np
-             ):angle(a), n_pads(np){;}
+             int n_pads
+             ):angle(a), n_pads(n_pads) {coeff = (n_pads == 0)?0.001:1./n_pads;}
   virtual ~Clustering(){;};
   /// angle of a reference frame rotation
   Float_t angle;
-  /// number of pads in a row. E.g. 1by1, 2by1, 3by1
-  Int_t n_pads;
+  /// Number of pads in a row
+  int n_pads;
+  /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
+  Float_t coeff;
   /// Function of row and column that is constant for a given cluster
   int GetConstant(int row, int col) {
     if (n_pads == 0)
       return col;
-    else
-      return (col - n_pads*row) / (n_pads);
+    else {
+      return (floor(coeff * col - row));
+    }
   }
 };
 
@@ -93,6 +96,7 @@ class AnalysisBase {
   Clustering* CL_diag;
   Clustering* CL_2by1;
   Clustering* CL_3by1;
+  Clustering* CL_3by2;
 
   /// An actual clustering precedure
   Clustering* _clustering;
@@ -234,6 +238,12 @@ class AnalysisBase {
 
   /// Whether to use Gaussian lorentzian PRf fit over polynomial
   bool _gaus_lorentz_PRF;
+
+  /// Wheather to use individual PRF
+  bool _individual_column_PRF;
+
+  /// Wheather to make PRF center position a free parameter
+  bool _PRF_free_centre;
 
   /// Whether to use arc function for track fitting
   bool _do_linear_fit;

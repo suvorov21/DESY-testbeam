@@ -14,16 +14,16 @@ bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
 //******************************************************************************
 
   auto m_max = sel::GetMaxMultiplicity(track);
-  auto n_gap = sel::GetNoGap(track, invert);
+  auto no_gap = sel::GetNoGap(track, invert);
   if (verbose > 1) {
     std::cout << "SELECTION " << std::endl;
     std::cout << "Max mult\t" << m_max << " < " << max_mult << std::endl;
-    std::cout << "Gap\t" << n_gap << std::endl;
+    std::cout << "No gap\t" << no_gap << std::endl;
     std::cout << "Linear Phi\t" << GetLinearPhi(track, invert) << std::endl;
     std::cout << "Linear theta\t" << GetLinearTheta(track, invert) << std::endl;
   }
   if (m_max > max_mult) return false;
-  if (!n_gap && cut_gap) return false;
+  if (!no_gap && cut_gap) return false;
 
   if (max_phi > 0 && abs(GetLinearPhi(track, invert)) > max_phi) return false;
   if (max_theta > 0 && abs(GetLinearTheta(track, invert)) > max_theta) return false;
@@ -91,7 +91,7 @@ float sel::GetLinearTheta(const std::vector<TCluster*> &track,
                           bool invert) {
 //******************************************************************************
   std::vector <double> par = sel::GetFitParamsXZ(track, invert);
-  return par[2];
+  return par[2] * sel::v_drift_est;
 }
 
 //******************************************************************************
@@ -99,6 +99,7 @@ std::vector <double> sel::GetFitParams(const std::vector<TCluster*> &track,
                                        bool invert) {
 //******************************************************************************
   std::vector <double> params;
+  for (auto i = 0; i < 3; ++i) params.push_back(-999.);
 
   TH2F* MM = new TH2F("MM", "MM",
                       geom::nPadx, 0, geom::nPadx,
@@ -121,9 +122,9 @@ std::vector <double> sel::GetFitParams(const std::vector<TCluster*> &track,
     double quality = fit->GetChisquare() / fit->GetNDF();
     double b = fit->GetParameter(0);
     double k = fit->GetParameter(1);
-    params.push_back(quality);
-    params.push_back(b);
-    params.push_back(k);
+    params[0] = quality;
+    params[1] = b;
+    params[2] = k;
   }
 
   delete MM;
@@ -136,6 +137,7 @@ std::vector <double> sel::GetFitParamsXZ(const std::vector<TCluster*> &track,
                                          bool invert) {
 //******************************************************************************
   std::vector <double> params;
+  for (auto i = 0; i < 3; ++i) params.push_back(-999);
 
   TH2F* MM = new TH2F("MM", "MM",
                       geom::nPadx, 0, geom::nPadx,
@@ -171,9 +173,9 @@ std::vector <double> sel::GetFitParamsXZ(const std::vector<TCluster*> &track,
     quality = fit->GetChisquare() / fit->GetNDF();
     double b = fit->GetParameter(0);
     double k = fit->GetParameter(1);
-    params.push_back(quality);
-    params.push_back(b);
-    params.push_back(k);
+    params[0] = quality;
+    params[1] = b;
+    params[2] = k;
   }
 
   delete MM;

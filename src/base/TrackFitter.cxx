@@ -14,19 +14,26 @@ TrackFitterBase::TrackFitterBase(TrackShape shape,
                                  _invert(invert),
                                  _shape(shape) {
 //******************************************************************************
-  _circle_function_up = new TF1("circle_up",
-    "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]",
-    -0.5, 0.5);
-  _circle_function_up->SetParName(0, "radius");
-  _circle_function_up->SetParName(1, "sin(alpha)");
-  _circle_function_up->SetParName(2, "target");
+  // _circle_function_up = new TF1("circle_up",
+  //   "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]",
+  //   -0.5, 0.5);
+  // _circle_function_up->SetParName(0, "radius");
+  // _circle_function_up->SetParName(1, "sin(alpha)");
+  // _circle_function_up->SetParName(2, "target");
 
-  _circle_function_dn = new TF1("circle_dn",
-    "sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) - [0] * sqrt(1-[1]*[1]) + [2]",
+  // _circle_function_dn = new TF1("circle_dn",
+  //   "sqrt([0]*[0] - TMath::Power(x+0.198 + [1] * [0], 2)) - [0] * sqrt(1-[1]*[1]) + [2]",
+  //   -0.5, 0.5);
+  // _circle_function_dn->SetParName(0, "radius");
+  // _circle_function_dn->SetParName(1, "sin(alpha)");
+  // _circle_function_dn->SetParName(2, "target");
+
+  _circle_function = new TF1("circle",
+    "-TMath::Sign(1, [0]) * sqrt(1./[0]*1./[0] - TMath::Power(x+0.198 - [1] * 1./[0], 2)) + 1./[0] * sqrt(1-[1]*[1]) + [2]",
     -0.5, 0.5);
-  _circle_function_dn->SetParName(0, "radius");
-  _circle_function_dn->SetParName(1, "sin(alpha)");
-  _circle_function_dn->SetParName(2, "target");
+  _circle_function->SetParName(0, "radius");
+  _circle_function->SetParName(1, "sin(alpha)");
+  _circle_function->SetParName(2, "target");
 }
 
 Double_t TrackFitterBase::FitCluster() {
@@ -59,9 +66,10 @@ TrackFitCern::TrackFitCern(TrackShape shape,
                _PRF_time_error(time_errors),
                _fit_bound(fit_bound),
                _charge_uncertainty(charge_uncertainty),
-               _angle(angle) {
+               _angle(angle),
+               _PRF_size(0) {
 //******************************************************************************
-  ;
+  _ax = new TAxis(50, -0.035, 0.015);
 }
 
 //******************************************************************************
@@ -86,6 +94,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
 
     for (auto pad:col) {
       auto q      = pad->GetQ();
+      auto colId  = pad->GetCol(_invert);
       if (!q)
         continue;
 
@@ -98,7 +107,22 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
       if (abs(center_pad_y - pos) > _fit_bound)
         continue;
 
-      double part = (a - _PRF_function->Eval(par[0] - center_pad_y));
+      TF1* PRF_tmp = _PRF_function;
+
+      if (_PRF_size && _complicated_pattern_PRF) {
+        auto prf_it = abs(colId % _PRF_size);
+        PRF_tmp = _PRF_arr[prf_it];
+      }
+
+      if (_PRF_size && _individual_column_PRF)
+        PRF_tmp = _PRF_arr[colId];
+
+      if (!PRF_tmp) {
+        std::cerr << "ERROR in TrackFitCern::FitCluster(). PRF is NULL" << std::endl;
+        exit(1);
+      }
+
+      double part = (a - PRF_tmp->Eval(center_pad_y - par[0]));
 
       if (_charge_uncertainty) {
         /** Poisson fluctuations only */
@@ -167,7 +191,15 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
   (void)ok;
   const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
 
-  return result_cluster.GetParams()[0];
+  auto fix = 0.;
+  /** DEV Try to fix a bias with correction */
+  // auto bin = _ax->FindBin(result_cluster.GetParams()[0]);
+
+  // if (bin > 0 && bin < 51)
+  //   fix = _corr[col[0]->GetCol()][bin-1];
+  /** */
+
+  return result_cluster.GetParams()[0] - fix;
 }
 
 //******************************************************************************
@@ -206,30 +238,54 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     track_gr->Fit("pol1", opt);
     fit = (TF1*)track_gr->GetFunction("pol1")->Clone();
   } else if (_shape == arc) {
+    // Float_t q_up, q_down;
+    // q_up = q_down = 1.e9;
+    // _circle_function_dn->SetParameters(80., 0, 0.);
+    // track_gr->Fit("circle_dn", opt);
+    // fit = track_gr->GetFunction("circle_dn");
+    // if (fit)
+    //   q_down = fit->GetChisquare() / fit->GetNDF();
+
+    // _circle_function_up->SetParameters(80., 0, 0.);
+    // track_gr->Fit("circle_up", opt);
+    // fit = track_gr->GetFunction("circle_up");
+    // if (fit)
+    //   q_up = fit->GetChisquare() / fit->GetNDF();
+
+    // if (q_up > q_down)
+    //   func = "circle_dn";
+    // else
+    //   func = "circle_up";
+
+    // track_gr->Fit(func, "Q");
+    // if (!track_gr->GetFunction(func))
+    //   return NULL;
+    // fit = (TF1*)track_gr->GetFunction(func)->Clone();
+
     Float_t q_up, q_down;
     q_up = q_down = 1.e9;
-    _circle_function_dn->SetParameters(80., 0, 0.);
-    track_gr->Fit("circle_dn", opt);
-    fit = track_gr->GetFunction("circle_dn");
-    if (fit)
-      q_down = fit->GetChisquare() / fit->GetNDF();
+    _circle_function->SetParameters(1./80., 0, 0.);
+    track_gr->Fit("circle", opt);
+    TF1* fit_up = (TF1*)track_gr->GetFunction("circle")->Clone();
+    if (fit_up)
+      q_up = fit_up->GetChisquare() / fit_up->GetNDF();
 
-    _circle_function_up->SetParameters(80., 0, 0.);
-    track_gr->Fit("circle_up", opt);
-    fit = track_gr->GetFunction("circle_up");
-    if (fit)
-      q_up = fit->GetChisquare() / fit->GetNDF();
+    _circle_function->SetParameters(-1./80., 0, 0.);
+    track_gr->Fit("circle", opt);
+    TF1* fit_dn = (TF1*)track_gr->GetFunction("circle")->Clone();
+    if (fit_dn)
+      q_down = fit_dn->GetChisquare() / fit_dn->GetNDF();
+
+    if (!track_gr->GetFunction("circle"))
+      return NULL;
 
     if (q_up > q_down)
-      func = "circle_dn";
+      fit = (TF1*)fit_dn->Clone();
     else
-      func = "circle_up";
+      fit = (TF1*)fit_up->Clone();
 
-    track_gr->Fit(func, "Q");
-    if (!track_gr->GetFunction(func))
-      return NULL;
-    fit = (TF1*)track_gr->GetFunction(func)->Clone();
-
+    delete fit_up;
+    delete fit_dn;
   }
 
   delete track_gr;
@@ -238,4 +294,15 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     return NULL;
 
   return fit;
+}
+
+//******************************************************************************
+void TrackFitCern::SetPRFarr(TF1* f[], const int n) {
+//******************************************************************************
+  _PRF_arr = new TF1*[n];
+  for (auto i = 0; i < n; ++i) {
+    _PRF_arr[i] = f[i];
+  }
+
+  _PRF_size = n;
 }
