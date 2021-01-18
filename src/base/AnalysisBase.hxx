@@ -216,7 +216,7 @@ class AnalysisBase {
   Float_t _max_theta;
 
 
-  ///Store the wfs
+  /// Wether to store the WFs
   bool _to_store_wf;
 
   /// T2K plotting style

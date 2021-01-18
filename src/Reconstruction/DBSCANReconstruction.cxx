@@ -155,18 +155,11 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const Int_t padAmpl[geom::nPad
 }
 
 std::vector<int> DBSCANReconstruction::FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n){
+      std::vector<int> wf_v;
 
-      std::vector<int> wf_v; 
-      //wf_v.reserve(600);
-
-      for(int k=0; k<geom::Nsamples; k++){
-        //int ampl = padAmpl[n.x][n.y][k];
-        //if(ampl <= 0) continue;
+      for(int k=0; k<geom::Nsamples; k++)
         wf_v.push_back(padAmpl[n.x][n.y][k]);
-      }
 
-  //if (_verbose > 2)
-    //std::cout << "Filed " << nodes.size() << " nodes" << std::endl;
   return wf_v;
 }
 

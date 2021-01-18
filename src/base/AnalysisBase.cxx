@@ -754,10 +754,13 @@ bool AnalysisBase::ReadParamFile() {
         _max_phi = TString(value).Atof();
       } else if (name == "max_theta") {
         _max_theta = TString(value).Atof();
-//switch to WF storage
+      //switch to WF storage
       } else if (name == "to_store_wf") {
         if (value == "0") {
           _to_store_wf = false;
+          std::cout << "WFs will NOT be stored" << std::endl;
+        } else {
+          std::cout << "WFs will be stored. Analysis will be slowed down" << std::endl;
         }
       }
     }

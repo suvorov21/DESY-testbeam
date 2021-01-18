@@ -251,11 +251,6 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_y[%i][10]/I", Nclusters)
                 );
 
-  //_tree->Branch("pad_wf_t",
-  //              &_pad_wf_t,
-  //              TString::Format("_pad_wf_t[%i][10][520]/I", Nclusters)
-  //              );
-
   if (_to_store_wf) _tree->Branch("pad_wf_q",
                 &_pad_wf_q,
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
@@ -518,7 +513,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
        for (auto nSmp = 0; nSmp < 520; ++nSmp) {
 	    //_pad_wf_t[colId][padId][nSmp] = -999;
 	    _pad_wf_q[colId][padId][nSmp] = -999;
-         
+
       	}
 
       }
@@ -585,7 +580,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     if (_verbose >= v_analysis_steps)
       std::cout << "start cluster fit" << std::endl;
-      
+
     std::vector <double> QsegmentS; QsegmentS.clear();
     std::vector <int> pad_wf_v; //WF
 
@@ -603,7 +598,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       _clust_pos[clusterId] = 0.;
       _charge[clusterId] = 0;
-        
+
       int colQ = 0;
       int padId = 0;
 
@@ -616,7 +611,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                                           _invert,
                                                           _clustering->angle);
         _charge[clusterId] += pad->GetQ();
-         
+
 
         //dEdx part
 	pad_wf_v.clear();
@@ -629,7 +624,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _pad_y[clusterId][padId] = pad->GetRow(_invert);
         _wf_width[clusterId][padId] = pad->GetWidth();
         _wf_fwhm[clusterId][padId] = pad->GetFWHM();
-  
+
         //if (_pad_charge[clusterId][padId] <= 0) continue;
 
          if (_to_store_wf){
@@ -711,9 +706,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         std::cout << "Cluster pos " << track_pos[clusterId] << "\t";
         std::cout << cluster_mean[clusterId] << std::endl;
       }
-        
+
         if (colQ) QsegmentS.push_back(colQ);
-        
+
     } // loop over clusters
 
     std::vector<TCluster*> clusters_clean;
@@ -751,7 +746,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose >= v_analysis_steps) {
       std::cout << "Loop over columns done" << std::endl;
     }
-      
+
       //dEdx calculations
       double alpha = 0.7;
       sort(QsegmentS.begin(), QsegmentS.end());
@@ -862,7 +857,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       // Fill PRF
       auto robust_pads = GetRobustPadsInColumn(cluster->GetHits());
       int padId = 0;
-        
+
       for (auto pad:robust_pads) {
         if (!pad)
           continue;
