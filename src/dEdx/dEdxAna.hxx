@@ -42,6 +42,9 @@ class dEdxAna: public AnalysisBase {
   Int_t _wf_width[10][geom::nPadx];
   Int_t _wf_fwhm[10][geom::nPadx];
 
+  Int_t _pad_wf_t[10][geom::nPadx][520];
+  Int_t _pad_wf_q[10][geom::nPadx][520];
+
   /**
    * Histogramms and graphs declaration
    */

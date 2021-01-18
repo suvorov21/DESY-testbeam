@@ -108,6 +108,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(
       int Q = 0;
       int t = 0;
       std::vector<std::pair<int, int>> WF_v;
+      //WF_v.reserve(600);
       int first = 0;
       int last = -9999;
       for(int k=0; k<geom::Nsamples; k++){
@@ -142,6 +143,8 @@ std::vector<Node> DBSCANReconstruction::FillNodes(
         node.id = nodes.size();
         nodes.push_back(node);
       }
+
+
     }
   }
   if (_verbose > 2)
@@ -151,6 +154,15 @@ std::vector<Node> DBSCANReconstruction::FillNodes(
     nodes.erase(nodes.begin(), nodes.end());
   }
   return nodes;
+}
+
+std::vector<int> DBSCANReconstruction::FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n){
+      std::vector<int> wf_v;
+
+      for(int k=0; k<geom::Nsamples; k++)
+        wf_v.push_back(padAmpl[n.x][n.y][k]);
+
+  return wf_v;
 }
 
 std::vector<DB_Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
@@ -237,7 +249,7 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   delete event3D;
 }
 
-bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<DB_Cluster> clusters, TEvent* event){
+bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], std::vector<Node> nodes, std::vector<DB_Cluster> clusters, TEvent* event){
   if(!nodes.size()) return false;
   std::vector <TTrack*> tracks;
   std::vector<THit*> unusedHits;
@@ -249,7 +261,8 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<DB_Cl
     tracks.push_back(track);
     for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
-      THit *hit = new THit(n.x,n.y,n.t,n.q,n.w,n.whm);
+      std::vector<int> wf_v = FillWFs(padAmpl,n);
+      THit *hit = new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm);
       usedHits[i] = 1;
       if(n.c == (int)trkID){
         track->AddHit(hit);
@@ -260,7 +273,8 @@ bool DBSCANReconstruction::FillOutput(std::vector<Node> nodes, std::vector<DB_Cl
   // stored unselected hits
   for (uint i = 0; i<nodes.size(); i++){
     Node n = nodes[i];
-    if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q,n.w,n.whm));
+    std::vector<int> wf_v = FillWFs(padAmpl,n);
+    if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm));
   }
 
 
@@ -277,6 +291,6 @@ bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nP
   std::vector<Node> new_nodes = UpdateNodes(clusters,nodes);
 
   //if(nodes.size()) DrawNodes(new_nodes);
-  if(nodes.size()) if(clusters.size() == 1) return FillOutput(new_nodes,clusters,event);
+  if(nodes.size()) if(clusters.size() == 1) return FillOutput(padAmpl,new_nodes,clusters,event);
   return false;
 }

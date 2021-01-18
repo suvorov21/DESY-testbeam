@@ -1,3 +1,4 @@
+
 #ifndef SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 #define SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 
@@ -24,6 +25,7 @@ struct Node{
     int id = -999;  // node ID
     int  w = -999;  // WF width
     int whm = -999; // WF WHM
+
 };
 
 struct DB_Cluster{
@@ -39,13 +41,9 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual ~DBSCANReconstruction() {;}
 
   virtual bool Initialize(int verbose);
-  virtual bool SelectEvent(
-                const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                TEvent* event
-                );
-  /// Initial fill of nodes
-  virtual std::vector<Node> FillNodes(
-                const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
+  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
+  virtual std::vector<Node> FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
+  virtual std::vector<int> FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n);
   virtual double MeasureDistance(Node a, Node b);
   /// Merge nodes into clusters
   virtual std::vector<Node> FindClusters(std::vector<Node> nodes);
@@ -57,9 +55,9 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual std::vector <Node> UpdateNodes(std::vector <DB_Cluster> clusters,
                                          std::vector <Node> nodes);
   virtual void DrawNodes(std::vector<Node> nodes);
-
-  /// Fill the output TEvent from clusters of nodes
-  virtual bool FillOutput(std::vector<Node> nodes,
+  /// Store the output in TEven format
+  virtual bool FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                          std::vector<Node> nodes,
                           std::vector<DB_Cluster> clusters,
                           TEvent* event);
 

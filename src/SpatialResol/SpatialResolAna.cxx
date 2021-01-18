@@ -298,6 +298,11 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_y[%i][10]/I", Nclusters)
                 );
 
+  if (_to_store_wf) _tree->Branch("pad_wf_q",
+                &_pad_wf_q,
+                TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
+                );
+
   _output_vector.push_back(_tree);
 
   _hdEdx  = new TH1F("dEdx","",300,0,5000);
@@ -563,6 +568,13 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           _pad_y[colId][padId] = -999;
           _wf_width[colId][padId] = -999;
           _wf_fwhm[colId][padId] = -999;
+
+       for (auto nSmp = 0; nSmp < 520; ++nSmp) {
+	    //_pad_wf_t[colId][padId][nSmp] = -999;
+	    _pad_wf_q[colId][padId][nSmp] = -999;
+
+      	}
+
       }
 
       cluster_N[colId]     = 0;
@@ -628,6 +640,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose >= v_analysis_steps)
       std::cout << "start cluster fit" << std::endl;
 
+    std::vector <double> QsegmentS; QsegmentS.clear();
+    std::vector <int> pad_wf_v; //WF
+
+    //if (robust_clusters.size() < 30) continue;
+          //continue;
+
     for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
       auto cluster = robust_clusters[clusterId];
       if (!(&cluster[0]))
@@ -639,16 +657,50 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       _clust_pos[clusterId] = 0.;
       _charge[clusterId] = 0;
+
+      int colQ = 0;
+      int padId = 0;
+
       for (auto pad:robust_pads) {
         if (!pad)
           continue;
+
 
         _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
                                                           _invert,
                                                           _clustering->angle);
         _charge[clusterId] += pad->GetQ();
-      } // loop over pads
 
+
+        //dEdx part
+	pad_wf_v.clear();
+
+        colQ+= pad->GetQ();
+
+        _pad_charge[clusterId][padId] = pad->GetQ();
+        _pad_time[clusterId][padId] = pad->GetTime();
+        _pad_x[clusterId][padId] = pad->GetCol(_invert);
+        _pad_y[clusterId][padId] = pad->GetRow(_invert);
+        _wf_width[clusterId][padId] = pad->GetWidth();
+        _wf_fwhm[clusterId][padId] = pad->GetFWHM();
+
+        //if (_pad_charge[clusterId][padId] <= 0) continue;
+
+         if (_to_store_wf){
+
+          pad_wf_v = pad->GetWF_v();
+
+
+          for (auto tz = 0; tz < pad_wf_v.size(); ++tz) {
+	    //_pad_wf_t[clusterId][padId][tz] = pad_wf_v[tz].first;
+	    //if(pad_wf_v[tz].first == tz)
+	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz]; //.second;
+          }
+	}
+        ++padId;
+
+
+      } // loop over pads
       _clust_pos[clusterId] /= _charge[clusterId];
       _x[clusterId] = cluster->GetX();
 
@@ -713,6 +765,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         std::cout << "Cluster pos " << track_pos[clusterId] << "\t";
         std::cout << cluster_mean[clusterId] << std::endl;
       }
+
+        if (colQ) QsegmentS.push_back(colQ);
+
     } // loop over clusters
 
     std::vector<TCluster*> clusters_clean;
@@ -750,6 +805,18 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (_verbose >= v_analysis_steps) {
       std::cout << "Loop over columns done" << std::endl;
     }
+
+      //dEdx calculations
+      double alpha = 0.7;
+      sort(QsegmentS.begin(), QsegmentS.end());
+      double totQ = 0.;
+      Int_t i_max = round(alpha * QsegmentS.size());
+      for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
+      float CT= totQ / (alpha * QsegmentS.size());
+
+      //_npoints = QsegmentS.size();
+      _dEdx = CT;
+      _hdEdx->Fill(CT);
 
     _Cols_used->Fill(Ndots);
 
@@ -878,9 +945,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 // ************ STEP 6 *********************************************************
 
-      std::vector <double> QsegmentS; QsegmentS.clear();
-
-    // PRF is filled for all the clusters!
     for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
       auto cluster = clusters[clusterId];
       a_peak_fit[clusterId] = cluster->GetCharge();
@@ -891,7 +955,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       // Fill PRF
       auto robust_pads = GetRobustPadsInColumn(cluster->GetHits());
       int padId = 0;
-      int colQ = 0;
 
       for (auto pad:robust_pads) {
         if (!pad)
@@ -918,17 +981,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _time[clusterId][padId]  = time;
         _dx[clusterId][padId]    = center_pad_y - track_fit_y;
         _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
-
-        //dEdx part
-        colQ+= pad->GetQ();
-
-        _pad_charge[clusterId][padId] = q;
-        _pad_time[clusterId][padId] = time;
-        _pad_x[clusterId][padId] = pad->GetCol(_invert);
-        _pad_y[clusterId][padId] = pad->GetRow(_invert);
-        _wf_width[clusterId][padId] = pad->GetWidth();
-        _wf_fwhm[clusterId][padId] = pad->GetFWHM();
-
 
         if (_verbose >= v_prf) {
           std::cout << "PRF fill\t" << _dx[clusterId][padId];
@@ -963,7 +1015,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         // robust_pads are assumed sorted!!
         ++padId;
       }
-        if (colQ) QsegmentS.push_back(colQ);
     } // loop over columns
     _sw_partial[4]->Stop();
     for (int i = 0; i < Nclusters; ++i)
@@ -977,18 +1028,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       Draw();
     delete fit;
 
-    //dEdx calculations
-    double alpha = 0.7;
-    sort(QsegmentS.begin(), QsegmentS.end());
-    double totQ = 0.;
-    Int_t i_max = round(alpha * QsegmentS.size());
-    for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
-    float CT= totQ / (alpha * QsegmentS.size());
-    //_hdEdx->Fill(CT);
-
-    //_npoints = QsegmentS.size();
-    _dEdx = CT;
-    _hdEdx->Fill(CT);
     _tree->Fill();
   } // loop over tracks
 
@@ -1469,4 +1508,5 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TEvent* event, int trkID) {
   delete MMsel;
   delete event3D;*/
 }
+
 
