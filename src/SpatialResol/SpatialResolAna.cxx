@@ -682,6 +682,45 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         if (!pad)
           continue;
 
+        // treat cross-talk
+        // not for the first pad
+        if (pad != robust_pads[0] && _cross_talk_treat != def) {
+          auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
+          auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
+          // cross talk selection
+          if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
+            pad->SetQ(0);
+            for (auto time = pad->GetTime() + 4; time < 510; ++time) {
+              if (pad->GetWF_v()[time] > pad->GetQ()) {
+                pad->SetTime(time);
+                pad->SetQ(pad->GetWF_v()[time]);
+              }
+            } // over time
+            if (pad->GetQ() == 0) {
+              delete pad;
+              pad = NULL;
+            }
+          } // cross-talk suppression
+
+          if (_cross_talk_treat == cherry_pick) {
+            pad->SetQ(0);
+            for (
+                 auto time = robust_pads[0]->GetTime() - 4;
+                 time < robust_pads[0]->GetTime() + 4;
+                 ++time
+                 ) {
+              if (pad->GetWF_v()[time] > pad->GetQ() &&
+                  pad->GetWF_v()[time] > pad->GetWF_v()[robust_pads[0]->GetTime() + 5]) {
+                pad->SetTime(time);
+                pad->SetQ(pad->GetWF_v()[time]);
+              }
+            } // over time
+            if (pad->GetQ() == 0) {
+              delete pad;
+              pad = NULL;
+            }
+          } // cross-talk cherry picking
+        } // cross-talk block
 
         _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
                                                           _invert,
