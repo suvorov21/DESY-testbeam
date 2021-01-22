@@ -41,6 +41,7 @@ get robust clusters (truncate, etc.)
 #### step 2 ####################################################################
 
 for cluster:clusters
+    treat cross-talk
     get centre of charge position
     call fitter for cluster
 

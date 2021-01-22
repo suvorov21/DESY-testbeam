@@ -634,7 +634,6 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
     exit(1);
   }
-  std::cout << "coef " << _clustering->coeff << std::endl;
   std::vector<TCluster*> cluster_v;
   for (auto col:tr->GetCols(_invert)) {
     // skip first and last column
@@ -668,7 +667,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr) {
           auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
           (*it)->SetX(x_new);
           /** */
-          std::cout << "Add to cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
+          // std::cout << "Add to cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
 
           break;
         }
@@ -679,7 +678,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr) {
         first_cluster->SetX(geom::GetXposPad(pad, _invert, _clustering->angle));
         first_cluster->SetCharge(pad->GetQ());
         cluster_v.push_back(first_cluster);
-        std::cout << "New cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
+        // std::cout << "New cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
       }
     } // over pads
   } // over cols diagonalise track

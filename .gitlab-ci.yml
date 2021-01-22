@@ -83,6 +83,7 @@ Spatial_resol_slope_3by1:
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
     - sed -i '23s@.*@cluster = 3by1@' params/default.ini
+    - sed -i '28s@.*@invert = 1@' params/default.ini
     - sed -i '34s@.*@max_mult = 6@' params/default.ini
     - sed -i '45s@.*@cluster_min  = 31@' params/default.ini
     - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"

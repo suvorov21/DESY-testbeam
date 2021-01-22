@@ -678,7 +678,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       int colQ = 0;
       int padId = 0;
 
+      auto pad_id = -1;
       for (auto pad:robust_pads) {
+        ++pad_id;
         if (!pad)
           continue;
 
@@ -697,8 +699,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
               }
             } // over time
             if (pad->GetQ() == 0) {
-              delete pad;
-              pad = NULL;
+              robust_pads.erase(
+                                robust_pads.begin() + pad_id,
+                                robust_pads.begin() + pad_id + 1
+                                );
             }
           } // cross-talk suppression
 
@@ -716,8 +720,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
               }
             } // over time
             if (pad->GetQ() == 0) {
-              delete pad;
-              pad = NULL;
+              robust_pads.erase(
+                                robust_pads.begin() + pad_id,
+                                robust_pads.begin() + pad_id + 1
+                                );
             }
           } // cross-talk cherry picking
         } // cross-talk block
