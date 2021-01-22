@@ -154,7 +154,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
     _ev = event->GetID() + (trkID+1) * 1e8;
     TTrack* itrack = event->GetTracks()[trkID];
     std::vector<TCluster*> clusters;
-    clusters = ClusterTrack(itrack, &Clustering::GetConstant, *_clustering);
+    clusters = ClusterTrack(itrack);
 
     if (_verbose > 1)
       std::cout << "Clusterization done " << clusters.size() <<  std::endl;
@@ -203,7 +203,7 @@ bool dEdxAna::ProcessEvent(const TEvent *event) {
       	for (auto nSmp = 0; nSmp < 520; ++nSmp) {
 	    _pad_wf_t[j][i][nSmp] = -999;
 	    _pad_wf_q[j][i][nSmp] = -999;
-         
+
       	}
 
 

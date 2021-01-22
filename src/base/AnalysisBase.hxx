@@ -41,7 +41,7 @@ public:
     if (n_pads == 0)
       return col;
     else {
-      return (floor(coeff * col - row));
+      return (floor(coeff * row - col));
     }
   }
 };
@@ -109,7 +109,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = connst and so on.
   */
-  std::vector<TCluster*> ClusterTrack(const TTrack* tr, int (Clustering::*f)(int, int), Clustering& cl);
+  std::vector<TCluster*> ClusterTrack(const TTrack* tr);
 
 
   /************************** Utilities functions *****************************/
@@ -219,6 +219,14 @@ class AnalysisBase {
   /// Maximum angle (abs(tan)) w.r.t. MM plane
   Float_t _max_theta;
 
+  /// Hot to treat cross-talk
+  enum cross_talk {
+    def = 0,
+    suppress,
+    cherry_pick
+  };
+
+  cross_talk _cross_talk_treat;
 
   /// Wether to store the WFs
   bool _to_store_wf;

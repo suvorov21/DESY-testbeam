@@ -605,7 +605,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 // *******************  STEP 1 *************************************************
 
     std::vector<TCluster*> clusters;
-    clusters = ClusterTrack(track, &Clustering::GetConstant, *_clustering);
+    clusters = ClusterTrack(track);
 
     if (_verbose >= v_analysis_steps)
       std::cout << "Clusterization done " << clusters.size() <<  std::endl;
@@ -690,7 +690,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
         //dEdx part
-	pad_wf_v.clear();
+      	pad_wf_v.clear();
 
         colQ+= pad->GetQ();
 
@@ -708,15 +708,11 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           pad_wf_v = pad->GetWF_v();
 
 
-          for (auto tz = 0; tz < pad_wf_v.size(); ++tz) {
-	    //_pad_wf_t[clusterId][padId][tz] = pad_wf_v[tz].first;
-	    //if(pad_wf_v[tz].first == tz)
-	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz]; //.second;
+          for (uint tz = 0; tz < pad_wf_v.size(); ++tz) {
+      	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz];
           }
-	}
+      	}
         ++padId;
-
-
       } // loop over pads
       _clust_pos[clusterId] /= _charge[clusterId];
       _x[clusterId] = cluster->GetX();

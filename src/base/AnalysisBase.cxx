@@ -8,6 +8,7 @@
 
 //******************************************************************************
 AnalysisBase::AnalysisBase(int argc, char** argv) :
+  _clustering(NULL),
   _file_in_name(""),
   _file_out_name(""),
   _param_file_name(""),
@@ -627,10 +628,13 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
-                                                  int (Clustering::*f)(int, int),
-                                                  Clustering& cl) {
+std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr) {
 //******************************************************************************
+  if (!_clustering) {
+    std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
+    exit(1);
+  }
+  std::cout << "coef " << _clustering->coeff << std::endl;
   std::vector<TCluster*> cluster_v;
   for (auto col:tr->GetCols(_invert)) {
     // skip first and last column
@@ -641,7 +645,7 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
       auto col_id = pad->GetCol(_invert);
       auto row_id = pad->GetRow(_invert);
 
-      auto cons = (cl.*f)(row_id, col_id);
+      auto cons = _clustering->GetConstant(row_id, col_id);
       // skip first and last row
       if (row_id == 0 || row_id == geom::GetNRow(_invert)-1)
         continue;
@@ -655,15 +659,16 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
 
         auto cluster_col = (*(*it))[0]->GetCol(_invert);
         auto cluster_row = (*(*it))[0]->GetRow(_invert);
-        if ((cl.*f)(cluster_row, cluster_col) == cons) {
+        if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
           (*it)->AddHit(pad);
           (*it)->AddCharge(pad->GetQ());
           /** update X position */
-          auto x_pad = geom::GetXposPad(pad, _invert, cl.angle);
+          auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
           auto mult  = (*it)->GetSize();
           auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
           (*it)->SetX(x_new);
           /** */
+          std::cout << "Add to cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
 
           break;
         }
@@ -671,9 +676,10 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr,
       // add new cluster
       if (it == cluster_v.end()) {
         TCluster* first_cluster = new TCluster(pad);
-        first_cluster->SetX(geom::GetXposPad(pad, _invert, cl.angle));
+        first_cluster->SetX(geom::GetXposPad(pad, _invert, _clustering->angle));
         first_cluster->SetCharge(pad->GetQ());
         cluster_v.push_back(first_cluster);
+        std::cout << "New cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
       }
     } // over pads
   } // over cols diagonalise track
@@ -795,6 +801,17 @@ bool AnalysisBase::ReadParamFile() {
           std::cout << "WFs will NOT be stored" << std::endl;
         } else {
           std::cout << "WFs will be stored. Analysis will be slowed down" << std::endl;
+        }
+      } else if (name == "cross_talk") {
+        if (value == "suppress") {
+          _cross_talk_treat = suppress;
+          std::cout << "Cross-talk will be suppressed" << std::endl;
+        } else if (value == "cherry_pick") {
+          _cross_talk_treat = cherry_pick;
+          std::cout << "Cross-talk will be cherry-picked" << std::endl;
+        } else {
+          _cross_talk_treat = def;
+          std::cout << "Cross-talk will not be treated" << std::endl;
         }
       }
     }
