@@ -82,6 +82,13 @@ namespace units {
     const float a2_inv  =   1.0652823;
     const float a3_inv  =   1.2173058;
     const float a32_inv =   0.93503353;
+
+    // OBSOLETE
+    // const float a2      =   1.0652823;
+    // const float a3      =   1.2173058;
+
+    // const float a2_inv  =   1.1465425;
+    // const float a3_inv  =   1.2783096;
 }
 
 #endif

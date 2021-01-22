@@ -703,6 +703,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                 robust_pads.begin() + pad_id,
                                 robust_pads.begin() + pad_id + 1
                                 );
+              --pad_id;
             }
           } // cross-talk suppression
 
@@ -724,6 +725,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                                 robust_pads.begin() + pad_id,
                                 robust_pads.begin() + pad_id + 1
                                 );
+              --pad_id;
             }
           } // cross-talk cherry picking
         } // cross-talk block

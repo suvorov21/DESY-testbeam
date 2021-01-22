@@ -41,7 +41,7 @@ public:
     if (n_pads == 0)
       return col;
     else {
-      return (floor(coeff * row - col));
+      return (floor(coeff * col - row));
     }
   }
 };
