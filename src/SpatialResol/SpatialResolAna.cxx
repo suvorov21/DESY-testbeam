@@ -77,7 +77,12 @@ bool SpatialResolAna::Initialize() {
     }
 
     // READ PRF
-    auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
+    TH2F* histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
+    auto tree = (TTree*)_Prev_iter_file->Get("outtree");
+    if (!histo_prev) {
+      histo_prev = new TH2F("PRF_histo_tmp2","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+      tree->Project("PRF_histo_tmp2", "qfrac:dx");
+    }
     histo_prev->SetName("prev_hsto");
     if (!ProfilePRF(histo_prev, _PRF_graph)) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
@@ -107,7 +112,6 @@ bool SpatialResolAna::Initialize() {
 
     // Read PRF for complicated patterns
     if (_clustering->n_pads > 1) {
-      auto tree = (TTree*)_Prev_iter_file->Get("outtree");
       _PRF_function_arr = new TF1*[3];
       for (auto rest = 0; rest < _clustering->n_pads; ++rest) {
         _PRF_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
@@ -126,7 +130,7 @@ bool SpatialResolAna::Initialize() {
     }
 
     if (_individual_column_PRF) {
-      auto tree = (TTree*)_Prev_iter_file->Get("outtree");
+
       _PRF_function_arr = new TF1*[36];
       for (auto colId = 0; colId < geom::GetNColumn(_invert); ++colId) {
         _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", _PRF_free_centre);
@@ -880,35 +884,35 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     std::vector<TCluster*> clusters_clean;
     // if not a column clustering
-    if (_clustering->n_pads > 0) {
-      // average 2 measurements into one
-      for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
-        auto cluster1 = robust_clusters[pairIt+0];
-        auto cluster2 = robust_clusters[pairIt+1];
-        if (!cluster1 || !cluster2)
-          continue;
-        float x1 = cluster1->GetX();
-        float x2 = cluster2->GetX();
-        float av_x = 0.5 * (x1 + x2);
+    // if (_clustering->n_pads > 100) {
+    //   // average 2 measurements into one
+    //   for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
+    //     auto cluster1 = robust_clusters[pairIt+0];
+    //     auto cluster2 = robust_clusters[pairIt+1];
+    //     if (!cluster1 || !cluster2)
+    //       continue;
+    //     float x1 = cluster1->GetX();
+    //     float x2 = cluster2->GetX();
+    //     float av_x = 0.5 * (x1 + x2);
 
-        float y1 = cluster1->GetY();
-        float y2 = cluster2->GetY();
+    //     float y1 = cluster1->GetY();
+    //     float y2 = cluster2->GetY();
 
-        float y1_e = cluster1->GetYE();
-        float y2_e = cluster2->GetYE();
+    //     float y1_e = cluster1->GetYE();
+    //     float y2_e = cluster2->GetYE();
 
-        float av_y = y1 * y2_e * y2_e + y2 * y1_e * y1_e;
-        av_y /= y1_e * y1_e + y2_e * y2_e;
+    //     float av_y = y1 * y2_e * y2_e + y2 * y1_e * y1_e;
+    //     av_y /= y1_e * y1_e + y2_e * y2_e;
 
-        auto cl = new TCluster();
-        cl->SetPos(av_x, av_y, 0.);
-        clusters_clean.push_back(cl);
-      } // loop over pairs
-    } else {
+    //     auto cl = new TCluster();
+    //     cl->SetPos(av_x, av_y, 0.);
+    //     clusters_clean.push_back(cl);
+    //   } // loop over pairs
+    // } else {
       // do nothing in case of row/column
       for (auto cluster:robust_clusters)
         clusters_clean.push_back(cluster);
-    }
+    // }
 
     if (_verbose >= v_analysis_steps) {
       std::cout << "Loop over columns done" << std::endl;
