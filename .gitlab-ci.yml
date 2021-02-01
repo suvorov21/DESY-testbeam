@@ -60,7 +60,7 @@ Spatial_resol_slope_diagonal:
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
-    - ./test/SR_test.exe Spatial_test_iter1.root 500;
+    - ./test/SR_test.exe Spatial_test_iter1.root 600;
 
 Spatial_resol_slope_column:
   stage: test
@@ -89,7 +89,7 @@ Spatial_resol_slope_3by1:
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
-    - ./test/SR_test.exe Spatial_test_iter1.root 500;
+    - ./test/SR_test.exe Spatial_test_iter1.root 600;
 
 dEdx_raw_test:
   stage: test
