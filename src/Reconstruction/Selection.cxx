@@ -47,33 +47,34 @@ int sel::GetMaxMultiplicity(const std::vector<TCluster*> &track) {
 bool sel::GetNoGap(const std::vector<TCluster*> &track,
                    const bool &invert) {
 //******************************************************************************
-  std::vector<int> row;
-  std::vector<int> col;
   for(auto cluster:track) if(cluster->GetSize()){
+    std::vector<int> row;
+    std::vector<int> col;
     for (auto pad:*cluster) if (pad) {
       row.push_back(pad->GetRow(invert));
       col.push_back(pad->GetCol(invert));
     } // loop over pads
-  } // loop over cluster
-  sort(row.begin(), row.end());
-  sort(col.begin(), col.end());
 
-  // no gaps in rows
-  if (row.size() == 0)
-    return false;
-  auto prev = row[0];
-  for (auto r:row) {
-    if (r - prev > 1)
+    sort(row.begin(), row.end());
+    sort(col.begin(), col.end());
+
+    // no gaps in rows
+    if (row.size() == 0)
       return false;
-    prev = r;
-  }
-  // no gaps in cols
-  prev = col[0];
-  for (auto c:col) {
-    if (c - prev > 1)
-      return false;
-    prev = c;
-  }
+    auto prev = row[0];
+    for (auto r:row) {
+      if (r - prev > 1)
+        return false;
+      prev = r;
+    }
+    // no gaps in cols
+    prev = col[0];
+    for (auto c:col) {
+      if (c - prev > 1)
+        return false;
+      prev = c;
+    }
+  } // loop over cluster
 
   return true;
 }
