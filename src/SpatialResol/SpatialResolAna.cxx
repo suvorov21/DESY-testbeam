@@ -12,8 +12,6 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   _tree(NULL),
   _do_full_track_fit(false),
   _do_separate_pad_fit(false),
-  // WARNING
-  _correction(true),
   _gaussian_residuals(true),
   _charge_uncertainty(true) {
 //******************************************************************************

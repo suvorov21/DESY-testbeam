@@ -175,9 +175,6 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether fit all the pads separatly
   bool _do_separate_pad_fit;
 
-  /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool _correction;
-
   /// Whether to fit residuals with Gaussian
   bool _gaussian_residuals;
 

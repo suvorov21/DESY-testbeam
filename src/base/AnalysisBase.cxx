@@ -22,6 +22,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _chain(NULL),
   _Prev_iter_name(TString("")),
   _iteration(0),
+  _correction(false),
   _reconstruction(NULL),
   _max_mult(6),
   _cut_gap(true),
@@ -72,6 +73,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     if (c < 0) break;
     switch (c) {
       case 0  :
+        if (index == 5) _correction       =  true;
         if (index == 6) _start_ID         =  atoi(optarg);
         if (index == 7) _end_ID           =  atoi(optarg);
         if (index == 8) _param_file_name  = optarg;

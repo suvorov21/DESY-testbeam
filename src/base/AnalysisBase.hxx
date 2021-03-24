@@ -187,6 +187,9 @@ class AnalysisBase {
   /// iteration number. Starting from 0
   Int_t   _iteration;
 
+  /// Whether to apply correction of spatial resolution (take geometrical mean)
+  bool _correction;
+
   /// choose the input array size, whether to use 510 or 511 time bins
   bool _saclay_cosmics;
   Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
