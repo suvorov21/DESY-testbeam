@@ -16,7 +16,6 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _end_ID(-1),
   _selected(0),
   _event(NULL),
-  _store_event_tree(false),
   _work_with_event_file(false),
   _file_in(NULL),
   _file_out(NULL),
@@ -90,10 +89,6 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
       case 'r' :
         _overwrite        = true;
         std::cout << "Output will be overwritten" << std::endl;
-        break;
-      case 's' :
-        _store_event_tree = true;
-        std::cout << "Tree with TEvents will be written" << std::endl;
         break;
       case 'h' : help(argv[0]);                    break;
       //case '?' : help(argv[0]);
@@ -187,11 +182,6 @@ bool AnalysisBase::Initialize() {
 
   file->Close();
 
-  if (_work_with_event_file && _store_event_tree) {
-    std::cerr << "ERROR. AnalysisBase::Initialize. Prohibited to generate TEvent over TEvent. Exit" << std::endl;
-    exit(1);
-  }
-
   std::cout << "Initializing analysis base...............";
   // read and chain input files
   _chain = new TChain(tree_name);
@@ -272,23 +262,6 @@ bool AnalysisBase::Initialize() {
       std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
       exit(1);
     }
-  }
-
-  // in case we want to store TEvent in the file
-  if (_store_event_tree) {
-    // take a name from the input and dir from output
-    Ssiz_t slash_pos = 0;
-    while (_file_out_name.Index("/", 1, slash_pos+1, TString::kExact) != -1)
-      slash_pos = _file_out_name.Index("/", 1, slash_pos+1, TString::kExact);
-    TString file_dir  = _file_out_name(0, slash_pos+1);
-    slash_pos = 0;
-    while (first_file_name.Index("/", 1, slash_pos+1, TString::kExact) != -1)
-      slash_pos = first_file_name.Index("/", 1, slash_pos+1, TString::kExact);
-    TString file_name = first_file_name(slash_pos+1, first_file_name.Length());
-
-    _event_file = new TFile((file_dir + file_name).Data(), "RECREATE");
-    _event_tree = new TTree("event_tree", "");
-    _event_tree->Branch("Event",    &_event,  32000,  0);
   }
 
   if (_file_out)
@@ -396,7 +369,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _sw_partial[0]->Start(false);
 
     if (!_work_with_event_file) {
-      if (_event && !_store_event_tree)
+      if (_event)
         delete _event;
       _event = new TRawEvent(EventList[eventID]);
 
@@ -410,13 +383,10 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     ProcessEvent(_event);
     _sw_partial[1]->Stop();
 
-    if (_store_event) {
+    if (_store_event)
       ++_selected;
-      if (_store_event_tree)
-        _event_tree->Fill();
-    }
 
-    if (!_store_event_tree && !_work_with_event_file) {
+    if (!_work_with_event_file) {
       delete _event;
       _event = NULL;
     }
@@ -444,14 +414,6 @@ bool AnalysisBase::WriteOutput() {
   if (!_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
-  }
-
-  // Write the TEvents in the file
-  if (_store_event_tree) {
-    _event_file->cd();
-    _event_tree->Write("", TObject::kOverwrite);
-    std::cout << "Wrote TEvent events into " << _event_file->GetName() << std::endl;
-    _event_file->Close();
   }
 
   std::cout << "Writing standard output..................";

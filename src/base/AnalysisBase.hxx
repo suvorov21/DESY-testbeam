@@ -169,9 +169,6 @@ class AnalysisBase {
 
   /// The current processing event
   TRawEvent* _event;
-  bool    _store_event_tree;
-  TFile*  _event_file;
-  TTree*  _event_tree;
   bool    _work_with_event_file;
 
   /// input file
