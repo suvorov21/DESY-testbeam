@@ -30,6 +30,7 @@ Then the code can be run with e.g.
 ```bash
 ./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b
 ```
+The detailed description of the input flags is provided in src/SpatialResol/README.md.
 
 ## Tool structure
 The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
@@ -105,7 +106,7 @@ The raw input for the analysis is 3D array (x, y, t). During the reconstruction 
 
 In order to speedup the analysis we implemented a feature to save the TEvent class itself. It means that the reconstruction and selection could be run once and the events that passed the selection would be saved in the TEvent format. In order to do this, run the executable with flag "-c"
 ```bash
-./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root -s
+./SpatialResol.exe.exe -i input_path/input_file.root -o output_path/output_file.root -s -t0 -b
 ```
 The output_path/input_file.root will be created that could be later used as an input. The analysis package will recognize automatically which format is used for the input file.
 
@@ -126,47 +127,9 @@ Micromegas:
  y   |              |
      |              |         Pad:
      |              |          __
-   0 |______________|         |__| 1.0 cm
-     0               35        1.1 cm
+   0 |______________|         |__| 10.19 mm
+     0               35        11.28 mm
              x
 ```
 
 The time information is stored as a 510 bins array or 511 bins array. The package make an automatic guess which one to use and will exit if the data format is unknown.
-
-
-
-
-
-
-# Working with macros (**DEPRECATED**)
-You could run the analysis with a simple macros (like at CERN analysis). You could find the macros template under macros/TutorialMacro.cxx
-
-## Compilation
-The compilation is possible from the macros folder. You need to specify the macro you need as a source. You are free to create subdirectories in the macro folder with your analysis. Just call the compilation from the macro folder and specify the proper path.
-Make sure that the proper compiler and ROOT version are used. ROOT >= v6.16 was tested.
-To setup the environment at LXPLUS you can use setup.sh without changes.
-```bash
-cd macros
-make SRC="YourMacro.cxx"
-```
-
-The output will be stored as bin/YourMacro.exe
-
-## Running
-The macros can read both single root file and list of root files. To run the macros call
-```bash
-./bin/YourMacro.exe -i input_file -o output_path
-```
-The ROOT help could be called with -h flag. The macro help will be called with flag '-m'.
-The common view is the following
-```
-../bin/YourMacro.exe usage
-
-   -i <input_file>      : input file name with a path
-   -o <output_path>     : output files path
-   -b                   : run in batch mode
-   -v <verbose_lvel>    : verbosity level
-   -d                   : test mode. run over first 30 events
-   -h                   : print ROOT help
-   -m                   : print ../bin/YourMacro.exe help
-```

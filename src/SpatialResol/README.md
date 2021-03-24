@@ -45,12 +45,6 @@ for cluster:clusters
     get centre of charge position
     call fitter for cluster
 
-if diagonal
-    ommit 1st and last diags
-    average 2 clusters in a row --> cluster_clean
-else
-    clusters --> clusters_clean
-
 #### step 3 ####################################################################
 
 call track fitter for clusters_cleanm
