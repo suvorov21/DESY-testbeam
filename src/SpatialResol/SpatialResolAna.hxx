@@ -90,6 +90,8 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _track_pos[Nclusters];
   /// Residuals (X_track-X_cluster)
   Float_t _residual[Nclusters];
+  /// Residuals (X_track-X_cluster) w/o the given cluster in the fit
+  Float_t _residual_corr[Nclusters];
   /// charge in the cluster
   Int_t   _charge[Nclusters];
   /// multiplicity of the cluster

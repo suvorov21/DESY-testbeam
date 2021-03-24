@@ -13,7 +13,7 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
   _do_full_track_fit(false),
   _do_separate_pad_fit(false),
   // WARNING
-  _correction(false),
+  _correction(true),
   _gaussian_residuals(true),
   _charge_uncertainty(true) {
 //******************************************************************************
@@ -255,6 +255,10 @@ bool SpatialResolAna::Initialize() {
   _tree->Branch("residual",
                 &_residual,
                 TString::Format("residual[%i]/F", Nclusters)
+                );
+  _tree->Branch("residual_corr",
+                &_residual_corr,
+                TString::Format("residual_corr[%i]/F", Nclusters)
                 );
   _tree->Branch("dx",
                 &_dx,
@@ -566,6 +570,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _multiplicity[colId]  = -999;
       _charge[colId]        = -999;
       _residual[colId]      = -999;
+      _residual_corr[colId] = -999;
       _clust_pos[colId]     = -999;
       _track_pos[colId]     = -999;
       _x[colId]             = -999;
@@ -1050,6 +1055,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _cluster_av[clusterId] = cluster->GetY();
       _track_pos[clusterId] = track_fit_y;
       _residual[clusterId] = _cluster_av[clusterId] - track_fit_y;
+      _residual_corr[clusterId] = _cluster_av[clusterId] - track_fit_y1;
 
       _resol_col_hist[clusterId]->Fill(_cluster_av[clusterId] - track_fit_y);
       _resol_col_hist_except[clusterId]->Fill(_cluster_av[clusterId] - track_fit_y1);
