@@ -587,11 +587,27 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
                                   return  cl1->GetCharge() < cl->GetCharge();});
 
   // trancation cut
+  /* NO TRUNCATION */
   auto frac = 1.00;
   Int_t i_max = round(frac * tr.size());
   for (auto i = 0; i < i_max; ++i) {
     result.push_back(tr[i]);
   }
+  /* */
+
+  /* truncate with prominence */
+  // sort along the track
+  // sort(tr.begin(), tr.end(), [](TCluster* cl1,
+  //                               TCluster* cl){
+  //                                 return  cl1->GetX() < cl->GetX();});
+  // compute the prominence
+  // auto prom_cut = 0.6;
+  // for (uint i = 1; i < tr.size() - 1; ++i) {
+  //   auto prom = 2.*tr[i]->GetCharge() / (tr[i-1]->GetCharge() + tr[i+1]->GetCharge());
+  //   if (prom > prom_cut)
+  //     result.push_back(tr[i]);
+  // }
+  /* */
 
   // BUG truncation with neighbours is not working with clusters
   // trancation + neibours
