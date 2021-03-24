@@ -7,4 +7,5 @@ TRawEvent::~TRawEvent() {
       delete hit;
     hit = NULL;
   }
+  fHits.clear();
 }

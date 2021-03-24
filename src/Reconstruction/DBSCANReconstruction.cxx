@@ -112,21 +112,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes( TEvent* event){
 
   // fill the maximum amplitude and time
   for (auto hit:event->GetHits()) {
-    int Q = 0;
-    int t = 0;
-    auto adc = hit->GetWF_v();
-    for(auto it = adc.begin(); it < adc.end(); ++it) {
-      if ((*it) <= 0) continue;
-      if ((*it) > Q) {
-        Q = (*it);
-        t = it - hit->GetWF_v().begin();
-      }
-    }
-
-    hit->SetQ(Q);
-    hit->SetTime(t);
-
-    if (Q) {
+    if (hit->GetQ() > 0) {
       Node node;
       node.hit  = hit;
       node.id = nodes.size();
@@ -245,7 +231,6 @@ bool DBSCANReconstruction::FillOutput(TEvent* event,
     for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
       if(n.c == (int)trkID){
-        // std::vector<int> wf_v = FillWFs(event, n);
         usedHits[i] = 1;
         event->AddUsedHit(n.hit);
       }

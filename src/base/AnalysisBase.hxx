@@ -140,6 +140,8 @@ class AnalysisBase {
   bool operator==(const AnalysisBase* ana){(void)ana;
     std::cerr << "Comparison is depricated" << std::endl; exit(1);}
 
+  bool ChainInputFiles(TString tree_name);
+
   /// verbosity levels
   enum verbosity_base {
     v_progress = 1,

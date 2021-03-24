@@ -12,9 +12,9 @@ class TEvent: public TRawEvent {
   //ctor
   explicit TEvent() : TRawEvent() {;}
   explicit TEvent(UInt_t var): TRawEvent(var){;}
-  explicit TEvent(const TRawEvent* event);
+  explicit TEvent(const TRawEvent* event) : TRawEvent(event) {;};
   // dtor
-  virtual ~TEvent();
+  virtual ~TEvent() {;};
   // getters
   std::vector <THit*>   GetUsedHits()   const  {return fUsedHits;}
   std::vector <THit*>   GetUnusedHits() const  {return fUnusedHits;}

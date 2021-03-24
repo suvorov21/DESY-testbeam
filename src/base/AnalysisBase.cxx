@@ -139,7 +139,8 @@ bool AnalysisBase::Initialize() {
   TFile* file;
   TString filename = _file_in_name;
 
-  // in case of list input
+  // extract the name of the input ROOT file
+  // in case of list input take the first ROOT file
   if (!_file_in_name.Contains(".root")) {
     std::ifstream fList(_file_in_name.Data());
     if (!fList.good()) {
@@ -159,6 +160,11 @@ bool AnalysisBase::Initialize() {
     std::cout << "Raw data is using" << std::endl;
     tree_name = "tree";
     _work_with_event_file = false;
+    ChainInputFiles(tree_name);
+    if (!_chain) {
+      std::cerr << "Error while chaining files" << std::endl;
+      exit(1);
+    }
     // Check the time binning. As we used both 510 and 511 time bins
     // the correct binning should be used for reading file
     TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
@@ -177,6 +183,7 @@ bool AnalysisBase::Initialize() {
   } else if((TTree*)file->Get("event_tree")) {
     std::cout << "TRawEvent data is using" << std::endl;
     tree_name = "event_tree";
+    ChainInputFiles(tree_name);
     _work_with_event_file = true;
     _chain->SetBranchAddress("Event", &_event);
   } else {
@@ -187,28 +194,6 @@ bool AnalysisBase::Initialize() {
   file->Close();
 
   std::cout << "Initializing analysis base...............";
-  // read and chain input files
-  _chain = new TChain(tree_name);
-  TString first_file_name = "";
-
-  if (_file_in_name.Contains(".root")) {
-    _chain->AddFile(_file_in_name);
-    first_file_name = _file_in_name;
-  } else {
-    std::ifstream fList(_file_in_name.Data());
-    if (!fList.good()) {
-      std::cerr << "Can not read input " << _file_in_name << std::endl;
-      exit(1);
-    }
-    while (fList.good()) {
-      std::string temp_filename;
-      getline(fList, temp_filename);
-      if (fList.eof()) break;
-      _chain->AddFile(temp_filename.c_str());
-      if (first_file_name.CompareTo("") == 0)
-        first_file_name = temp_filename;
-    }
-  }
 
   // setup the T2K style
   Int_t T2KstyleIndex = 2;
@@ -310,6 +295,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
         for (auto y = 0; y < geom::nPady; ++y) {
           auto hit = new THit(x, y);
           std::vector<int> adc;
+          auto Qmax = -1;
+          auto Tmax = -1;
           for (auto t = 0; t < geom::Nsamples; ++t) {
             // ommit last
             if (_saclay_cosmics && t == geom::Nsamples)
@@ -321,12 +308,24 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
             _padAmpl[x][y][t] = q < -249 ? 0 : q;
             adc.push_back(_padAmpl[x][y][t]);
+            if (q > Qmax) {
+              Qmax = q;
+              Tmax = t;
+            }
             /** REWEIGHT OF THE PAD*/
             // if (x == 5 && y == 16)
             //   _padAmpl[x][y][t] *= 0.95;
             /** */
           } // over time
           hit->SetWF_v(adc);
+          if (Qmax > 0){
+            hit->SetQ(Qmax);
+            hit->SetTime(Tmax);
+            _event->AddHit(hit);
+          } else {
+            delete hit;
+            hit = NULL;
+          }
         } // over Y
       } // over X
     } // if 3D array input
@@ -335,8 +334,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _sw_partial[0]->Start(false);
 
-    // auto reco_event = new TEvent(_event);
-    auto reco_event = static_cast<TEvent*>(_event);
+    auto reco_event = new TEvent(_event);
+    // auto reco_event = dynamic_cast<TEvent*>(_event);
 
     if (!_reconstruction->SelectEvent(reco_event))
       continue;
@@ -780,6 +779,29 @@ void AnalysisBase::help(const std::string& name) {
 }
 
 //******************************************************************************
+bool AnalysisBase::ChainInputFiles(TString tree_name) {
+//******************************************************************************
+  _chain = new TChain(tree_name);
+  if (_file_in_name.Contains(".root")) {
+    _chain->AddFile(_file_in_name);
+  } else {
+    std::ifstream fList(_file_in_name.Data());
+    if (!fList.good()) {
+      std::cerr << "Can not read input " << _file_in_name << std::endl;
+      exit(1);
+    }
+    while (fList.good()) {
+      std::string temp_filename;
+      getline(fList, temp_filename);
+      if (fList.eof()) break;
+      _chain->AddFile(temp_filename.c_str());
+    }
+  }
+
+  return true;
+}
+
+//******************************************************************************
 void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set) {
 //******************************************************************************
     vm_usage     = 0.0;
@@ -821,7 +843,7 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  // std::cout << "\t Memory  " <<  real << "\t" << virt;
+  std::cout << "\t Memory  " <<  real << "\t" << virt;
   std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed CPU " << CPUtime << " ms/event";
