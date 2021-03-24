@@ -39,6 +39,3 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/base/)
 #---Create  a main program using the library
 add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
 target_link_libraries(SpatialResol.exe TEvent TBase)
-
-add_executable(dEdx.exe ${PROJECT_SOURCE_DIR}/dEdx/dEdxAna.cxx)
-target_link_libraries(dEdx.exe TEvent TBase)

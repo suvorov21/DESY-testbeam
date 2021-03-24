@@ -91,29 +91,29 @@ Spatial_resol_slope_3by1:
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
 
-dEdx_raw_test:
-  stage: test
-  before_script:
-    - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mv download input.root
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
-  script:
-    - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
-    - ./test/dEdx_test.exe dEdx_test.root;
+# dEdx_raw_test:
+#   stage: test
+#   before_script:
+#     - yum -y install wget
+#     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+#     - mv download input.root
+#     - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
+#   script:
+#     - ./build/dEdx.exe -b -i input.root -o dEdx_test.root -v 1
+#     - ./test/dEdx_test.exe dEdx_test.root;
 
-dEdx_TEvent_test:
-  stage: test
-  before_script:
-    - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
-    - mkdir raw/
-    - mv download raw/input.root
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
-  script:
-    - ./build/dEdx.exe -b -i raw/input.root -o ./dEdx_test.root -v 1 -s
-    - ./build/dEdx.exe -b -i ./input.root -o ./dEdx_test_v2.root -v 1
-    - ./test/dEdx_test.exe ./dEdx_test_v2.root;
+# dEdx_TEvent_test:
+#   stage: test
+#   before_script:
+#     - yum -y install wget
+#     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+#     - mkdir raw/
+#     - mv download raw/input.root
+#     - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
+#   script:
+#     - ./build/dEdx.exe -b -i raw/input.root -o ./dEdx_test.root -v 1 -s
+#     - ./build/dEdx.exe -b -i ./input.root -o ./dEdx_test_v2.root -v 1
+#     - ./test/dEdx_test.exe ./dEdx_test_v2.root;
 
 # documentation, etc.
 docs:
