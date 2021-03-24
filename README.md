@@ -55,8 +55,8 @@ SpatialResolAna.cxx is supposed to be the main analysis that we are working with
 ### Parameter file
 The parameter file is used to define the fitters, selection, etc. The default one is `param/default.ini`. Any other parameter file could be used, with flag `--param other_file.ini` during analysis execution.
 
-### New variables to store
-New variables can be easily implemented in the header file and then added in the Initialization function of any analysis. If you want to add an TObject to store (histo, tree, canvas) add it to `output_vector` and it will be stored automatically.
+### Store new variables in the output
+New variables can be easily implemented in the header file and then added in the Initialization function of any analysis. If you want to store an TObject (e.g. histo, tree, canvas) add one to `output_vector` and it will be written into the output file automatically.
 
 ### Cluster definition
 The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main option are considered:
@@ -65,7 +65,7 @@ The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main
 3. 2by1 cluster
 4. 3by1 cluster
 
-They could be switched in the parameter file
+They could be switched in the parameter file.
 
 ### Track fitters
 Track fitters are defined at `TrackFitter.cxx` file. That's how the position in the particular cluster is reconstructed. Afterwards clusters are fit together into track. One can define its own class that will do a position fitting with any algorithm one want to test.
@@ -100,15 +100,6 @@ Event display for raw events is available in plotters/EventDisplay.C. With this 
 .x EventDisplay.C("path-to-data-file.root")
 ```
 For clearness of the plots you can limit the waveform X axis with `WFstart` and `WFend`.
-
-## Data structure
-The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
-
-In order to speedup the analysis we implemented a feature to save the TEvent class itself. It means that the reconstruction and selection could be run once and the events that passed the selection would be saved in the TEvent format. In order to do this, run the executable with flag "-c"
-```bash
-./SpatialResol.exe.exe -i input_path/input_file.root -o output_path/output_file.root -s -t0 -b
-```
-The output_path/input_file.root will be created that could be later used as an input. The analysis package will recognize automatically which format is used for the input file.
 
 ## Script submission
 To submit script at the LXPLUS please use the script/submitter.py. It creates list of tasks and submit them to condor system. At the beginning of the file you can specify the input and output paths, versions, number of iterations (if any), job flavor and log folder. As an input you need list of input/output files: two columns separated with at least one space. Run the submitter as following:

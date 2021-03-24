@@ -7,6 +7,7 @@ file (GLOB_RECURSE BASE_SET_SOURCEFILES
     ${PROJECT_SOURCE_DIR}/base/ReconstructionBase.cxx
     ${PROJECT_SOURCE_DIR}/base/TrackFitter.cxx
     ${PROJECT_SOURCE_DIR}/base/TCluster.cxx
+    ${PROJECT_SOURCE_DIR}/base/TEvent.cxx
     ${PROJECT_SOURCE_DIR}/Reconstruction/*.cxx
     ${PROJECT_SOURCE_DIR}/utils/*.cxx
 )
@@ -16,6 +17,7 @@ file (GLOB BASE_SET_HEADERFILES
     ${PROJECT_SOURCE_DIR}/base/ReconstructionBase.hxx
     ${PROJECT_SOURCE_DIR}/base/TrackFitter.hxx
     ${PROJECT_SOURCE_DIR}/base/TCluster.hxx
+    ${PROJECT_SOURCE_DIR}/base/TEvent.hxx
     ${PROJECT_SOURCE_DIR}/Reconstruction/*.hxx
     ${PROJECT_SOURCE_DIR}/utils/*.hxx
 )

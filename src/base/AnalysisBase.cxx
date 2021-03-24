@@ -36,9 +36,8 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _PRF_free_centre(false),
   _do_linear_fit(false),
   _do_para_fit(false),
-  _app(NULL),
-  _useCern(false),
-  _to_store_wf(true)
+  _to_store_wf(true),
+  _app(NULL)
 {
 //******************************************************************************
 
@@ -155,26 +154,31 @@ bool AnalysisBase::Initialize() {
   file = new TFile(filename.Data(), "READ");
 
   // find out which tree was send as an input
-  // padAmpl or TEvent
-
+  // padAmpl[][][] or TRawEvent
   if ((TTree*)file->Get("tree")) {
     std::cout << "Raw data is using" << std::endl;
     tree_name = "tree";
     _work_with_event_file = false;
+    // Check the time binning. As we used both 510 and 511 time bins
+    // the correct binning should be used for reading file
+    TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
+    if (branch_name.Contains("[510]")) {
+      _saclay_cosmics = true;
+      _chain->SetBranchAddress("PadAmpl", _padAmpl_saclay);
+    } else if (branch_name.Contains("[511]")) {
+      _saclay_cosmics = false;
+      _chain->SetBranchAddress("PadAmpl", _padAmpl);
+    } else {
+      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+      std::cerr << "Time binning is inconsistent." << std::endl;
+      std::cerr << "Read from file " << branch_name  << std::endl;
+      exit(1);
+    }
   } else if((TTree*)file->Get("event_tree")) {
-    std::cout << "TEvent data is using" << std::endl;
+    std::cout << "TRawEvent data is using" << std::endl;
     tree_name = "event_tree";
     _work_with_event_file = true;
-  } else if ((TTree*)file->Get("padData")) {
-    _useCern = true;
-    // tree_name = "padData";
-    // std::cout << "Running over CERN data" << std::endl;
-    // _tgeom= (TTree*)file->Get("femGeomTree");
-    // //std::vector<int> *iPad(0);
-    // //std::vector<int> *jPad(0);
-    // _tgeom->SetBranchAddress("jPad", &_jPad );
-    // _tgeom->SetBranchAddress("iPad", &_iPad );
-    // _tgeom->GetEntry(0); // put into memory geometry info
+    _chain->SetBranchAddress("Event", &_event);
   } else {
     std::cerr << "ERROR. AnalysisBase::Initialize. Unknown tree name" << std::endl;
     exit(1);
@@ -206,29 +210,6 @@ bool AnalysisBase::Initialize() {
     }
   }
 
-  if (_useCern) {
-    std::cerr << "CERN data format is deprecated" << std::endl;
-    exit(1);
-    // _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
-    // _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
-
-  } else if (!_work_with_event_file) {
-    TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
-    if (branch_name.Contains("[510]")) {
-      _saclay_cosmics = true;
-      _chain->SetBranchAddress("PadAmpl", _padAmpl_saclay);
-    } else if (branch_name.Contains("[511]")) {
-      _saclay_cosmics = false;
-      _chain->SetBranchAddress("PadAmpl", _padAmpl);
-    } else {
-      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
-      std::cerr << "Time binning is inconsistent." << std::endl;
-      std::cerr << "Read from file " << branch_name  << std::endl;
-      exit(1);
-    }
-  } else
-    _chain->SetBranchAddress("Event", &_event);
-
   // setup the T2K style
   Int_t T2KstyleIndex = 2;
   // Official T2K style as described in http://www.t2k.org/comm/pubboard/style/index_html
@@ -247,22 +228,19 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  //if (!_test_mode){
-  if (1){
-
-    if(_overwrite)
-      _file_out = new TFile(_file_out_name.Data(), "RECREATE");
-    else
-      _file_out = new TFile(_file_out_name.Data(), "NEW");
+  if(_overwrite)
+    _file_out = new TFile(_file_out_name.Data(), "RECREATE");
+  else
+    _file_out = new TFile(_file_out_name.Data(), "NEW");
 
 
-    if (!_file_out->IsOpen()) {
-      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
-      std::cerr << "File already exists or directory is not writable" << std::endl;
-      std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
-      exit(1);
-    }
+  if (!_file_out->IsOpen()) {
+    std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+    std::cerr << "File already exists or directory is not writable" << std::endl;
+    std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
+    exit(1);
   }
+
 
   if (_file_out)
     _file_out->cd();
@@ -315,81 +293,68 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       std::cout << "*************************************" << std::endl;
     }
 
+    // Dump progress in command line
     if (_verbose == v_progress && (eventID%(N_events/denimonator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
 
     _chain->GetEntry(EventList[eventID]);
 
-    if (_useCern) {
-      std::cerr << "CERN data format is deprecated" << std::endl;
-      exit(1);
-      // memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
-      // for (uint ic=0; ic< _listOfChannels->size(); ic++){
-      //   int chan= (*_listOfChannels)[ic];
-      //   if ((*_jPad)[chan] >= geom::nPadx ||
-      //         (*_iPad)[chan] >= geom::nPady)
-      //     continue;
-      //   for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
-      //     if (it >= geom::Nsamples)
-      //       continue;
-      //     int adc = (*_listOfSamples)[ic][it];
-      //     _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
-      //   }
-      // }
-    } else if (!_work_with_event_file) {
+    if (!_work_with_event_file) {
+      // create TRawEvent from 3D array
+      if (_event)
+        delete _event;
+      _event = new TRawEvent(EventList[eventID]);
+
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
+          auto hit = new THit(x, y);
+          std::vector<int> adc;
           for (auto t = 0; t < geom::Nsamples; ++t) {
             // ommit last
             if (_saclay_cosmics && t == geom::Nsamples)
               continue;
             int q = 0;
-            if (_saclay_cosmics) {
-              q = _padAmpl_saclay[x][y][t] - 250;
-            } else {
-              q = _padAmpl[x][y][t] - 250;
-            }
+            q = _saclay_cosmics ?
+                _padAmpl_saclay[x][y][t] - 250 :
+                _padAmpl[x][y][t] - 250;
 
-            //_padAmpl[x][y][t] = q < 0 ? 0 : q;
             _padAmpl[x][y][t] = q < -249 ? 0 : q;
-
+            adc.push_back(_padAmpl[x][y][t]);
             /** REWEIGHT OF THE PAD*/
             // if (x == 5 && y == 16)
             //   _padAmpl[x][y][t] *= 0.95;
             /** */
-
-          }
-        }
-      }
-    }
+          } // over time
+          hit->SetWF_v(adc);
+        } // over Y
+      } // over X
+    } // if 3D array input
 
     _store_event = false;
 
     _sw_partial[0]->Start(false);
 
-    if (!_work_with_event_file) {
-      if (_event)
-        delete _event;
-      _event = new TRawEvent(EventList[eventID]);
+    // auto reco_event = new TEvent(_event);
+    auto reco_event = static_cast<TEvent*>(_event);
 
-      if (!_reconstruction->SelectEvent(_padAmpl, _event))
-        continue;
-    }
-    // else _event->SetID(EventList[eventID]);
+    if (!_reconstruction->SelectEvent(reco_event))
+      continue;
 
     _sw_partial[0]->Stop();
     _sw_partial[1]->Start(false);
-    ProcessEvent(_event);
+    ProcessEvent(reco_event);
     _sw_partial[1]->Stop();
 
     if (_store_event)
       ++_selected;
 
-    if (!_work_with_event_file) {
-      delete _event;
-      _event = NULL;
-    }
+    // if (!_work_with_event_file) {
+    delete _event;
+    _event = NULL;
+    // delete reco_event;
+    // reco_event = NULL;
+    // }
   } // end of event loop
 
   if (_verbose == v_progress)
@@ -399,7 +364,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 }
 
 //******************************************************************************
-bool AnalysisBase::ProcessEvent(const TRawEvent* event) {
+bool AnalysisBase::ProcessEvent(const TEvent* event) {
 //******************************************************************************
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
@@ -439,7 +404,7 @@ bool AnalysisBase::WriteOutput() {
 // make the inheritance possible
 // e.g. draw events here but also draw some analysi specific stuff in the analysis
 //******************************************************************************
-void AnalysisBase::DrawSelection(const TRawEvent *event){
+void AnalysisBase::DrawSelection(const TEvent *event){
 //******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
@@ -454,7 +419,7 @@ void AnalysisBase::DrawSelection(const TRawEvent *event){
   //}
 
   // sel hits
-  for (auto h:event->GetHits()){
+  for (auto h:event->GetUsedHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());

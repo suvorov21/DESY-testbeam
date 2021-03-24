@@ -533,10 +533,10 @@ bool SpatialResolAna::Initialize() {
 }
 
 //******************************************************************************
-bool SpatialResolAna::ProcessEvent(const TRawEvent* event) {
+bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 //******************************************************************************
 
-  auto track_hits = event->GetHits();
+  auto track_hits = event->GetUsedHits();
   if (!track_hits.size())
     return false;
 

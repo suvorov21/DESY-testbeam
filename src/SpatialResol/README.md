@@ -21,7 +21,7 @@ SpatialResol.exe
 ```
 # Analysis Flow
 
-## initialisation
+## Initialisation
 Define TTree vars
 
 Define histograms
@@ -31,10 +31,8 @@ Define histograms
 ```
 #### step 1 ####################################################################
 # clusterize and ommit 1st and last columns/rows
-if diagonal
-    Diagonolize --> vector<TCluster> clusters
-else
-    Colonize --> vector<TCluster> clusters
+# E.g. form columns for horizontal clusters ot diagonals for tracks with angle close to 45 degree.
+ClusteriseTrack()
 
 get robust clusters (truncate, etc.)
 

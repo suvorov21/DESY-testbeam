@@ -10,7 +10,8 @@ class THit : public TObject{
  public:
   // ctor
   THit(const int col, const int row,
-       const int time, const int q,
+       const int time       = -1,
+      const int q           = -1,
        const std::vector<int> wf = std::vector<int>(),
        const UInt_t fec     = -1,
        const UInt_t asic    = -1,

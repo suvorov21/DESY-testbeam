@@ -11,6 +11,7 @@
 /** @endcond */
 
 #include "TRawEvent.hxx"
+#include "TEvent.hxx"
 #include "TCluster.hxx"
 #include "Geom.hxx"
 
@@ -21,8 +22,7 @@ class ReconstructionBase {
   virtual ~ReconstructionBase() {;}
 
   virtual bool Initialize(int verbose);
-  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                  TRawEvent* event);
+  virtual bool SelectEvent(TEvent* event);
 
 protected:
   int _verbose;

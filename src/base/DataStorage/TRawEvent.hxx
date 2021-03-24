@@ -1,8 +1,11 @@
-#ifndef SRC_CLASS_TEVENT_HXX_
-#define SRC_CLASS_TEVENT_HXX_
+#ifndef SRC_CLASS_TRAWEVENT_HXX_
+#define SRC_CLASS_TRAWEVENT_HXX_
 
 #include "THit.hxx"
 
+//! Class that contains pointers to all the hits in the event
+
+//! This class is used for the I/O with a ROOT file
 class TRawEvent : public TObject{
  public:
   //ctor
@@ -12,25 +15,21 @@ class TRawEvent : public TObject{
   virtual ~TRawEvent();
   // getters
   Int_t GetID() const  {return ID;}
-  std::vector <THit*>   GetHits()       const  {return fUsedHits;}
-  std::vector <THit*>   GetUnusedHits() const  {return fUnusedHits;}
+  std::vector <THit*>   GetHits()       const  {return fHits;}
   // setters
-  void SetHits(const std::vector <THit*>& inhits )        {fUsedHits = inhits;}
-  void SetUnusedHits(const std::vector <THit*>& inhits)   {fUnusedHits = inhits;}
+  void SetHits(const std::vector <THit*>& inhits )        {fHits = inhits;}
   void SetID(Int_t var) {ID = var;}
 
-  void AddHit(THit* hit) {fUsedHits.push_back(hit);}
-  void AddUnusedHit(THit* hit) {fUnusedHits.push_back(hit);}
+  void AddHit(THit* hit) {fHits.push_back(hit);}
 
   ClassDef (TRawEvent,1);
 
- private:
-  /// tracks coming out of reconstruction
-  std::vector <THit*>   fUsedHits;
-  /// unused hits.
-  std::vector <THit*>   fUnusedHits;
+ protected:
+  /// vector of hits in event
+  std::vector <THit*> fHits;
 
-  Int_t ID;
+  /// Event Id
+  UInt_t ID;
 };
 
 #endif

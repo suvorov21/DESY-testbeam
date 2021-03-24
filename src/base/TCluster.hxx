@@ -46,8 +46,6 @@ class TCluster {
   TCluster(THit* pad) {_hits.push_back(pad);}
   virtual ~TCluster();
 
-  // ClassDef (TCluster,1);
-
  private:
   std::vector<THit*> _hits;               // all hits.
   Float_t _x;

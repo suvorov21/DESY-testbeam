@@ -2,12 +2,7 @@
 
 //// TRawEvent
 TRawEvent::~TRawEvent() {
-  for (auto hit:fUnusedHits) {
-    if (hit)
-      delete hit;
-    hit = NULL;
-  }
-  for (auto hit:fUsedHits) {
+  for (auto hit:fHits) {
     if (hit)
       delete hit;
     hit = NULL;

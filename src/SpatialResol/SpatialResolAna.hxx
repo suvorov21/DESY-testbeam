@@ -18,7 +18,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
-  bool ProcessEvent(const TRawEvent* event);
+  bool ProcessEvent(const TEvent* event);
 
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TRawEvent* event);

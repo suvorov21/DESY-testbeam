@@ -18,7 +18,9 @@ bool DBSCANReconstruction::Initialize(int verbose) {
 }
 
 double DBSCANReconstruction::MeasureDistance(Node a, Node b){
-    double distance2 = pow(a.x-b.x,2) + pow(a.y-b.y,2) + pow( (a.t-b.t)/30 ,2); // distance squared.
+    double distance2 = pow(a.hit->GetRow() - b.hit->GetRow(), 2) +
+                       pow(a.hit->GetCol()-b.hit->GetCol(),2) +
+                       pow( (a.hit->GetTime()-b.hit->GetTime())/30 ,2); // distance squared.
     return pow(distance2,0.5);
 }
 
@@ -68,9 +70,14 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> nodes){
   return nodes;
 }
 
-std::vector<Node> DBSCANReconstruction::FillNodes(
-                const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]){
+std::vector<Node> DBSCANReconstruction::FillNodes( TEvent* event){
   std::vector<Node> nodes;
+
+  if (_verbose > 2)
+    std::cout << "Found " << event->GetHits().size() << " hits" << std::endl;
+
+  if (event->GetHits().size() > MAX_NODES_TOT)
+    return nodes;
 
   // use in the future: instead of tmax, take all local maximums in the WF!!
 
@@ -103,72 +110,46 @@ std::vector<Node> DBSCANReconstruction::FillNodes(
   //   }
   // }
 
-  for(int i=0; i<geom::nPadx; i++){
-    for(int j=0; j<geom::nPady; j++){
-      int Q = 0;
-      int t = 0;
-      std::vector<std::pair<int, int>> WF_v;
-      //WF_v.reserve(600);
-      int first = 0;
-      int last = -9999;
-      for(int k=0; k<geom::Nsamples; k++){
-        int ampl = padAmpl[i][j][k];
-        if(ampl <= 0) continue;
-        if (!first)
-          first = k;
-        last = k;
-        WF_v.push_back(std::make_pair(k, padAmpl[i][j][k]));
-        // take only first max
-        // if (ampl < 0.4*Q ) break;
-        if(ampl > Q) {Q = ampl; t=k;}
+  // fill the maximum amplitude and time
+  for (auto hit:event->GetHits()) {
+    int Q = 0;
+    int t = 0;
+    auto adc = hit->GetWF_v();
+    for(auto it = adc.begin(); it < adc.end(); ++it) {
+      if ((*it) <= 0) continue;
+      if ((*it) > Q) {
+        Q = (*it);
+        t = it - hit->GetWF_v().begin();
       }
+    }
 
-      int first_HM = 0;
-      int last_HM = -9999;
-      for (auto pad:WF_v) {
-        if (!first_HM && pad.second > Q/2)
-          first_HM = pad.first;
-        if (pad.second > Q/2)
-          last_HM = pad.first;
-      }
+    hit->SetQ(Q);
+    hit->SetTime(t);
 
-      if(Q){
-        Node node;
-        node.x  = i;
-        node.y  = j;
-        node.t  = t;
-        node.q  = Q;
-        node.w = last - first;
-        node.whm = last_HM - first_HM;
-        node.id = nodes.size();
-        nodes.push_back(node);
-      }
-
-
+    if (Q) {
+      Node node;
+      node.hit  = hit;
+      node.id = nodes.size();
+      nodes.push_back(node);
     }
   }
-  if (_verbose > 2)
-    std::cout << "Filed " << nodes.size() << " nodes" << std::endl;
 
-  if (nodes.size() > MAX_NODES_TOT) {
-    nodes.erase(nodes.begin(), nodes.end());
-  }
   return nodes;
 }
 
-std::vector<int> DBSCANReconstruction::FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n){
-  std::vector<int> wf_v;
+// std::vector<int> DBSCANReconstruction::FillWFs(const TEvent* event, Node n) {
+//   std::vector<int> wf_v;
 
-  for(int k=0; k<geom::Nsamples; k++)
-    wf_v.push_back(padAmpl[n.x][n.y][k]);
+//   for(int k=0; k<geom::Nsamples; k++)
+//     wf_v.push_back(padAmpl[n.x][n.y][k]);
 
-  return wf_v;
-}
+//   return wf_v;
+// }
 
 std::vector<DB_Cluster> DBSCANReconstruction::FindClustersLargerThan(std::vector<Node> nodes, int minNodes){
   std::vector<DB_Cluster> clusters;
   auto it_max = std::max_element(nodes.begin(), nodes.end(),
-                       [](const Node& n1, const Node& n2) { return n1.c < n2.c; });
+                       [](const Node& n1, const Node& n2) { return n1.hit->GetQ() < n2.hit->GetQ(); });
   int numClusters = (it_max == nodes.end()) ? -1 : (*it_max).c;
   int acceptedClusters = 0;
   for(int i=0; i<=numClusters; i++){
@@ -220,9 +201,9 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   for (auto n:nodes){
-    event3D->Fill(n.t,n.y,n.x,n.c);
-    MM->Fill(n.x,n.y,n.q);
-    if(n.c==0) MMsel->Fill(n.x,n.y,n.q);
+    event3D->Fill(n.hit->GetTime(),n.hit->GetRow(),n.hit->GetCol(),n.hit->GetQ());
+    MM->Fill(n.hit->GetCol(),n.hit->GetRow(),n.hit->GetQ());
+    if(n.hit->GetQ()==0) MMsel->Fill(n.hit->GetCol(),n.hit->GetRow(),n.hit->GetQ());
   }
 
   TCanvas *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
@@ -249,10 +230,9 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   delete event3D;
 }
 
-bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+bool DBSCANReconstruction::FillOutput(TEvent* event,
                                       std::vector<Node> nodes,
-                                      std::vector<DB_Cluster> clusters,
-                                      TRawEvent* event
+                                      std::vector<DB_Cluster> clusters
                                       ){
   if(!nodes.size()) return false;
   std::vector<THit*> unusedHits;
@@ -265,16 +245,9 @@ bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPa
     for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
       if(n.c == (int)trkID){
-        std::vector<int> wf_v = FillWFs(padAmpl,n);
-        THit *hit = new THit(n.x,
-                             n.y,
-                             n.t,
-                             n.q,
-                             wf_v,
-                             n.w,
-                             n.whm);
+        // std::vector<int> wf_v = FillWFs(event, n);
         usedHits[i] = 1;
-        event->AddHit(hit);
+        event->AddUsedHit(n.hit);
       }
     }
   }
@@ -282,21 +255,24 @@ bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPa
   // stored unselected hits
   for (uint i = 0; i<nodes.size(); i++){
     Node n = nodes[i];
-    std::vector<int> wf_v = FillWFs(padAmpl,n);
-    if(!usedHits[i]) event->AddUnusedHit(new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm));
+    // std::vector<int> wf_v = FillWFs(event, n);
+    if(!usedHits[i]) event->AddUnusedHit(n.hit);
   }
 
   return true;
 }
 
-bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                       TRawEvent* event) {
-
-  std::vector<Node> nodes = FindClusters(FillNodes(padAmpl));
+bool DBSCANReconstruction::SelectEvent(TEvent* event) {
+  auto raw_nodes = FillNodes(event);
+  if (!raw_nodes.size())
+    return false;
+  std::vector<Node> nodes = FindClusters(raw_nodes);
   std::vector<DB_Cluster> clusters = FindClustersLargerThan(nodes,15);
   std::vector<Node> new_nodes = UpdateNodes(clusters,nodes);
 
   //if(nodes.size()) DrawNodes(new_nodes);
-  if(nodes.size()) if(clusters.size() == 1) return FillOutput(padAmpl,new_nodes,clusters,event);
+  if(nodes.size()) if(clusters.size() == 1) return FillOutput(event,
+                                                              new_nodes,
+                                                              clusters);
   return false;
 }

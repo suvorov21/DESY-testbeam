@@ -71,7 +71,7 @@ class AnalysisBase {
   * for applying the selection for the successfully reconstructed tracks,
   * performing the analysis itself, fill jistograms and TTree branches.
   */
-  virtual bool ProcessEvent(const TRawEvent* event);
+  virtual bool ProcessEvent(const TEvent* event);
   /// Write the output file (histos, trees)
   virtual bool WriteOutput();
 
@@ -133,7 +133,7 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
   /// Draw the selected event
-  virtual void DrawSelection(const TRawEvent *event);
+  virtual void DrawSelection(const TEvent *event);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
@@ -225,9 +225,6 @@ class AnalysisBase {
 
   cross_talk _cross_talk_treat;
 
-  /// Wether to store the WFs
-  bool _to_store_wf;
-
   /// T2K plotting style
   TStyle* _t2kstyle;
 
@@ -254,21 +251,14 @@ class AnalysisBase {
   bool _do_linear_fit;
   bool _do_para_fit;
 
+  /// Wether to store the WFs
+  bool _to_store_wf;
+
   /// Time control system
   TApplication* _app;
   TStopwatch* _sw_event;
 
   TStopwatch* _sw_partial[5];
-
-  /// Use CERN data
-  bool _useCern;
-  // TTree* _tgeom;
-
-  // std::vector<short>          *_listOfChannels;
-  // std::vector<std::vector<short> > *_listOfSamples;
-
-  // std::vector<int> *_iPad;
-  // std::vector<int> *_jPad;
 };
 
 
