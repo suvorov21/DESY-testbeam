@@ -260,7 +260,7 @@ class AnalysisBase {
   TApplication* _app;
   TStopwatch* _sw_event;
 
-  TStopwatch* _sw_partial[5];
+  TStopwatch* _sw_partial[6];
 };
 
 

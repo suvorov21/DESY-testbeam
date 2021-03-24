@@ -3,6 +3,7 @@
 
 /** @cond */
 #include "TROOT.h"
+#include <iostream>
 /** @endcond */
 
 /// Class for storing information about each reconstructed hit. Store row, column, charge and time
@@ -11,8 +12,7 @@ class THit : public TObject{
   // ctor
   THit(const int col, const int row,
        const int time       = -1,
-      const int q           = -1,
-       const std::vector<int> wf = std::vector<int>(),
+       const int q          = -1,
        const UInt_t fec     = -1,
        const UInt_t asic    = -1,
        const UInt_t channel = -1 ){
@@ -20,10 +20,11 @@ class THit : public TObject{
     fColumn   = col;
     fTime     = time;
     fCharge   = q;
-    fwf       = wf;
     fFEC      = fec;
     fASIC     = asic;
     fChannel  = channel;
+    for (auto i = 0; i < 511; ++i)
+      fwf[i] = 0;
   }
 
   // default ctor
@@ -32,24 +33,29 @@ class THit : public TObject{
     fColumn  = -999;
     fTime  = -999;
     fCharge  = 0;
-    fwf.clear();
+    for (auto i = 0; i < 511; ++i)
+      fwf[i] = 0;
   }
   // dtor
-  // Assume std::vector is destroyed automatically
   virtual ~THit() {;}
   // setters
   void SetRow(int row)    {fRow = row;}
   void SetCol(int col)    {fColumn = col;}
   void SetTime(int time)  {fTime = time;}
   void SetQ(int Q)        {fCharge = Q;}
-  void SetWF_v(std::vector<int> wf){fwf = wf;}
+  void SetADC(int i, int adc) {fwf[i] = adc;}
 
   // getters
   int GetRow(bool invert = false)    const;
   int GetCol(bool invert = false)    const;
   int GetTime()               const   {return fTime;}
   int GetQ()                  const   {return fCharge;}
-  std::vector<int> GetWF_v()  const   {return fwf;}
+  int GetADC(int i) const {
+    if (i > 0 && i < 512)
+      return fwf[i];
+    std::cout << "ADC index out of range!" << std::endl;
+    return 0;
+  }
   UInt_t GetFEC()             const   {return fFEC;}
   UInt_t GetASIC()            const   {return fASIC;}
   UInt_t GetChannel()         const   {return fChannel;}
@@ -61,7 +67,7 @@ class THit : public TObject{
   int  fColumn;
   int  fTime;
   int  fCharge;
-  std::vector<int> fwf;
+  int  fwf[511];
   UInt_t fFEC;
   UInt_t fASIC;
   UInt_t fChannel;

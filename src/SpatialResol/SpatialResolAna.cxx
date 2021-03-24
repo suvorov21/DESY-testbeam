@@ -697,9 +697,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
           pad->SetQ(0);
           for (auto time = pad->GetTime() + 4; time < 510; ++time) {
-            if (pad->GetWF_v()[time] > pad->GetQ()) {
+            if (pad->GetADC(time) > pad->GetQ()) {
               pad->SetTime(time);
-              pad->SetQ(pad->GetWF_v()[time]);
+              pad->SetQ(pad->GetADC(time));
             }
           } // over time
           if (pad->GetQ() == 0) {
@@ -718,10 +718,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
                time < robust_pads[0]->GetTime() + 4;
                ++time
                ) {
-            if (pad->GetWF_v()[time] > pad->GetQ() &&
-                pad->GetWF_v()[time] > pad->GetWF_v()[robust_pads[0]->GetTime() + 5]) {
+            if (pad->GetADC(time) > pad->GetQ() &&
+                pad->GetADC(time) > pad->GetADC(robust_pads[0]->GetTime() + 5)) {
               pad->SetTime(time);
-              pad->SetQ(pad->GetWF_v()[time]);
+              pad->SetQ(pad->GetADC(time));
             }
           } // over time
           if (pad->GetQ() == 0) {
@@ -754,11 +754,11 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
        if (_to_store_wf){
 
-        pad_wf_v = pad->GetWF_v();
+        // pad_wf_v = pad->GetWF_v();
 
 
-        for (uint tz = 0; tz < pad_wf_v.size(); ++tz) {
-    	    _pad_wf_q[clusterId][padId][tz] = pad_wf_v[tz];
+        for (uint tz = 0; tz < geom::Nsamples; ++tz) {
+    	    _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
         }
     	}
       ++padId;
@@ -881,36 +881,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   } // loop over clusters
 
   std::vector<TCluster*> clusters_clean;
-  // if not a column clustering
-  // if (_clustering->n_pads > 100) {
-  //   // average 2 measurements into one
-  //   for (uint pairIt = 0; pairIt < robust_clusters.size() - 1; pairIt += 2) {
-  //     auto cluster1 = robust_clusters[pairIt+0];
-  //     auto cluster2 = robust_clusters[pairIt+1];
-  //     if (!cluster1 || !cluster2)
-  //       continue;
-  //     float x1 = cluster1->GetX();
-  //     float x2 = cluster2->GetX();
-  //     float av_x = 0.5 * (x1 + x2);
 
-  //     float y1 = cluster1->GetY();
-  //     float y2 = cluster2->GetY();
-
-  //     float y1_e = cluster1->GetYE();
-  //     float y2_e = cluster2->GetYE();
-
-  //     float av_y = y1 * y2_e * y2_e + y2 * y1_e * y1_e;
-  //     av_y /= y1_e * y1_e + y2_e * y2_e;
-
-  //     auto cl = new TCluster();
-  //     cl->SetPos(av_x, av_y, 0.);
-  //     clusters_clean.push_back(cl);
-  //   } // loop over pairs
-  // } else {
-    // do nothing in case of row/column
-    for (auto cluster:robust_clusters)
-      clusters_clean.push_back(cluster);
-  // }
+  for (auto cluster:robust_clusters)
+    clusters_clean.push_back(cluster);
 
   if (_verbose >= v_analysis_steps) {
     std::cout << "Loop over columns done" << std::endl;
@@ -1341,6 +1314,7 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   std::cout << "*************** Time consuming **************" << std::endl;
+  std::cout << "Reading 3D array:\t"        << _sw_partial[5]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / _EventList.size() << std::endl;

@@ -259,6 +259,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   _sw_partial[0]->Reset();
   _sw_partial[1] = new TStopwatch();
   _sw_partial[1]->Reset();
+  _sw_partial[5] = new TStopwatch();
+  _sw_partial[5]->Reset();
 
   if (_verbose >= v_progress) {
     std::cout << "Input file............................... " << _file_in_name << std::endl;
@@ -284,6 +286,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _chain->GetEntry(EventList[eventID]);
 
+    _sw_partial[5]->Start(false);
+
     if (!_work_with_event_file) {
       // create TRawEvent from 3D array
       if (_event)
@@ -294,7 +298,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
           auto hit = new THit(x, y);
-          std::vector<int> adc;
+          // std::vector<int> adc;
           auto Qmax = -1;
           auto Tmax = -1;
           for (auto t = 0; t < geom::Nsamples; ++t) {
@@ -306,8 +310,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
                 _padAmpl_saclay[x][y][t] - 250 :
                 _padAmpl[x][y][t] - 250;
 
-            _padAmpl[x][y][t] = q < -249 ? 0 : q;
-            adc.push_back(_padAmpl[x][y][t]);
+            hit->SetADC(t, q);
             if (q > Qmax) {
               Qmax = q;
               Tmax = t;
@@ -317,7 +320,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
             //   _padAmpl[x][y][t] *= 0.95;
             /** */
           } // over time
-          hit->SetWF_v(adc);
+          // hit->SetWF_v(adc);
           if (Qmax > 0){
             hit->SetQ(Qmax);
             hit->SetTime(Tmax);
@@ -330,12 +333,13 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       } // over X
     } // if 3D array input
 
+    _sw_partial[5]->Stop();
+
     _store_event = false;
 
     _sw_partial[0]->Start(false);
 
     auto reco_event = new TEvent(_event);
-    // auto reco_event = dynamic_cast<TEvent*>(_event);
 
     if (!_reconstruction->SelectEvent(reco_event))
       continue;
