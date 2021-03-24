@@ -16,7 +16,9 @@ class CrossingReconstruction: public ReconstructionBase {
   virtual ~CrossingReconstruction() {;}
 
   virtual bool Initialize();
-  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
+  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                           TRawEvent* event
+                           );
 
  private:
   const int cluster_offset = 3;

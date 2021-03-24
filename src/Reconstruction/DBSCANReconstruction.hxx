@@ -41,9 +41,13 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual ~DBSCANReconstruction() {;}
 
   virtual bool Initialize(int verbose);
-  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
+  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                           TRawEvent* event
+                           );
   virtual std::vector<Node> FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
-  virtual std::vector<int> FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], Node n);
+  virtual std::vector<int> FillWFs(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                                   Node n
+                                   );
   virtual double MeasureDistance(Node a, Node b);
   /// Merge nodes into clusters
   virtual std::vector<Node> FindClusters(std::vector<Node> nodes);
@@ -59,7 +63,7 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual bool FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
                           std::vector<Node> nodes,
                           std::vector<DB_Cluster> clusters,
-                          TEvent* event);
+                          TRawEvent* event);
 
  private:
 

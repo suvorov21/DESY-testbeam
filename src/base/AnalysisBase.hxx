@@ -71,7 +71,7 @@ class AnalysisBase {
   * for applying the selection for the successfully reconstructed tracks,
   * performing the analysis itself, fill jistograms and TTree branches.
   */
-  virtual bool ProcessEvent(const TEvent* event);
+  virtual bool ProcessEvent(const TRawEvent* event);
   /// Write the output file (histos, trees)
   virtual bool WriteOutput();
 
@@ -109,7 +109,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = connst and so on.
   */
-  std::vector<TCluster*> ClusterTrack(const TTrack* tr);
+  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> tr);
 
 
   /************************** Utilities functions *****************************/
@@ -133,7 +133,7 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
   /// Draw the selected event
-  virtual void DrawSelection(const TEvent *event, int trackID);
+  virtual void DrawSelection(const TRawEvent *event);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
@@ -168,7 +168,7 @@ class AnalysisBase {
   int     _selected;
 
   /// The current processing event
-  TEvent* _event;
+  TRawEvent* _event;
   bool    _store_event_tree;
   TFile*  _event_file;
   TTree*  _event_tree;

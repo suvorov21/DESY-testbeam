@@ -10,7 +10,7 @@
 #include <fstream>   // read file lists
 /** @endcond */
 
-#include "TEvent.hxx"
+#include "TRawEvent.hxx"
 #include "TCluster.hxx"
 #include "Geom.hxx"
 
@@ -22,7 +22,7 @@ class ReconstructionBase {
 
   virtual bool Initialize(int verbose);
   virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                  TEvent* event);
+                  TRawEvent* event);
 
 protected:
   int _verbose;

@@ -5,7 +5,7 @@
 #include <TCanvas.h>
 /** @endcond */
 
-#include "TEvent.hxx"
+#include "TRawEvent.hxx"
 #include "TCluster.hxx"
 #include "Geom.hxx"
 

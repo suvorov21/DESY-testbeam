@@ -7,7 +7,7 @@ bool ReconstructionBase::Initialize(int verbose) {
 }
 
 bool ReconstructionBase::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                TEvent* event) {
+                                TRawEvent* event) {
   (void)padAmpl;
   (void)event;
 

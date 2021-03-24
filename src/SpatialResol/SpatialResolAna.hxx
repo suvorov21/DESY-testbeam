@@ -18,10 +18,10 @@ class SpatialResolAna: public AnalysisBase {
   /// Initialise histoes, input files, selections
   bool Initialize();
   /// Process the selection output called Event
-  bool ProcessEvent(const TEvent* event);
+  bool ProcessEvent(const TRawEvent* event);
 
   /// Draw the histograms of interest
-  TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
+  TCanvas* DrawSelectionCan(const TRawEvent* event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();

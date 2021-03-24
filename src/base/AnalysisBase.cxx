@@ -363,7 +363,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       //     _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
       //   }
       // }
-    } else {
+    } else if (!_work_with_event_file) {
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
@@ -398,7 +398,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (!_work_with_event_file) {
       if (_event && !_store_event_tree)
         delete _event;
-      _event = new TEvent(EventList[eventID]);
+      _event = new TRawEvent(EventList[eventID]);
 
       if (!_reconstruction->SelectEvent(_padAmpl, _event))
         continue;
@@ -429,7 +429,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 }
 
 //******************************************************************************
-bool AnalysisBase::ProcessEvent(const TEvent* event) {
+bool AnalysisBase::ProcessEvent(const TRawEvent* event) {
 //******************************************************************************
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
@@ -477,7 +477,7 @@ bool AnalysisBase::WriteOutput() {
 // make the inheritance possible
 // e.g. draw events here but also draw some analysi specific stuff in the analysis
 //******************************************************************************
-void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
+void AnalysisBase::DrawSelection(const TRawEvent *event){
 //******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
@@ -492,7 +492,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   //}
 
   // sel hits
-  for (auto h:event->GetTracks()[trkID]->GetHits()){
+  for (auto h:event->GetHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
@@ -644,60 +644,54 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::ClusterTrack(const TTrack* tr) {
+std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> tr) {
 //******************************************************************************
   if (!_clustering) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
     exit(1);
   }
   std::vector<TCluster*> cluster_v;
-  for (auto col:tr->GetCols(_invert)) {
-    // skip first and last column
-    auto it = col[0]->GetCol(_invert);
-    if (it == 0 || it == geom::GetNColumn(_invert)-1)
+  for (auto pad:tr) {
+    auto col_id = pad->GetCol(_invert);
+    auto row_id = pad->GetRow(_invert);
+
+    // skip first and last row/column
+    if (row_id == 0 || row_id == geom::GetNRow(_invert)-1 ||
+        col_id == 0 || col_id == geom::GetNColumn(_invert)-1)
       continue;
-    for (auto pad:col) {
-      auto col_id = pad->GetCol(_invert);
-      auto row_id = pad->GetRow(_invert);
 
-      auto cons = _clustering->GetConstant(row_id, col_id);
-      // skip first and last row
-      if (row_id == 0 || row_id == geom::GetNRow(_invert)-1)
+    auto cons = _clustering->GetConstant(row_id, col_id);
+
+    // search if the cluster is already considered
+    std::vector<TCluster*>::iterator it;
+    for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
+      if (!((*(*it))[0])) {
         continue;
-
-      // search if the diagonal is already considered
-      std::vector<TCluster*>::iterator it;
-      for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
-        if (!((*(*it))[0])) {
-          continue;
-        }
-
-        auto cluster_col = (*(*it))[0]->GetCol(_invert);
-        auto cluster_row = (*(*it))[0]->GetRow(_invert);
-        if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
-          (*it)->AddHit(pad);
-          (*it)->AddCharge(pad->GetQ());
-          /** update X position */
-          auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
-          auto mult  = (*it)->GetSize();
-          auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
-          (*it)->SetX(x_new);
-          /** */
-          // std::cout << "Add to cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
-
-          break;
-        }
-      } // loop over track clusters
-      // add new cluster
-      if (it == cluster_v.end()) {
-        TCluster* first_cluster = new TCluster(pad);
-        first_cluster->SetX(geom::GetXposPad(pad, _invert, _clustering->angle));
-        first_cluster->SetCharge(pad->GetQ());
-        cluster_v.push_back(first_cluster);
-        // std::cout << "New cluster row:col:const\t" << row_id << ":" << col_id << ":" << cons << std::endl;
       }
-    } // over pads
-  } // over cols diagonalise track
+
+      auto cluster_col = (*(*it))[0]->GetCol(_invert);
+      auto cluster_row = (*(*it))[0]->GetRow(_invert);
+      if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
+        (*it)->AddHit(pad);
+        (*it)->AddCharge(pad->GetQ());
+        /** update X position */
+        auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
+        auto mult  = (*it)->GetSize();
+        auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
+        (*it)->SetX(x_new);
+        /** */
+
+        break;
+      }
+    } // loop over track clusters
+    // add new cluster
+    if (it == cluster_v.end()) {
+      TCluster* first_cluster = new TCluster(pad);
+      first_cluster->SetX(geom::GetXposPad(pad, _invert, _clustering->angle));
+      first_cluster->SetCharge(pad->GetQ());
+      cluster_v.push_back(first_cluster);
+    }
+  } // over pads
 
   return cluster_v;
 }

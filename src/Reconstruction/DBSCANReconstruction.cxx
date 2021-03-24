@@ -249,9 +249,12 @@ void DBSCANReconstruction::DrawNodes(std::vector<Node> nodes){
   delete event3D;
 }
 
-bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], std::vector<Node> nodes, std::vector<DB_Cluster> clusters, TEvent* event){
+bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
+                                      std::vector<Node> nodes,
+                                      std::vector<DB_Cluster> clusters,
+                                      TRawEvent* event
+                                      ){
   if(!nodes.size()) return false;
-  std::vector <TTrack*> tracks;
   std::vector<THit*> unusedHits;
   std::vector<int> usedHits;
   usedHits.resize(nodes.size(),0);
@@ -259,16 +262,19 @@ bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPa
   for(uint trkID=0; trkID<clusters.size(); trkID++){
     if (!nodes.size())
       continue;
-    TTrack* track = new TTrack();
-    tracks.push_back(track);
     for (uint i = 0; i<nodes.size(); i++){
       Node n = nodes[i];
       if(n.c == (int)trkID){
         std::vector<int> wf_v = FillWFs(padAmpl,n);
-        THit *hit = new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm);
-        // THit *hit = new THit(n.x,n.y,n.t,n.q,n.w,n.whm);
+        THit *hit = new THit(n.x,
+                             n.y,
+                             n.t,
+                             n.q,
+                             wf_v,
+                             n.w,
+                             n.whm);
         usedHits[i] = 1;
-        track->AddHit(hit);
+        event->AddHit(hit);
       }
     }
   }
@@ -277,17 +283,14 @@ bool DBSCANReconstruction::FillOutput(const Int_t padAmpl[geom::nPadx][geom::nPa
   for (uint i = 0; i<nodes.size(); i++){
     Node n = nodes[i];
     std::vector<int> wf_v = FillWFs(padAmpl,n);
-    if(!usedHits[i]) unusedHits.push_back(new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm));
+    if(!usedHits[i]) event->AddUnusedHit(new THit(n.x,n.y,n.t,n.q,wf_v,n.w,n.whm));
   }
 
-
-  event->SetTracks(tracks);
-  event->SetHits(unusedHits);
   return true;
 }
 
 bool DBSCANReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                  TEvent* event) {
+                                       TRawEvent* event) {
 
   std::vector<Node> nodes = FindClusters(FillNodes(padAmpl));
   std::vector<DB_Cluster> clusters = FindClustersLargerThan(nodes,15);

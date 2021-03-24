@@ -8,52 +8,63 @@
 /// Class for storing information about each reconstructed hit. Store row, column, charge and time
 class THit : public TObject{
  public:
-  void SetRow(int row)    {fr = row;}
-  void SetCol(int col)    {fc = col;}
-  void SetTime(int time)  {ft = time;}
-  void SetQ(int Q)        {fq = Q;}
-  void SetWidth(int w)    {fw = w;}
-  void SetWHM(int whm)    {fwhm = whm;}
-  //void SetWF_v(std::vector<int> wf){fwf = wf;}
-
-  int GetRow(bool invert = false)    const;
-  int GetCol(bool invert = false)    const;
-  int GetTime()   const   {return ft;}
-  int GetQ()      const   {return fq;}
-  int GetWidth()  const   {return fw;}
-  int GetFWHM()   const   {return fwhm;}
-  std::vector<int> GetWF_v(){return fwf;}
-
-  THit(int col, int row, int time, int q, std::vector<int> wf, int w = 0, int whm = 0){
-  //THit(int col, int row, int time, int q, int w = 0, int whm = 0){
-    fr = row;
-    fc = col;
-    ft = time;
-    fq = q;
-    fw = w;
-    fwhm = whm;
-    fwf = wf;
+  // ctor
+  THit(const int col, const int row,
+       const int time, const int q,
+       const std::vector<int> wf = std::vector<int>(),
+       const UInt_t fec     = -1,
+       const UInt_t asic    = -1,
+       const UInt_t channel = -1 ){
+    fRow      =  row;
+    fColumn   = col;
+    fTime     = time;
+    fCharge   = q;
+    fwf       = wf;
+    fFEC      = fec;
+    fASIC     = asic;
+    fChannel  = channel;
   }
 
+  // default ctor
   THit(){
-    fr  = -999;
-    fc  = -999;
-    ft  = -999;
-    fq  = 0;
+    fRow  = -999;
+    fColumn  = -999;
+    fTime  = -999;
+    fCharge  = 0;
     fwf.clear();
   }
+  // dtor
+  // Assume std::vector is destroyed automatically
   virtual ~THit() {;}
+  // setters
+  void SetRow(int row)    {fRow = row;}
+  void SetCol(int col)    {fColumn = col;}
+  void SetTime(int time)  {fTime = time;}
+  void SetQ(int Q)        {fCharge = Q;}
+  void SetWF_v(std::vector<int> wf){fwf = wf;}
+
+  // getters
+  int GetRow(bool invert = false)    const;
+  int GetCol(bool invert = false)    const;
+  int GetTime()               const   {return fTime;}
+  int GetQ()                  const   {return fCharge;}
+  std::vector<int> GetWF_v()  const   {return fwf;}
+  UInt_t GetFEC()             const   {return fFEC;}
+  UInt_t GetASIC()            const   {return fASIC;}
+  UInt_t GetChannel()         const   {return fChannel;}
 
   ClassDef (THit,1);
 
  private:
-  int  fr;
-  int  fc;
-  int  ft;
-  int  fq;
-  int  fw;
-  int  fwhm;
+  int  fRow;
+  int  fColumn;
+  int  fTime;
+  int  fCharge;
   std::vector<int> fwf;
+  UInt_t fFEC;
+  UInt_t fASIC;
+  UInt_t fChannel;
+
 };
 
 #endif
