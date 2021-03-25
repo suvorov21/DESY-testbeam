@@ -11,7 +11,7 @@ class TRawEvent : public TObject{
   //ctor
   explicit TRawEvent(){;}
   explicit TRawEvent(Int_t var): ID(var) {;}
-  explicit TRawEvent(const TRawEvent* event) {fHits = event->fHits;}
+  explicit TRawEvent(const TRawEvent* event);
   // dtor
   virtual ~TRawEvent();
   // getters
