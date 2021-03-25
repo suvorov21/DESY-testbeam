@@ -6,7 +6,7 @@
 //! Class for storing clusters in the reconstructed tracks.
 
 //! It contains vector of hits associated with this cluster.
-class TCluster : public TObject{
+class TCluster {
  public:
   void AddHit(THit* hit) {_hits.push_back(hit);};
   void SetX(Float_t x) {_x = x;}
@@ -45,8 +45,6 @@ class TCluster : public TObject{
   TCluster(){_x = -999; _y = -999; _y_error = -999;}
   TCluster(THit* pad) {_hits.push_back(pad);}
   virtual ~TCluster();
-
-  ClassDef (TCluster,1);
 
  private:
   std::vector<THit*> _hits;               // all hits.

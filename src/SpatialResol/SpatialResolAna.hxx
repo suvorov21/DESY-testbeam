@@ -21,7 +21,7 @@ class SpatialResolAna: public AnalysisBase {
   bool ProcessEvent(const TEvent* event);
 
   /// Draw the histograms of interest
-  TCanvas* DrawSelectionCan(const TEvent* event, int trkID);
+  TCanvas* DrawSelectionCan(const TRawEvent* event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput();
@@ -90,6 +90,8 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _track_pos[Nclusters];
   /// Residuals (X_track-X_cluster)
   Float_t _residual[Nclusters];
+  /// Residuals (X_track-X_cluster) w/o the given cluster in the fit
+  Float_t _residual_corr[Nclusters];
   /// charge in the cluster
   Int_t   _charge[Nclusters];
   /// multiplicity of the cluster
@@ -172,9 +174,6 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Whether fit all the pads separatly
   bool _do_separate_pad_fit;
-
-  /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool _correction;
 
   /// Whether to fit residuals with Gaussian
   bool _gaussian_residuals;

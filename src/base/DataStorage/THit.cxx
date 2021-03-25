@@ -2,14 +2,14 @@
 
 int THit::GetRow(bool invert) const {
   if (!invert)
-    return fr;
+    return fRow;
   else
-    return fc;
+    return fColumn;
 }
 
 int THit::GetCol(bool invert) const {
   if (!invert)
-    return fc;
+    return fColumn;
   else
-    return fr;
+    return fRow;
 }

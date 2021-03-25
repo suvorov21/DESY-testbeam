@@ -11,3 +11,7 @@ build*
 *.root
 *.ipynb_checkpoints
 *.pdf
+*.so
+*.d
+*.pcm
+*.pyc

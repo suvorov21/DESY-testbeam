@@ -31,14 +31,10 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/base/)            #---Base processors
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/Reconstruction/)  #---Reconstruction
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/utils/)           #---utils
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/dEdx/)            #---dE/dx analysis
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/SpatialResol/)    #---SR analysis
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/base/)
 
 #---Create  a main program using the library
 add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
-target_link_libraries(SpatialResol.exe TEvent TBase)
-
-add_executable(dEdx.exe ${PROJECT_SOURCE_DIR}/dEdx/dEdxAna.cxx)
-target_link_libraries(dEdx.exe TEvent TBase)
+target_link_libraries(SpatialResol.exe TRawEvent TBase)

@@ -30,6 +30,7 @@ Then the code can be run with e.g.
 ```bash
 ./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b
 ```
+The detailed description of the input flags is provided in src/SpatialResol/README.md.
 
 ## Tool structure
 The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
@@ -54,8 +55,8 @@ SpatialResolAna.cxx is supposed to be the main analysis that we are working with
 ### Parameter file
 The parameter file is used to define the fitters, selection, etc. The default one is `param/default.ini`. Any other parameter file could be used, with flag `--param other_file.ini` during analysis execution.
 
-### New variables to store
-New variables can be easily implemented in the header file and then added in the Initialization function of any analysis. If you want to add an TObject to store (histo, tree, canvas) add it to `output_vector` and it will be stored automatically.
+### Store new variables in the output
+New variables can be easily implemented in the header file and then added in the Initialization function of any analysis. If you want to store an TObject (e.g. histo, tree, canvas) add one to `output_vector` and it will be written into the output file automatically.
 
 ### Cluster definition
 The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main option are considered:
@@ -64,7 +65,7 @@ The cluster definition is done inside `AnalysisBase.cxx`. At the moment two main
 3. 2by1 cluster
 4. 3by1 cluster
 
-They could be switched in the parameter file
+They could be switched in the parameter file.
 
 ### Track fitters
 Track fitters are defined at `TrackFitter.cxx` file. That's how the position in the particular cluster is reconstructed. Afterwards clusters are fit together into track. One can define its own class that will do a position fitting with any algorithm one want to test.
@@ -100,15 +101,6 @@ Event display for raw events is available in plotters/EventDisplay.C. With this 
 ```
 For clearness of the plots you can limit the waveform X axis with `WFstart` and `WFend`.
 
-## Data structure
-The raw input for the analysis is 3D array (x, y, t). During the reconstruction the TEvent class object is created. It contains a vector of TTrack with a vectors of THit. In your analysis you can make a loop over tracks/hits. For the analysis simplification in the TTrack class there are vectors of rows and columns, that contain the pointers to hits in the particular row or column.
-
-In order to speedup the analysis we implemented a feature to save the TEvent class itself. It means that the reconstruction and selection could be run once and the events that passed the selection would be saved in the TEvent format. In order to do this, run the executable with flag "-c"
-```bash
-./dEdx.exe -i input_path/input_file.root -o output_path/output_file.root -s
-```
-The output_path/input_file.root will be created that could be later used as an input. The analysis package will recognize automatically which format is used for the input file.
-
 ## Script submission
 To submit script at the LXPLUS please use the script/submitter.py. It creates list of tasks and submit them to condor system. At the beginning of the file you can specify the input and output paths, versions, number of iterations (if any), job flavor and log folder. As an input you need list of input/output files: two columns separated with at least one space. Run the submitter as following:
 ```bash
@@ -126,47 +118,9 @@ Micromegas:
  y   |              |
      |              |         Pad:
      |              |          __
-   0 |______________|         |__| 1.0 cm
-     0               35        1.1 cm
+   0 |______________|         |__| 10.19 mm
+     0               35        11.28 mm
              x
 ```
 
 The time information is stored as a 510 bins array or 511 bins array. The package make an automatic guess which one to use and will exit if the data format is unknown.
-
-
-
-
-
-
-# Working with macros (**DEPRECATED**)
-You could run the analysis with a simple macros (like at CERN analysis). You could find the macros template under macros/TutorialMacro.cxx
-
-## Compilation
-The compilation is possible from the macros folder. You need to specify the macro you need as a source. You are free to create subdirectories in the macro folder with your analysis. Just call the compilation from the macro folder and specify the proper path.
-Make sure that the proper compiler and ROOT version are used. ROOT >= v6.16 was tested.
-To setup the environment at LXPLUS you can use setup.sh without changes.
-```bash
-cd macros
-make SRC="YourMacro.cxx"
-```
-
-The output will be stored as bin/YourMacro.exe
-
-## Running
-The macros can read both single root file and list of root files. To run the macros call
-```bash
-./bin/YourMacro.exe -i input_file -o output_path
-```
-The ROOT help could be called with -h flag. The macro help will be called with flag '-m'.
-The common view is the following
-```
-../bin/YourMacro.exe usage
-
-   -i <input_file>      : input file name with a path
-   -o <output_path>     : output files path
-   -b                   : run in batch mode
-   -v <verbose_lvel>    : verbosity level
-   -d                   : test mode. run over first 30 events
-   -h                   : print ROOT help
-   -m                   : print ../bin/YourMacro.exe help
-```

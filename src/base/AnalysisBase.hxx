@@ -109,7 +109,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = connst and so on.
   */
-  std::vector<TCluster*> ClusterTrack(const TTrack* tr);
+  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr);
 
 
   /************************** Utilities functions *****************************/
@@ -133,12 +133,14 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() const {return _EventList;}
 
   /// Draw the selected event
-  virtual void DrawSelection(const TEvent *event, int trackID);
+  virtual void DrawSelection(const TEvent *event);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
   bool operator==(const AnalysisBase* ana){(void)ana;
     std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+
+  bool ChainInputFiles(TString tree_name);
 
   /// verbosity levels
   enum verbosity_base {
@@ -168,10 +170,7 @@ class AnalysisBase {
   int     _selected;
 
   /// The current processing event
-  TEvent* _event;
-  bool    _store_event_tree;
-  TFile*  _event_file;
-  TTree*  _event_tree;
+  TRawEvent* _event;
   bool    _work_with_event_file;
 
   /// input file
@@ -187,6 +186,9 @@ class AnalysisBase {
   TString _Prev_iter_name;
   /// iteration number. Starting from 0
   Int_t   _iteration;
+
+  /// Whether to apply correction of spatial resolution (take geometrical mean)
+  bool _correction;
 
   /// choose the input array size, whether to use 510 or 511 time bins
   bool _saclay_cosmics;
@@ -228,9 +230,6 @@ class AnalysisBase {
 
   cross_talk _cross_talk_treat;
 
-  /// Wether to store the WFs
-  bool _to_store_wf;
-
   /// T2K plotting style
   TStyle* _t2kstyle;
 
@@ -257,21 +256,14 @@ class AnalysisBase {
   bool _do_linear_fit;
   bool _do_para_fit;
 
+  /// Wether to store the WFs
+  bool _to_store_wf;
+
   /// Time control system
   TApplication* _app;
   TStopwatch* _sw_event;
 
-  TStopwatch* _sw_partial[5];
-
-  /// Use CERN data
-  bool _useCern;
-  // TTree* _tgeom;
-
-  // std::vector<short>          *_listOfChannels;
-  // std::vector<std::vector<short> > *_listOfSamples;
-
-  // std::vector<int> *_iPad;
-  // std::vector<int> *_jPad;
+  TStopwatch* _sw_partial[6];
 };
 
 
