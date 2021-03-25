@@ -35,7 +35,7 @@ The detailed description of the input flags is provided in src/SpatialResol/READ
 ## Tool structure
 The scheme of the package for the particular case of the spatial resolution analysis and in case of using DBSCAN reconstruction.
 
-![Tool structure](doc/doc_html__spatial_resol_ana_8cxx__incl.png)
+![Tool structure](doc/_spatial_resol_ana_8hxx__incl.png)
 
 The work flow can be briefly defined with the following chain:
 1. AnalysisBase open the input file and process the input. Usually it's a 3D array in x, y, t
