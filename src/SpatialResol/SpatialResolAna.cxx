@@ -1,6 +1,8 @@
+/** @cond */
 #include "TVector3.h"
 #include "Math/Functor.h"
 #include "Fit/Fitter.h"
+/** @endcond */
 
 #include "SpatialResolAna.hxx"
 #include "line.hxx"
