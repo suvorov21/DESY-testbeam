@@ -99,7 +99,7 @@ docs:
   stage: docs
   # when: manual
   before_script:
-    - sed -i '37s@.*@![Tool structure](d5/da3/_spatial_resol_ana_8hxx__incl.png)@' README.md
+    - sed -i 's@![Tool structure](doc/doc_html__spatial_resol_ana_8cxx__incl.png)@![Tool structure](d5/da3/_spatial_resol_ana_8hxx__incl.png)@g' README.md
   script:
     - doxygen Doxyfile
   artifacts:

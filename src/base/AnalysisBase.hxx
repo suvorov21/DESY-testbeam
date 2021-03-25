@@ -16,10 +16,12 @@
 #include <TH3F.h>
 #include "TStopwatch.h"
 #include "TGraphErrors.h"
+
+#include "SetT2KStyle.hxx"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"
-#include "SetT2KStyle.hxx"
+
 
 class TCluster;
 
@@ -79,17 +81,17 @@ class AnalysisBase {
   bool ReadParamFile();
 
   /// Process a cluster and return only pads that are suggested to be robust
-  /** E.g. function can return only 2 pads in a column
+  /** E.g. function can return only 2 pads in a column.
    * Another use case is to ommit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
-  std::vector<THit*> GetRobustPadsInColumn(std::vector<THit*> col);
+  std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
   /// Return only robust clusters
   /** E.g. apply a trunccation - ommit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.
    * Any condition can be specified.
    */
-  std::vector<TCluster*> GetRobustCols(std::vector<TCluster*> tr);
+  std::vector<TCluster*> GetRobustClusters(std::vector<TCluster*> tr);
 
   // TODO consider a better implementation. No need to create all instances
   Clustering* CL_col;

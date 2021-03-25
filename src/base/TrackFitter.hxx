@@ -7,7 +7,6 @@
 #include "TH1F.h"
 /** @endcond */
 
-#include "TRawEvent.hxx"
 #include "Geom.hxx"
 #include "TCluster.hxx"
 

@@ -10,7 +10,6 @@
 #include <fstream>   // read file lists
 /** @endcond */
 
-#include "TRawEvent.hxx"
 #include "TEvent.hxx"
 #include "TCluster.hxx"
 #include "Geom.hxx"

@@ -469,7 +469,7 @@ void AnalysisBase::DrawSelection(const TEvent *event){
 }
 
 //******************************************************************************
-std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
+std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) {
 //******************************************************************************
   std::vector<THit*> result;
   // sort in charge decreasing order
@@ -510,7 +510,7 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
+std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr) {
 //******************************************************************************
   std::vector<TCluster*> result;
   // sort clusters in increasing order

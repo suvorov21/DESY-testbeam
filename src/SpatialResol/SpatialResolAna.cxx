@@ -640,7 +640,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   if (clusters.size() < uint(_min_clusters))
     return false;
   // truncation
-  auto robust_clusters = GetRobustCols(clusters);
+  auto robust_clusters = GetRobustClusters(clusters);
 
   if (_verbose >= v_analysis_steps)
     std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
@@ -666,7 +666,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       continue;
 
     // loop over rows
-    auto robust_pads = GetRobustPadsInColumn(cluster->GetHits());
+    auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
     _multiplicity[clusterId] = robust_pads.size();
 
     _clust_pos[clusterId] = 0.;
@@ -1030,7 +1030,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     if (cluster->GetSize() == 1)
       continue;
     // Fill PRF
-    auto robust_pads = GetRobustPadsInColumn(cluster->GetHits());
+    auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
     int padId = 0;
 
     for (auto pad:robust_pads) {
