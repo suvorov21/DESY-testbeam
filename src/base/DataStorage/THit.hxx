@@ -6,7 +6,9 @@
 #include <iostream>
 /** @endcond */
 
-/// Class for storing information about each reconstructed hit. Store row, column, charge and time
+//! Class for storing information about each reconstructed hit.
+
+//! Store row, column, charge, time and the whole waveform
 class THit : public TObject{
  public:
   // ctor

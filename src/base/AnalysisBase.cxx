@@ -576,7 +576,7 @@ std::vector<TCluster*> AnalysisBase::GetRobustCols(std::vector<TCluster*> tr) {
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> tr) {
+std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) {
 //******************************************************************************
   if (!_clustering) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;

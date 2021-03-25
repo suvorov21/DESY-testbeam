@@ -188,23 +188,18 @@ bool SpatialResolAna::Initialize() {
       }
     }
 
-    // read event list passed through reconstruction+selection
-    // at the moment skip for the 1 iteration (after 0) files with TEvent
-    // reason: in at the step 0 TEvent file is generated and the list of events
-    // is different from the initial (raw) data file
-    // need to look through all events again
-    if (!_work_with_event_file) {
-      Int_t read_var;
-      auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
-      event_tree->SetBranchAddress("PassedEvents",    &read_var);
-      std::vector<Int_t> vec;
-      vec.clear();
-      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-        event_tree->GetEntry(i);
-        vec.push_back(read_var);
-      }
-      this->SetEventList(vec);
+    // read event list passed through reconstruction+selection at previous iteration
+    Int_t read_var;
+    auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
+    event_tree->SetBranchAddress("PassedEvents",    &read_var);
+    std::vector<Int_t> vec;
+    vec.clear();
+    for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+      event_tree->GetEntry(i);
+      vec.push_back(read_var);
     }
+    this->SetEventList(vec);
+
   } // if iteration
 
   _qulity_ratio   = new TH1F("quality_ratio",

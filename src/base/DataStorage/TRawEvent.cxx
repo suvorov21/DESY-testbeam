@@ -10,7 +10,6 @@ TRawEvent::~TRawEvent() {
   fHits.clear();
 }
 
-TRawEvent::TRawEvent(const TRawEvent* event) {
-  fHits = event->fHits;
-  ID = event->GetID();
-}
+TRawEvent::TRawEvent(const TRawEvent* event) :
+  fHits(event->fHits),
+  ID(event->GetID()) {;}
