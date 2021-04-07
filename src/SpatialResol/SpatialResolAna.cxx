@@ -284,16 +284,6 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_time[%i][10]/I", Nclusters)
                 );
 
-  _tree->Branch("wf_width",
-                &_wf_width,
-                TString::Format("_wf_width[%i][10]/I", Nclusters)
-                );
-
-  _tree->Branch("wf_fwhm",
-                &_wf_fwhm,
-                TString::Format("_wf_fwhm[%i][10]/I", Nclusters)
-                );
-
   _tree->Branch("pad_x",
                 &_pad_x,
                 TString::Format("_pad_x[%i][10]/I", Nclusters)
@@ -582,8 +572,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         _pad_time[colId][padId] = -999;
         _pad_x[colId][padId] = -999;
         _pad_y[colId][padId] = -999;
-        _wf_width[colId][padId] = -999;
-        _wf_fwhm[colId][padId] = -999;
 
      for (auto nSmp = 0; nSmp < 520; ++nSmp) {
     //_pad_wf_t[colId][padId][nSmp] = -999;

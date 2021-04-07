@@ -53,9 +53,9 @@ class THit : public TObject{
   int GetTime()               const   {return fTime;}
   int GetQ()                  const   {return fCharge;}
   int GetADC(int i) const {
-    if (i > 0 && i < 512)
+    if (i >= 0 && i < 512)
       return fwf[i];
-    std::cout << "ADC index out of range!" << std::endl;
+    std::cout << "ADC index out of range!\t" << i << std::endl;
     return 0;
   }
   UInt_t GetFEC()             const   {return fFEC;}
