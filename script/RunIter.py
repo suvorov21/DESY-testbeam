@@ -53,13 +53,7 @@ def main():
     for iterId in range (0, Niter):
         exe = comm.copy()
         exe.append('-t'+str(iterId))
-        # generate TEvent for the first time
         input_file = input_path+input_name
-        if TEvent:
-            if iterId == 0:
-                exe.append('-s')
-            else:
-                input_file = out_path+input_name
 
         exe.append('-i ' + input_file)
         output_base = out_path+out_name+'_iter'+str(iterId)
