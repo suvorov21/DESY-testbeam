@@ -46,7 +46,7 @@ class THit : public TObject{
   void SetTime(int time)  {fTime = time;}
   void SetQ(int Q)        {fCharge = Q;}
   void SetADC(int i, int adc) {
-    if (i >= 0 && i < 512) {
+    if (i < 0 || i > 511) {
       std::cout << "ADC index out of range!\t" << i << std::endl;
       return;
     }
