@@ -45,7 +45,13 @@ class THit : public TObject{
   void SetCol(int col)    {fColumn = col;}
   void SetTime(int time)  {fTime = time;}
   void SetQ(int Q)        {fCharge = Q;}
-  void SetADC(int i, int adc) {fwf[i] = adc;}
+  void SetADC(int i, int adc) {
+    if (i >= 0 && i < 512) {
+      std::cout << "ADC index out of range!\t" << i << std::endl;
+      return;
+    }
+    fwf[i] = adc;
+  }
 
   // getters
   int GetRow(bool invert = false)    const;

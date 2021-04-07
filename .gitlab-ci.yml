@@ -55,8 +55,8 @@ Spatial_resol_slope_diagonal:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
     - mv download input.root
-    - sed -i '23s@.*@cluster = diag@' params/default.ini
-    - sed -i '45s@.*@cluster_min  = 52@' params/default.ini
+    - sed -i '29s@.*@cluster = diag@' params/default.ini
+    - sed -i '51s@.*@cluster_min  = 52@' params/default.ini
     - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
@@ -69,8 +69,8 @@ Spatial_resol_slope_column:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
-    - sed -i '34s@.*@max_mult = 7@' params/default.ini
-    - sed -i '28s@.*@invert  = 1@' params/default.ini
+    - sed -i '40s@.*@max_mult = 7@' params/default.ini
+    - sed -i '34s@.*@invert  = 1@' params/default.ini
     - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
@@ -83,9 +83,9 @@ Spatial_resol_slope_3by1:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
-    - sed -i '23s@.*@cluster = 3by1@' params/default.ini
-    - sed -i '34s@.*@max_mult = 6@' params/default.ini
-    - sed -i '45s@.*@cluster_min  = 31@' params/default.ini
+    - sed -i '29s@.*@cluster = 3by1@' params/default.ini
+    - sed -i '40s@.*@max_mult = 6@' params/default.ini
+    - sed -i '51s@.*@cluster_min  = 31@' params/default.ini
     - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
