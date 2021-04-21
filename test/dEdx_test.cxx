@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "TFile.h"
+#include "TTree.h"
 #include "TH1F.h"
 #include "TF1.h"
 
@@ -12,7 +13,9 @@ int main(int argc, char** argv) {
 
   std::cout << "dEdx_test. Open file " << argv[1] << std::endl;
   auto f = new TFile(argv[1], "READ");
-  auto h = (TH1F*)f->Get("dEdx");
+  auto t = (TTree*)f->Get("outtree");
+  auto h = new TH1F("h", "", 200, 0., 4000.);
+  t->Project("h", "dEdx", "dEdx > 0");
 
   if (!h->GetEntries()) {
     std::cerr << "ERROR! dEdx_test::main(): no entries in dEdx " << std::endl;

@@ -1,3 +1,4 @@
+
 #ifndef SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 #define SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 
@@ -12,19 +13,16 @@
 
 const int MIN_DIST  = 2;
 const int MIN_NODES = 1;
+const int MAX_NODES = 200;
+const int MAX_NODES_TOT = 300;
 
 struct Node{
-    int  x = -999;  // row
-    int  y = -999;  // column
-    int  t = -999;  // time
-    int  q = -999;  // charge
+    THit* hit;
     int  c = -999;  // cluster ID
     int id = -999;  // node ID
-    int  w = -999;  // WF width
-    int whm = -999; // WF WHM
 };
 
-struct Cluster{
+struct DB_Cluster{
     int size = 0;
     int id   = -999;      // cluster ID
     // TODO make it a vector to prevent overflow
@@ -36,15 +34,30 @@ class DBSCANReconstruction: public ReconstructionBase {
   DBSCANReconstruction();
   virtual ~DBSCANReconstruction() {;}
 
-  virtual bool Initialize();
-  virtual bool SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples], TEvent* event);
-  virtual std::vector<Node> FillNodes(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]);
+  virtual bool Initialize(int verbose);
+  /// Main function of the reconstruction
+  virtual bool SelectEvent(TEvent* event);
+  /// Fill THits with maximum amplitude and time. Create Nodes
+  std::vector<Node> FillNodes(TEvent* event);
+  /// Merge nodes Nodes clusters
+  std::vector<Node> FindClusters(std::vector<Node> raw_nodes);
+
+
+  // virtual std::vector<int> FillWFs(const TEvent* event, Node n);
   virtual double MeasureDistance(Node a, Node b);
-  virtual std::vector<Node> FindClusters(std::vector<Node> nodes);
-  virtual std::vector<Cluster> FindClustersLargerThan(std::vector<Node> nodes, int minNodes);
-  virtual std::vector <Node> UpdateNodes(std::vector <Cluster> clusters, std::vector <Node> nodes);
+
+  /// Search for large enough clusters
+  virtual std::vector<DB_Cluster> FindClustersLargerThan(std::vector<Node> nodes,
+                                                         int minNodes
+                                                         );
+  /// Assotiate nodes with clusters
+  virtual std::vector <Node> UpdateNodes(std::vector <DB_Cluster> clusters,
+                                         std::vector <Node> nodes);
   virtual void DrawNodes(std::vector<Node> nodes);
-  virtual bool FillOutput(std::vector<Node> nodes, std::vector<Cluster> clusters, TEvent* event);
+  /// Store the output in TEven format
+  virtual bool FillOutput(TEvent* event,
+                          std::vector<Node> nodes,
+                          std::vector<DB_Cluster> clusters);
 
  private:
 

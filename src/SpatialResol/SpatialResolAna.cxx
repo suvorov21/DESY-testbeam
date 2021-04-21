@@ -1,81 +1,27 @@
+/** @cond */
+#include "TVector3.h"
+#include "Math/Functor.h"
+#include "Fit/Fitter.h"
+/** @endcond */
+
 #include "SpatialResolAna.hxx"
+#include "line.hxx"
 
-//! verbosity level
-//! 1 (default) print progress, memory usage, time consumption
-//! 2           print event and track number
-//! 3           print fit details
-//! 4           print PRF details
-
-//********************************************************************
+//******************************************************************************
 SpatialResolAna::SpatialResolAna(int argc, char** argv):
   AnalysisBase(argc, argv),
-  _do_arc_fit(true),
+  _Prev_iter_file(NULL),
+  _tree(NULL),
   _do_full_track_fit(false),
   _do_separate_pad_fit(false),
-  // WARNING
-  _correction(false),
   _gaussian_residuals(true),
-  _charge_uncertainty(true),
-  _gaus_lorentz_PRF(false),
-  _iteration(-1){
-  //********************************************************************
-
-  // read CLI
-  const struct option longopts[] = {
-    {"input",           no_argument,    0,    'i'},  // 0
-    {"output",          no_argument,    0,    'o'},
-    {"batch",           no_argument,    0,    'b'},
-    {"verbose",         no_argument,    0,    'v'},
-    {"rewrite",         no_argument,    0,    'r'},
-    {"correction",      no_argument,    0,    'c'},
-    {"full_track_fit",    no_argument,  0,     0},  // 6
-    {"separate_pad_fit",  no_argument,  0,     0},  // 7
-    {"linear_fit",        no_argument,  0,     0},  // 8
-    {"gaus_lorentz",      no_argument,  0,     0}, // 9
-    {"help",            no_argument,    0,    'h'},
-    {"start",           required_argument,    0,     0},  // 11
-    {"end",             required_argument,    0,     0},  // 12
-    {0,                 0,              0,     0}
-  };
-
-  int index;
-
-  optind = 1;
-  for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drmst:ca", longopts, &index);
-    if (c < 0) break;
-    switch (c) {
-      case 0 :
-        if (index == 6)
-          _do_full_track_fit = true;
-        if (index == 7)
-          _do_separate_pad_fit = true;
-        if (index == 8)
-          _do_arc_fit = false;
-        if (index == 9)
-          _gaus_lorentz_PRF = true;
-        break;
-      case 't' : _iteration        = atoi(optarg);  break;
-      case 'c' : _correction       = true;         break;
-    }
-  }
-
-  if (_iteration == -1) {
-    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
-    std::cout << " Iteration should be defined as a input param" << std::endl;
-    exit(1);
-  }
-
-  if (_do_separate_pad_fit && _do_full_track_fit) {
-    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
-    std::cout << " Incorrect input params definintion" << std::endl;
-    exit(1);
-  }
+  _charge_uncertainty(true) {
+//******************************************************************************
 }
 
-//********************************************************************
+//******************************************************************************
 bool SpatialResolAna::Initialize() {
-  //********************************************************************
+//******************************************************************************
   std::cout << "*****************************************" << std::endl;
   std::cout << "***   Spatial resolution analysis    ****" << std::endl;
   std::cout << "*****************************************" << std::endl;
@@ -94,56 +40,135 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_gr_prev = NULL;
   _uncertainty_vs_prf_histo   = NULL;
 
-  _PRF_function = InitializePRF("PRF_function");
-  _PRF_function_2pad = InitializePRF("PRF_function_2pad");
-  _PRF_function_3pad = InitializePRF("PRF_function_3pad");
-  _PRF_function_4pad = InitializePRF("PRF_function_4pad");
+  _PRF_function = InitializePRF("PRF_function", _PRF_free_centre);
+  // _PRF_function_2pad = InitializePRF("PRF_function_2pad");
+  // _PRF_function_3pad = InitializePRF("PRF_function_3pad");
+  // _PRF_function_4pad = InitializePRF("PRF_function_4pad");
 
   if (_do_full_track_fit)
     _PRF_function->FixParameter(0, 1.);
 
+  // Initialize graph for PRF profiling
+  _PRF_graph = new TGraphErrors();
+  _PRF_graph->SetName("PRF_graph");
+  _PRF_graph_2pad = new TGraphErrors();
+  _PRF_graph_2pad->SetName("PRF_graph_2pad");
+  _PRF_graph_3pad = new TGraphErrors();
+  _PRF_graph_3pad->SetName("PRF_graph_3pad");
+  _PRF_graph_4pad = new TGraphErrors();
+  _PRF_graph_4pad->SetName("PRF_graph_4pad");
+
   // load information from previous iteration
   if (_iteration) {
-    TString prev_file_name = _file_out_name;
-    prev_file_name   = prev_file_name(0, prev_file_name.Index("iter"));
-    prev_file_name  += "iter";
-    prev_file_name  += TString::Itoa(_iteration - 1, 10);
-    prev_file_name  += ".root";
+    if (_Prev_iter_name.Length() == 0) {
+      _Prev_iter_name = _file_out_name;
+      _Prev_iter_name   = _Prev_iter_name(0, _Prev_iter_name.Index("iter"));
+      _Prev_iter_name  += "iter";
+      _Prev_iter_name  += TString::Itoa(_iteration - 1, 10);
+      _Prev_iter_name  += ".root";
+    }
 
-    _Prev_iter_file = new TFile(prev_file_name.Data(), "READ");
+    _Prev_iter_file = new TFile(_Prev_iter_name.Data(), "READ");
     if (!_Prev_iter_file->IsOpen()) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
       std::cerr << "File from previous iteration is not found" << std::endl;
+      std::cerr << "File name: " << _Prev_iter_name << std::endl;
       exit(1);
     }
-    auto histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
+
+    // READ PRF
+    TH2F* histo_prev = (TH2F*)_Prev_iter_file->Get("PRF_histo");
+    auto tree = (TTree*)_Prev_iter_file->Get("outtree");
+    if (!histo_prev) {
+      histo_prev = new TH2F("PRF_histo_tmp2","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+      tree->Project("PRF_histo_tmp2", "qfrac:dx");
+    }
     histo_prev->SetName("prev_hsto");
-    auto gr = new TGraphErrors();
-    if (!ProfilePRF(histo_prev, gr)) {
+    if (!ProfilePRF(histo_prev, _PRF_graph)) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
       std::cerr << "PRF can not be profiled" << std::endl;
       exit(1);
     }
-    gr->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
-    _PRF_function = gr->GetFunction("PRF_function");
-    // _PRF_function   = (TF1*)_Prev_iter_file->Get("PRF_function");
+    // kind of magic that works.
+    // More fits better result
+    // seems that the tolerance is wronng somewhere in ROOT
+    for (auto i = 0; i < 3; ++i)
+      _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+    // TODO think about memory control
+    _PRF_function = (TF1*)_PRF_graph->GetFunction("PRF_function")->Clone("PRF_function");
     auto uncertainty_graph = (TH1F*)_Prev_iter_file->Get("resol_total");
 
     if (!_PRF_function || !uncertainty_graph) {
       std::cerr << "ERROR. SpatialResolAna::Initialize().";
       std::cout << "PRF function or resolution is not specified" << std::endl;
-      std::cerr << "Search in " << prev_file_name << std::endl;
+      std::cerr << "Search in " << _Prev_iter_name << std::endl;
       exit(1);
     }
 
-    // if (_PRF_function) {
-    //   std::cout << "      PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula() << "  with ";
-    //   for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
-    //     std::cout << "  " << _PRF_function->GetParameter(i) << ",";
-    //   std::cout << "  Chi2/NDF " << _PRF_function->GetChisquare()
-    //             << "/" << _PRF_function->GetNDF() << std::endl;
-    //   std::cout << std::endl;
-    // }
+    if (_clustering->n_pads > 0 && _individual_column_PRF) {
+      std::cerr << "ERROR. Conflicting options" << std::endl;
+      exit(1);
+    }
+
+    // Read PRF for complicated patterns
+    if (_clustering->n_pads > 1) {
+      _PRF_function_arr = new TF1*[3];
+      for (auto rest = 0; rest < _clustering->n_pads; ++rest) {
+        _PRF_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
+
+        TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+        TString s = TString().Itoa(_clustering->n_pads, 10);
+        TString r = TString().Itoa(rest, 10);
+        tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
+        TGraphErrors* gr_tmp = new TGraphErrors();
+        ProfilePRF(tmp, gr_tmp);
+        for (auto i = 0; i < 3; ++i)
+          gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
+
+        _PRF_function_arr[rest] = (TF1*)gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", rest));
+      }
+    }
+
+    if (_individual_column_PRF) {
+
+      _PRF_function_arr = new TF1*[36];
+      for (auto colId = 0; colId < geom::GetNColumn(_invert); ++colId) {
+        _PRF_function_arr[colId] = InitializePRF("PRF_function_tmp", _PRF_free_centre);
+
+        TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
+        TString s = TString().Itoa(_clustering->n_pads, 10);
+        TString r = TString().Itoa(colId, 10);
+        tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
+        TGraphErrors* gr_tmp = new TGraphErrors();
+        ProfilePRF(tmp, gr_tmp);
+        for (auto i = 0; i < 3; ++i)
+          gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
+
+        _PRF_function_arr[colId] = (TF1*)gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", colId));
+      }
+    }
+
+    // Read PRF in time
+    auto histo_prev_t = (TH2F*)_Prev_iter_file->Get("PRF_histo_time");
+    histo_prev_t->SetName("prev_hsto_time");
+    auto Nbins = histo_prev_t->GetYaxis()->GetNbins();
+    _PRF_time_e = new TH1F("prf_e", "",
+                           Nbins,
+                           histo_prev_t->GetYaxis()->GetBinLowEdge(1),
+                           histo_prev_t->GetYaxis()->GetBinLowEdge(Nbins) + histo_prev_t->GetYaxis()->GetBinWidth(Nbins)
+                           );
+
+    _PRF_time_error = new TGraphErrors();
+    if (!_PRF_time_error || !ProfilePRF_X(histo_prev_t, _PRF_time_error, _PRF_time_e)) {
+      std::cerr << "ERROR. SpatialResolAna::Initialize().";
+      std::cout << "PRF time function is not specified" << std::endl;
+      std::cerr << "Search in " << _Prev_iter_name << std::endl;
+      exit(1);
+    }
+    histo_prev_t->Fit("pol2", "Q");
+    _PRF_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
+    _PRF_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
+    _PRF_time_func = _PRF_time_error->GetFunction("pol2");
 
     Double_t mean, sigma;
     sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
@@ -165,23 +190,18 @@ bool SpatialResolAna::Initialize() {
       }
     }
 
-    // read event list passed through reconstruction+selection
-    // at the moment skip for the 1 iteration (after 0) files with TEvent
-    // reason: in at the step 0 TEvent file is generated and the list of events
-    // is different from the initial (raw) data file
-    // need to look through all events again
-    if (!_work_with_event_file) {
-      Int_t read_var;
-      auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
-      event_tree->SetBranchAddress("PassedEvents",    &read_var);
-      std::vector<Int_t> vec;
-      vec.clear();
-      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-        event_tree->GetEntry(i);
-        vec.push_back(read_var);
-      }
-      this->SetEventList(vec);
+    // read event list passed through reconstruction+selection at previous iteration
+    Int_t read_var;
+    auto event_tree = (TTree*)_Prev_iter_file->Get("EventTree");
+    event_tree->SetBranchAddress("PassedEvents",    &read_var);
+    std::vector<Int_t> vec;
+    vec.clear();
+    for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+      event_tree->GetEntry(i);
+      vec.push_back(read_var);
     }
+    this->SetEventList(vec);
+
   } // if iteration
 
   _qulity_ratio   = new TH1F("quality_ratio",
@@ -196,55 +216,103 @@ bool SpatialResolAna::Initialize() {
   // Initialise histoes and graphs
   _PRF_histo = new TH2F("PRF_histo","", prf_bin, prf_min, prf_max, 150,0.,1.5);
 
-  // Initialize graph for PRF profiling
-  _PRF_graph = new TGraphErrors();
-  _PRF_graph->SetName("PRF_graph");
-  _PRF_graph_2pad = new TGraphErrors();
-  _PRF_graph_2pad->SetName("PRF_graph_2pad");
-  _PRF_graph_3pad = new TGraphErrors();
-  _PRF_graph_3pad->SetName("PRF_graph_3pad");
-  _PRF_graph_4pad = new TGraphErrors();
-  _PRF_graph_4pad->SetName("PRF_graph_4pad");
-
   // PRF for different multiplicities
   auto dir_prf_mult = _file_out->mkdir("prf_mult");
   _output_vector.push_back(dir_prf_mult);
 
+  // PRF in time
+  _PRF_time = new TH2F("PRF_histo_time","", prf_bin, prf_min, prf_max, 100, -20., 80.);
+  _output_vector.push_back(_PRF_time);
+
   _file_out->cd();
   _tree = new TTree("outtree", "");
   _tree->Branch("ev",           &_ev);
+  _tree->Branch("dEdx",         &_dEdx);
+
   _tree->Branch("angle_yz",     &_angle_yz);
   _tree->Branch("angle_xy",     &_angle_xy);
+
+  _tree->Branch("rob_clusters", &_rob_clusters);
+
+  _tree->Branch("quality",      &_quality);
+  _tree->Branch("mom",          &_mom);
+  _tree->Branch("sina",         &_sin_alpha);
+  _tree->Branch("offset",       &_offset);
+
   _tree->Branch("multiplicity",
                 &_multiplicity,
-                TString::Format("multiplicity[%i]/I", geom::nPadx)
+                TString::Format("multiplicity[%i]/I", Nclusters)
                 );
   _tree->Branch("charge",
                 &_charge,
-                TString::Format("charge[%i]/I", geom::nPadx)
+                TString::Format("charge[%i]/I", Nclusters)
                 );
   _tree->Branch("residual",
                 &_residual,
-                TString::Format("residual[%i]/F", geom::nPadx)
+                TString::Format("residual[%i]/F", Nclusters)
+                );
+  _tree->Branch("residual_corr",
+                &_residual_corr,
+                TString::Format("residual_corr[%i]/F", Nclusters)
                 );
   _tree->Branch("dx",
                 &_dx,
-                TString::Format("dx[%i][10]/F", geom::nPadx)
+                TString::Format("dx[%i][10]/F", Nclusters)
                 );
   _tree->Branch("qfrac",
                 &_qfrac,
-                TString::Format("qfrac[%i][10]/F", geom::nPadx)
+                TString::Format("qfrac[%i][10]/F", Nclusters)
+                );
+  _tree->Branch("time",
+                &_time,
+                TString::Format("time[%i][10]/I", Nclusters)
                 );
   _tree->Branch("clust_pos",
                 &_clust_pos,
-                TString::Format("clust_pos[%i]/I", geom::nPadx)
+                TString::Format("clust_pos[%i]/F", Nclusters)
                 );
   _tree->Branch("track_pos",
                 &_track_pos,
-                TString::Format("track_pos[%i]/I", geom::nPadx)
+                TString::Format("track_pos[%i]/F", Nclusters)
+                );
+  _tree->Branch("pad_charge",
+                &_pad_charge,
+                TString::Format("_pad_charge[%i][10]/I", Nclusters)
+                );
+  _tree->Branch("pad_time",
+                &_pad_time,
+                TString::Format("_pad_time[%i][10]/I", Nclusters)
+                );
+
+  _tree->Branch("pad_x",
+                &_pad_x,
+                TString::Format("_pad_x[%i][10]/I", Nclusters)
+                );
+  _tree->Branch("pad_y",
+                &_pad_y,
+                TString::Format("_pad_y[%i][10]/I", Nclusters)
+                );
+
+  if (_to_store_wf) _tree->Branch("pad_wf_q",
+                &_pad_wf_q,
+                TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
+                );
+
+  // WARNING TEMP
+  _tree->Branch("fit_up",
+                &_fit_up,
+                TString::Format("fit_up[%i]/F", Nclusters)
+                );
+
+  _tree->Branch("fit_bt",
+                &_fit_bt,
+                TString::Format("fit_bt[%i]/F", Nclusters)
                 );
 
   _output_vector.push_back(_tree);
+
+  _hdEdx  = new TH1F("dEdx","",300,0,5000);
+  _output_vector.push_back(_hdEdx);
 
   _PRF_histo_2pad = new TH2F("PRF_histo_2pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
@@ -257,15 +325,15 @@ bool SpatialResolAna::Initialize() {
   dir_prf_mult->Append(_PRF_histo_3pad);
   dir_prf_mult->Append(_PRF_histo_4pad);
 
-  dir_prf_mult->Append(_PRF_function_2pad);
-  dir_prf_mult->Append(_PRF_function_3pad);
-  dir_prf_mult->Append(_PRF_function_4pad);
+  // dir_prf_mult->Append(_PRF_function_2pad);
+  // dir_prf_mult->Append(_PRF_function_3pad);
+  // dir_prf_mult->Append(_PRF_function_4pad);
 
   dir_prf_mult->Append(_PRF_graph_2pad);
   dir_prf_mult->Append(_PRF_graph_3pad);
   dir_prf_mult->Append(_PRF_graph_4pad);
 
-  for (auto i = 0; i < geom::GetMaxColumn(_invert); ++i)
+  for (auto i = 0; i < Nclusters; ++i)
     _PRF_histo_col[i] = new TH2F(Form("PRF_histo_col_%i", i),
       "", prf_bin, prf_min, prf_max, 150,0.,1.5);
 
@@ -281,7 +349,7 @@ bool SpatialResolAna::Initialize() {
 
   _output_vector.push_back(_resol_total);
 
-  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+  for (auto j = 0; j < Nclusters; ++j) {
     _resol_col_hist[j]  = new TH1F(Form("resol_histo_%i", j),
      "", resol_bin, resol_min, resol_max);
     _resol_col_hist_except[j]  = new TH1F(Form("resol_histo1__%i", j),
@@ -337,7 +405,7 @@ bool SpatialResolAna::Initialize() {
 
   auto dir_resol = _file_out->mkdir("resol_column");
   _output_vector.push_back(dir_resol);
-  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+  for (auto j = 0; j < Nclusters; ++j) {
     dir_resol->Append(_resol_col_hist[j]);
     dir_resol->Append(_resol_col_hist_except[j]);
   }
@@ -345,7 +413,7 @@ bool SpatialResolAna::Initialize() {
   if (_do_separate_pad_fit) {
     Double_t arr[4] = {0., .15, .7, 1.01};
     _prf_scale_axis = new TAxis(3, arr);
-    for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+    for (auto j = 0; j < Nclusters; ++j) {
       for (auto id=0; id < 3; ++id) {
         _Fit_quality_plots[id][j] = new TH1F(Form("pad_fit_q_%i_%i", j, id),
          "", 300, 0., 30.);
@@ -358,7 +426,7 @@ bool SpatialResolAna::Initialize() {
   _output_vector.push_back(dir_x_scan);
 
   _x_scan_axis = new TAxis(x_scan_bin, x_scan_min, x_scan_max);
-  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+  for (auto j = 0; j < Nclusters; ++j) {
     for (auto i = 0; i < x_scan_bin; ++i) {
       _resol_col_x_scan[j][i] = new TH1F(Form("resol_histo_Xscan_%i_%i", j, i),
        "", resol_bin, resol_min, resol_max);
@@ -369,7 +437,7 @@ bool SpatialResolAna::Initialize() {
     }
   }
 
-  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+  for (auto j = 0; j < Nclusters; ++j) {
     for (auto i = 0; i < x_scan_bin; ++i) {
       _resol_col_x_scan_lim_mult[j][i] =
         new TH1F(Form("resol_histo_Xscan_%i_%i", j, i), "",
@@ -386,14 +454,14 @@ bool SpatialResolAna::Initialize() {
 
   auto dir_prf = _file_out->mkdir("prf_column");
   _output_vector.push_back(dir_prf);
-  for (auto j = 0; j < geom::GetMaxColumn(_invert); ++j) {
+  for (auto j = 0; j < Nclusters; ++j) {
     dir_prf->Append(_PRF_histo_col[j]);
   }
 
   _passed_events.clear();
 
   std::cout << "done" << std::endl;
-  if (_verbose > 1) {
+  if (_verbose >= v_event_number) {
     std::cout << "\t PRF(x) = " << _PRF_function->GetFormula()->GetExpFormula();
     std::cout << "  with ";
     for (auto i = 0; i < _PRF_function->GetNpar(); ++i)
@@ -403,17 +471,40 @@ bool SpatialResolAna::Initialize() {
 
   // Initilise selection
   _reconstruction = new DBSCANReconstruction();
-  _reconstruction->Initialize();
+  _reconstruction->Initialize(_verbose);
 
   // Initialise track fitter
-  _fitter = new TrackFitter(TrackFitter::CERN_like, _PRF_function,
-      fit_bound_right, _uncertainty, _iteration, _verbose, _invert,
-      _charge_uncertainty, _do_arc_fit);
+  TrackFitterBase::TrackShape shape = TrackFitterBase::arc;
+  if (_do_linear_fit) {
+    shape = TrackFitterBase::linear;
+  } else if (_do_para_fit) {
+    shape = TrackFitterBase::parabola;
+  }
 
-  if (_do_full_track_fit)
-    _fitter->SetType(TrackFitter::ILC_like);
-  else if (_do_separate_pad_fit)
-    _fitter->SetType(TrackFitter::Separate_pads);
+  _fitter = new TrackFitCern(shape,
+                             _invert,
+                             _verbose,
+                             _iteration,
+                             _PRF_function,
+                             _PRF_graph,
+                             fit_bound_right,
+                             _charge_uncertainty,
+                             _PRF_time_func,
+                             _PRF_time_e,
+                             _clustering->angle
+                             );
+
+  if (_clustering->n_pads > 1 && _iteration) {
+    std::cout << _PRF_function_arr[0]->GetName() << std::endl;
+    std::cout << _PRF_function_arr[1]->GetName() << std::endl;
+    _fitter->SetPRFarr(_PRF_function_arr, _clustering->n_pads);
+    _fitter->SetComplicatedPatternPRF(true);
+  }
+
+  if (_individual_column_PRF && _iteration) {
+    _fitter->SetPRFarr(_PRF_function_arr, 36);
+    _fitter->SetIndividualPRF(true);
+  }
 
   // Initialize timers
   _sw_partial[2] = new TStopwatch();
@@ -426,324 +517,583 @@ bool SpatialResolAna::Initialize() {
   return true;
 }
 
-//********************************************************************
+//******************************************************************************
 bool SpatialResolAna::ProcessEvent(const TEvent* event) {
-  //********************************************************************
+//******************************************************************************
 
-  for (uint trackId = 0; trackId < event->GetTracks().size(); ++trackId) {
+  auto track_hits = event->GetUsedHits();
+  if (!track_hits.size())
+    return false;
 
-    TTrack* track = event->GetTracks()[trackId];
-    if (!track)
-      continue;
+  _ev = event->GetID();
 
-    if (_verbose > 1)
-      std::cout << "Track id = " << trackId << std::endl;
+  _quality    = -999.;
+  _mom        = -999.;
+  _sin_alpha  = -999.;
+  _offset     = -999.;
+  _rob_clusters = -999;
 
-    if (!sel::CrossingTrackSelection(track, _invert, _verbose))
-      continue;
+  int cluster_N[Nclusters];
+  double track_pos[Nclusters];
+  double cluster_mean[Nclusters];
+  float charge_max[Nclusters];
+  double a_peak_fit[Nclusters];
 
-    std::vector<double> fit_v = sel::GetFitParams(track, _invert);
-    std::vector<double> fit_xz = sel::GetFitParamsXZ(track, _invert);
+  int Ndots = 0;
 
-    _angle_xy = fit_v[2];
-    _angle_yz = fit_xz[2] * sel::v_drift_est;
+  // At the moment ommit first and last column
+  // first loop over columns
+  _sw_partial[2]->Start(false);
 
-    _ev = event->GetID();
+  // reset tree values
+  for (auto colId = 0; colId < Nclusters; ++colId) {
+    _multiplicity[colId]  = -999;
+    _charge[colId]        = -999;
+    _residual[colId]      = -999;
+    _residual_corr[colId] = -999;
+    _clust_pos[colId]     = -999;
+    _track_pos[colId]     = -999;
+    _x[colId]             = -999;
+    _x_av[colId]          = -999;
+    // _cluster_av[colId]    = -999;
+    _dEdx               = -999;
 
-    _store_event = true;
+    // WARNING TMP
+    _fit_up[colId]        = -999.;
+    _fit_bt[colId]        = -999.;
 
-    int cluster[geom::nPadx];
-    int cluster_N[geom::nPadx];
-    double track_pos[geom::nPadx];
-    double cluster_mean[geom::nPadx];
-    float charge_max[geom::nPadx];
-    double a_peak_fit[geom::nPadx];
+    for (auto padId = 0; padId < 10; ++padId) {
+      _dx[colId][padId]    = -999;
+      _time[colId][padId]  = -999;
+      _qfrac[colId][padId] = -999;
 
-    pads_t pos_in_pad;
-    pos_in_pad.clear();
-    pos_in_pad.resize(geom::GetMaxColumn(_invert));
-    int Ndots = 0;
+        //dEdx part
+        _pad_charge[colId][padId] = -999;
+        _pad_time[colId][padId] = -999;
+        _pad_x[colId][padId] = -999;
+        _pad_y[colId][padId] = -999;
 
-    // At the moment ommit first and last column
-    // first loop over columns
-    _sw_partial[2]->Start(false);
+     for (auto nSmp = 0; nSmp < 520; ++nSmp) {
+    //_pad_wf_t[colId][padId][nSmp] = -999;
+    _pad_wf_q[colId][padId][nSmp] = -999;
 
-    // reset tree values
-    for (auto colId = 0; colId < geom::nPadx; ++colId) {
-      _multiplicity[colId]  = -999;
-      _charge[colId]        = -999;
-      _residual[colId]      = -999;
-      for (auto padId = 0; padId < 10; ++padId) {
-        _dx[colId][padId]   = -999;
-        _qfrac[colId][padId] = -999;
-      }
+    	}
 
-      cluster[colId]       = 0;
-      cluster_N[colId]     = 0;
-      charge_max[colId]    = 0;
-      track_pos[colId]     = -999.;
-      cluster_mean[colId]  = 0.;
-      a_peak_fit[colId]    = 0.;
     }
 
-    auto robust_cols = GetRobustCols(track->GetCols(_invert));
-    for (auto col:robust_cols) {
-      if (!col[0])
-        continue;
-      auto it_x = col[0]->GetCol(_invert);
+    cluster_N[colId]     = 0;
+    charge_max[colId]    = 0;
+    track_pos[colId]     = -999.;
+    cluster_mean[colId]  = 0.;
+    a_peak_fit[colId]    = 0.;
+  }
+// *****************************************************************************
+// ************** See steps documentation in the README.md file ****************
+// *******************  STEP 1 *************************************************
 
-      TH1F* cluster_h;
-      if (!_invert)
-        cluster_h = new TH1F("cluster", "", geom::nPady,
-          -1.*geom::nPady*geom::dy/2., 1.*geom::nPady*geom::dy/2.);
-      else
-        cluster_h = new TH1F("cluster", "", geom::nPadx,
-          -1*geom::nPadx*geom::dx/2., 1.*geom::nPadx*geom::dx/2.);
+  std::vector<TCluster*> clusters;
+  clusters = ClusterTrack(track_hits);
 
-      // loop over rows
-      auto robust_pads = GetRobustPadsInColumn(col);
-      _multiplicity[it_x] = robust_pads.size();
-      _charge[it_x] = std::accumulate(robust_pads.begin(), robust_pads.end(), 0,
-                                      [](const int& x, const THit* hit)
-                                      {return x + hit->GetQ();});
+  if (_verbose >= v_analysis_steps)
+    std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
-      for (auto pad:robust_pads) {
-        if (!pad)
-          continue;
+  // selection
+  if (!sel::CrossingTrackSelection(clusters,
+                                   _max_mult,
+                                   _cut_gap,
+                                   _max_phi,
+                                   _max_theta,
+                                   _invert,
+                                   _verbose
+                                   ))
+    return false;
 
-        auto it_y = pad->GetRow(_invert);
-        auto q = pad->GetQ();
+  std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
+  std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
 
-        cluster[it_x] += q;
-        ++cluster_N[it_x];
-        cluster_h->Fill(geom::GetYpos(it_y, _invert), q);
-        if (charge_max[it_x] < q)
-          charge_max[it_x] = q;
-      } // end of loop over rows
+  _angle_xy = fit_v[2];
+  _angle_yz = fit_xz[2] * sel::v_drift_est;
 
-      cluster_mean[it_x] = cluster_h->GetMean();
+  // if not a column clustering
+  if (_clustering->n_pads > 0) {
+    if (clusters.size() < 5)
+      return false;
+    // clean first and last cluster
+    sort(clusters.begin(), clusters.end(),
+         [&](TCluster* cl1, TCluster* cl2){
+            return cl1->GetX() < cl2->GetX();
+          });
+    clusters.erase(clusters.begin(), clusters.begin() + 1);
+    clusters.erase(clusters.end()-1);
+  }
+  // cut on the number of clusters
+  if (clusters.size() < uint(_min_clusters))
+    return false;
+  // truncation
+  auto robust_clusters = GetRobustClusters(clusters);
 
-      delete cluster_h;
-      cluster_h = NULL;
+  if (_verbose >= v_analysis_steps)
+    std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
-      if (!cluster[it_x] || !charge_max[it_x])
-        continue;
+  _rob_clusters = robust_clusters.size();
 
-      ++Ndots;
+  /// decide that track is accepted by selection
+  _store_event = true;
+// *******************  STEP 2 *************************************************
 
-      track_pos[it_x] = _fitter->FitCluster(robust_pads,
-          cluster[it_x], cluster_mean[it_x], pos_in_pad,
-          _uncertainty_vs_prf_histo);
+  if (_verbose >= v_analysis_steps)
+    std::cout << "start cluster fit" << std::endl;
 
-      if (_verbose > 5) {
-        std::cout << "Cluster pos " << track_pos[it_x] << "\t";
-        std::cout << cluster_mean[it_x] << std::endl;
-      }
-    } // loop over columns
+  std::vector <double> QsegmentS; QsegmentS.clear();
+  std::vector <int> pad_wf_v; //WF
 
-    if (_verbose > 3)
-      std::cout << "Loop over columns done" << std::endl;
+  //if (robust_clusters.size() < 30) continue;
+        //continue;
 
-    _Cols_used->Fill(Ndots);
-
-    _sw_partial[2]->Stop();
-    _sw_partial[3]->Start(false);
-
-    TF1* fit = NULL;
-    fit = _fitter->FitTrack(track_pos, cluster_N, track,
-                            track_pos[1], pos_in_pad);
-
-    if (!fit)
+  for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
+    auto cluster = robust_clusters[clusterId];
+    if (!(&cluster[0]))
       continue;
+
+    // loop over rows
+    auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
+    _multiplicity[clusterId] = robust_pads.size();
+
+    _clust_pos[clusterId] = 0.;
+    _charge[clusterId] = 0;
+
+    int colQ = 0;
+    int padId = 0;
+
+    auto pad_id = -1;
+    for (auto pad:robust_pads) {
+      ++pad_id;
+      if (!pad)
+        continue;
+
+      // treat cross-talk
+      // not for the first pad
+      if (pad != robust_pads[0] && _cross_talk_treat != def) {
+        auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
+        auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
+        // cross talk selection
+        if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
+          pad->SetQ(0);
+          for (auto time = pad->GetTime() + 4; time < 510; ++time) {
+            if (pad->GetADC(time) > pad->GetQ()) {
+              pad->SetTime(time);
+              pad->SetQ(pad->GetADC(time));
+            }
+          } // over time
+          if (pad->GetQ() == 0) {
+            robust_pads.erase(
+                              robust_pads.begin() + pad_id,
+                              robust_pads.begin() + pad_id + 1
+                              );
+            --pad_id;
+          }
+        } // cross-talk suppression
+
+        if (_cross_talk_treat == cherry_pick) {
+          pad->SetQ(0);
+          for (
+               auto time = robust_pads[0]->GetTime() - 4;
+               time < robust_pads[0]->GetTime() + 4;
+               ++time
+               ) {
+            if (pad->GetADC(time) > pad->GetQ() &&
+                pad->GetADC(time) > pad->GetADC(robust_pads[0]->GetTime() + 5)) {
+              pad->SetTime(time);
+              pad->SetQ(pad->GetADC(time));
+            }
+          } // over time
+          if (pad->GetQ() == 0) {
+            robust_pads.erase(
+                              robust_pads.begin() + pad_id,
+                              robust_pads.begin() + pad_id + 1
+                              );
+            --pad_id;
+          }
+        } // cross-talk cherry picking
+      } // cross-talk block
+
+      _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
+                                                        _invert,
+                                                        _clustering->angle);
+      _charge[clusterId] += pad->GetQ();
+
+
+      //dEdx part
+    	pad_wf_v.clear();
+
+      colQ+= pad->GetQ();
+
+      _pad_charge[clusterId][padId] = pad->GetQ();
+      _pad_time[clusterId][padId] = pad->GetTime();
+      _pad_x[clusterId][padId] = pad->GetCol(_invert);
+      _pad_y[clusterId][padId] = pad->GetRow(_invert);
+
+      //if (_pad_charge[clusterId][padId] <= 0) continue;
+
+       if (_to_store_wf){
+
+        // pad_wf_v = pad->GetWF_v();
+
+
+        for (uint tz = 0; tz < geom::Nsamples; ++tz) {
+    	    _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
+        }
+    	}
+      ++padId;
+    } // loop over pads
+    _clust_pos[clusterId] /= _charge[clusterId];
+    _x[clusterId] = cluster->GetX();
+
+    double CoC =  _clust_pos[clusterId];
+
+    ++Ndots;
+
+    if (_multiplicity[clusterId] > 1 && _iteration > 0){
+      track_pos[clusterId] = _fitter->FitCluster(robust_pads,
+                                                 _charge[clusterId],
+                                                 _clust_pos[clusterId]
+                                                 );
+      _clust_pos[clusterId] = track_pos[clusterId];
+      // WARNING temp
+      auto it_main = std::max_element((*cluster).begin(), (*cluster).end(),
+                                      [](const THit* n1, const THit* n2) { return n1->GetQ() < n2->GetQ(); });
+      auto main_row = (*it_main)->GetRow(_invert);
+      auto it_up = std::find_if((*cluster).begin(), (*cluster).end(),
+                                    [&](const THit* h1) { return h1->GetRow(_invert) == main_row + 1; });
+      auto it_bt = std::find_if((*cluster).begin(), (*cluster).end(),
+                                    [&](const THit* h1) { return h1->GetRow(_invert) == main_row - 1; });
+
+      // for (auto ii = 0; ii < cluster->GetSize(); ++ii)
+      //   std::cout << (*cluster)[ii]->GetRow(_invert) << "   ";
+      // std::cout << std::endl;
+
+      if (it_up != (*cluster).end() && it_bt != (*cluster).end()) {
+        // std::cout << main_row << "\t" << (*it_up)->GetRow() << "\t" << (*it_bt)->GetRow() << std::endl;
+        Float_t r_up = 1.*(*it_up)->GetQ() / (*it_main)->GetQ();
+        Float_t r_bt = 1.*(*it_bt)->GetQ() / (*it_main)->GetQ();
+        if (r_up > _PRF_function->GetMinimum() && r_bt > _PRF_function->GetMinimum()) {
+          // r_up = PRF(x-x_pad) / PRF(x - x_pad+1)
+          auto minimisator = [&](const Double_t *par) {
+            if (par[1])
+              return abs(r_up - _PRF_function->Eval(geom::GetYposPad((*it_up)) - par[0]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
+            else
+              return abs(r_bt - _PRF_function->Eval(geom::GetYposPad((*it_bt)) - par[0]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
+          };
+          ROOT::Math::Functor fcn_cluster(minimisator,2);
+          ROOT::Fit::Fitter  fitter_cluster;
+
+          double pStart[2] = {geom::GetYposPad((*it_main)), true};
+          fitter_cluster.SetFCN(fcn_cluster, pStart);
+          bool ok = fitter_cluster.FitFCN();
+          (void)ok;
+          const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
+          if (ok && r_up > 0.04)
+            _fit_up[clusterId] = result_cluster.GetParams()[0];
+
+          // if (_fit_up[clusterId] > -0.009 && _fit_up[clusterId] < -0.0087)
+          //   std::cout << r_up << "\t" << _fit_up[clusterId] << "\t" << _PRF_function->Eval(geom::GetYposPad((*it_up)) - _fit_up[clusterId]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - _fit_up[clusterId]) << std::endl;
+
+          pStart[0] = geom::GetYposPad((*it_main));
+          pStart[1] = false;
+          fitter_cluster.SetFCN(fcn_cluster, pStart);
+          ok = fitter_cluster.FitFCN();
+          const ROOT::Fit::FitResult & result_cluster2 = fitter_cluster.Result();
+          if (ok && r_bt > 0.04)
+            _fit_bt[clusterId] = result_cluster2.GetParams()[0];
+        }
+      }
+    } else {
+      track_pos[clusterId] = _clust_pos[clusterId];
+    }
+
+    cluster->SetY(track_pos[clusterId]);
+    cluster->SetCharge(_charge[clusterId]);
+
+    if (_verbose >= v_fit_details) {
+      for (auto pad:*cluster) {
+        std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
+      }
+      std::cout << std::endl;
+    }
+
+    if (_verbose >= v_fit_details)
+      std::cout << "X:CoC:Fit\t" << cluster->GetX() << "\t" << CoC << "\t" << cluster->GetY() << std::endl;
+
 
     // TODO review this mess
-    if (fit && _do_full_track_fit)
-      fit = (TF1*)fit->Clone();
-
-    double quality = fit->GetChisquare() / fit->GetNDF();
-    _Chi2_track->Fill(quality);
-
-    if (_verbose > 3)
-      std::cout << "Track fit done" << std::endl;
-
-    TString func = fit->GetName();
-
-    // in case of arc fitting fill the momentum histo
-    if (_do_arc_fit) {
-      float mom = fit->GetParameter(0) * units::B * units::clight / 1.e9;
-      if (func.CompareTo("circle_dn") == 0) mom *= -1.;
-      _mom_reco->Fill(mom);
-      _pos_reco->Fill(fit->GetParameter(2));
-      _ang_reco->Fill(fit->GetParameter(1));
-    }
-
-    TF1* fit1[geom::nPadx];
-    for (int i = 1; i < geom::GetMaxColumn(_invert)-1; ++i) {
-      if (!_correction)
-        fit1[i] = fit;
+    if (cluster->GetSize() == 1) {
+      cluster->SetYE(0.002);
+    } else {
+      // if not a column clustering
+      if (_clustering->n_pads > 0)
+        cluster->SetYE(0.0008);
       else {
-        fit1[i] = _fitter->FitTrack(track_pos, cluster_N, track, track_pos[1],
-          pos_in_pad, i);
-        // TODO review this mess
-        if (_do_full_track_fit)
-          fit1[i] = (TF1*)fit1[i]->Clone();
+        /** DEV VERSION */
+        // auto half_size = 0.5 * geom::dy;
+        // auto dx_from_side = fmod(abs(cluster->GetY()), geom::dy);
+        // if (dx_from_side > half_size)
+        //   dx_from_side -= half_size;
+        // else
+        //   dx_from_side = half_size - dx_from_side;
+        // auto dy = 200 - 100 * dx_from_side / half_size;
+        // dy *= 1e-6;
+        // cluster->SetYE(dy);
+        /** END OF DEV */
+
+        /** OLD VERSION below */
+        if (_iteration)
+          cluster->SetYE(_uncertainty);
+        else
+          cluster->SetYE(0.001);
+
       }
     }
 
-    _sw_partial[3]->Stop();
-    _sw_partial[4]->Start(false);
+    if (_verbose >= v_residuals) {
+      std::cout << "Cluster pos " << track_pos[clusterId] << "\t";
+      std::cout << cluster_mean[clusterId] << std::endl;
+    }
 
-    // second loop over columns
-    for (auto col:robust_cols) {
-      if (!col[0])
+      if (colQ) QsegmentS.push_back(colQ);
+
+  } // loop over clusters
+
+  std::vector<TCluster*> clusters_clean;
+
+  for (auto cluster:robust_clusters)
+    clusters_clean.push_back(cluster);
+
+  if (_verbose >= v_analysis_steps) {
+    std::cout << "Loop over columns done" << std::endl;
+  }
+
+    //dEdx calculations
+    double alpha = 0.7;
+    sort(QsegmentS.begin(), QsegmentS.end());
+    double totQ = 0.;
+    Int_t i_max = round(alpha * QsegmentS.size());
+    for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
+    float CT= totQ / (alpha * QsegmentS.size());
+
+    //_npoints = QsegmentS.size();
+    _dEdx = CT;
+    _hdEdx->Fill(CT);
+
+  _Cols_used->Fill(Ndots);
+
+  _sw_partial[2]->Stop();
+  _sw_partial[3]->Start(false);
+
+//******************** STEP 3 **************************************************
+
+  TF1* fit = NULL;
+  fit = _fitter->FitTrack(clusters_clean);
+  _track_fit_func = fit;
+
+  if (!fit)
+    return false;
+
+  // TODO review this mess
+  if (fit && _do_full_track_fit)
+    fit = (TF1*)fit->Clone();
+
+  _quality = fit->GetChisquare() / fit->GetNDF();
+  _Chi2_track->Fill(_quality);
+
+  if (_verbose >= v_analysis_steps)
+    std::cout << "Track fit done" << std::endl;
+
+  TString func = fit->GetName();
+
+  // in case of arc fitting fill the momentum histo
+  // TODO review mess
+  if (!_do_linear_fit && !_do_para_fit) {
+    float mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
+    // if (func.CompareTo("circle_dn") == 0) mom *= -1.;
+    _mom_reco->Fill(mom);
+    _pos_reco->Fill(fit->GetParameter(2));
+    _ang_reco->Fill(fit->GetParameter(1));
+
+    _mom        = mom;
+    _sin_alpha  = fit->GetParameter(1);
+    _offset     = fit->GetParameter(2);
+  }
+
+  if (_do_para_fit) {
+    // pol2 := [p0]+[p1]*x+[p2]*pow(x,2)
+
+    double x1 = clusters_clean[0]->GetX();
+    TVector3 start(x1, fit->Eval(x1), 0.);
+    double x2 = (*(clusters_clean.end()-1))->GetX();
+    TVector3 end(x2, fit->Eval(x2), 0.);
+    TLine_att line(start, end);
+
+    double a = fit->GetParameter(2);;
+    double b = fit->GetParameter(1);
+    // double c = fit->GetParameter(0);
+
+    double x0 = - b * (x2-x1) + a*x2*x2 + b*x2 - a*x1*x1 - b*x1 ;
+    x0 /= 2*a*(x2-x1);
+    TVector3 max_sag(x0, fit->Eval(x0), 0.);
+    double sag = line.GetDistVec(max_sag).Mag();
+    double L = (end - start).Mag();
+
+    if (abs(sag) > 1e-10) {
+      _mom = L*L /8/sag + sag / 2;
+      _mom *= units::B * units::clight / 1.e9;
+      if (a < 0)
+        _mom *= -1;
+    }
+
+    _sin_alpha = TMath::Sin(TMath::ATan(fit->Derivative(x1)));
+    _offset    = start.Y();
+
+    if (_verbose > v_analysis_steps) {
+      std::cout << "start:end:max\t" << start.X() << ", " << start.Y();
+      std::cout << "\t" << end.X() << ", " << end.Y();
+      std::cout << "\t" << max_sag.X() << ", " << max_sag.Y() << std::endl;
+      std::cout << "Line at x0\t" << line.EvalX(max_sag.X()).Y() << std::endl;
+      std::cout << "Sagitta:\t" << sag << "\tLength:\t" << L << std::endl;
+      std::cout << "mom:\t" << _mom << std::endl;
+    }
+  }
+
+//****************** STEP 4 ****************************************************
+
+  TF1* fit1[Nclusters];
+  for (int i = 0; i < Nclusters; ++i) {
+    if (!_correction)
+      fit1[i] = fit;
+    else {
+      fit1[i] = _fitter->FitTrack(clusters_clean, i);
+      // TODO review this mess
+      if (_do_full_track_fit)
+        fit1[i] = (TF1*)fit1[i]->Clone();
+    }
+  }
+
+  _sw_partial[3]->Stop();
+  _sw_partial[4]->Start(false);
+
+//****************** STEP 5 ****************************************************
+
+  // second loop over columns
+  for (uint clusterId = 0; clusterId < clusters_clean.size(); ++clusterId) {
+    auto cluster = clusters_clean[clusterId];
+    if (!cluster) continue;
+
+    _x_av[clusterId]      = cluster->GetX();
+    double track_fit_y    = fit->Eval(_x_av[clusterId]);
+    double track_fit_y1   = fit1[clusterId]->Eval(_x_av[clusterId]);
+
+    if (_verbose >= v_residuals) {
+      std::cout << "Residuals id:x:cluster:track\t" << clusterId << "\t";
+      std::cout << _x_av[clusterId] << "\t";
+      std::cout << cluster->GetY() << "\t";
+      std::cout << track_fit_y << "\t";
+      std::cout << (cluster->GetY() - track_fit_y)*1e6;
+      std::cout << std::endl;
+    }
+
+    // fill SR
+    _clust_pos[clusterId] = cluster->GetY();
+    _track_pos[clusterId] = track_fit_y;
+    _residual[clusterId] = _clust_pos[clusterId] - track_fit_y;
+    _residual_corr[clusterId] = _clust_pos[clusterId] - track_fit_y1;
+
+    _resol_col_hist[clusterId]->Fill(_clust_pos[clusterId] - track_fit_y);
+    _resol_col_hist_except[clusterId]->Fill(_clust_pos[clusterId] - track_fit_y1);
+  }
+
+// ************ STEP 6 *********************************************************
+
+  for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
+    auto cluster = clusters[clusterId];
+    a_peak_fit[clusterId] = cluster->GetCharge();
+
+    // don't fill PRF for multiplicity of 1
+    if (cluster->GetSize() == 1)
+      continue;
+    // Fill PRF
+    auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
+    int padId = 0;
+
+    for (auto pad:robust_pads) {
+      if (!pad)
         continue;
-      auto it_x = col[0]->GetCol(_invert);
 
-      if (track_pos[it_x]  == -999.)
-        continue;
+      auto q    = pad->GetQ();
+      auto time = pad->GetTime();
 
-      double x    = geom::GetXpos(it_x, _invert);
+      double x = geom::GetXposPad(pad, _invert, _clustering->angle);
+      // double x = cluster->GetX();
+      double center_pad_y = geom::GetYposPad(pad,
+                                             _invert,
+                                             _clustering->angle
+                                             );
+
       double track_fit_y    = fit->Eval(x);
-      double track_fit_y1   = fit1[it_x]->Eval(x);
 
-      if (_verbose > 4) {
-        std::cout << "Residuals cluster:track\t" << track_pos[it_x] << "\t";
-        std::cout << track_fit_y << "\t" << (track_pos[it_x] - track_fit_y)*1e6;
-        std::cout << std::endl;
-      }
-
-      // fill SR
-      _clust_pos[it_x] = track_pos[it_x];
-      _track_pos[it_x] = track_fit_y;
-      _residual[it_x] = track_pos[it_x] - track_fit_y;
-      _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
-      _resol_col_hist_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
-
-      // fill x scan
-      auto bin = _x_scan_axis->FindBin(track_fit_y);
-
-      if (bin > 0 && bin <= x_scan_bin) {
-        _resol_col_x_scan[it_x][bin-1]->Fill(track_pos[it_x] - track_fit_y);
-        _mult_x_scan[it_x][bin-1]->Fill(cluster_N[it_x]);
-
-        if (cluster_N[it_x] == 3 || cluster_N[it_x] == 4)
-          _resol_col_x_scan_lim_mult[it_x][bin-1]->Fill(track_pos[it_x] - track_fit_y);
-      }
-
-      // if (cluster_N[it_x] == 2) {
-      //   _resol_col_hist[it_x]->Fill(track_pos[it_x] - track_fit_y);
-      //   _resol_col_hist_2pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
-      // } else if (cluster_N[it_x] == 3) {
-      //   _resol_col_hist_3pad[it_x]->Fill(track_pos[it_x] - track_fit_y);
-      //   _resol_col_hist_3pad_except[it_x]->Fill(track_pos[it_x] - track_fit_y1);
-      // }
-
-      // in case of full track fit calc normalisation coefficient
-      // if (_do_full_track_fit) {
-      //   float a_nom = 0.;
-      //   float a_den = 0.;
-      //   for (auto pad:col) {
-      //     auto q      = pad->GetQ();
-      //     auto it_y   = pad->GetRow(_invert);
-      //     if (!q)
-      //       continue;
-      //     double center_pad_y = geom::GetYpos(it_y, _invert);
-
-      //     if (abs(center_pad_y - track_fit_y) > fit_bound_right)
-      //       continue;
-
-      //     a_nom += _PRF_function->Eval(center_pad_y - track_fit_y);
-      //     a_den += TMath::Power(_PRF_function->Eval(center_pad_y - track_fit_y), 2) /   q;
-      //   }
-
-      //   a_peak_fit[it_x] = a_nom / a_den;
-      // } else
-      a_peak_fit[it_x] = 1.*cluster[it_x];
-
-      // fill pad accuracy
-      // if (_do_separate_pad_fit) {
-      //   for (auto it = pos_in_pad[it_x].begin();
-      //             it < pos_in_pad[it_x].end();
-      //             ++it) {
-      //     int bin_prf = -1 + _prf_scale_axis->FindBin((*it).first);
-      //   // TODO make the definition through constants
-      //     if (bin_prf < 0 || bin_prf > 2) {
-      //       std::cout << "Error bin 1  " << bin_prf << "\t" << (*it).first << std::endl;
-      //       exit(1);
-      //     }
-      //     _Fit_quality_plots[bin_prf][it_x]->Fill(abs(track_fit_y - (*it).second.first) / (*it).second.second);
-
-      //     int bin2 = -1 + _prf_error_axis->FindBin((*it).first);
-      //     if (bin2 < 0 || bin2 >= prf_error_bins-1) {
-      //       std::cout << "Error bin 2  " << bin2 << "\t" << (*it).first << std::endl;
-      //       exit(1);
-      //     }
-      //     _uncertainty_prf_bins[bin2]->Fill(track_fit_y - (*it).second.first);
-      //   }
-      // }
-
-      if (cluster_N[it_x] == 1)
+      /// WARNING only 10 first pads are used
+      if (padId > 9)
         continue;
-      // Fill PRF
-      auto robust_pads = GetRobustPadsInColumn(col);
-      int padId = 0;
-      for (auto pad:robust_pads) {
-        if (!pad)
-          continue;
 
-        auto it_y = pad->GetRow(_invert);
-        auto q = pad->GetQ();
+      // Pad characteristics
+      // time, position wrt track, charge, col/row
+      _time[clusterId][padId]  = time;
+      _dx[clusterId][padId]    = center_pad_y - track_fit_y;
+      _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
 
-        if (!cluster[it_x] || !q)
-          continue;
-
-        double center_pad_y = geom::GetYpos(it_y, _invert);
-
-        if (it_x == 4) {
-          auto bin_prf = _x_pads->FindBin(center_pad_y);
-          if (bin_prf > 0 && bin_prf < 5) {
-            _PRF_histo_xscan[bin_prf-1]->Fill(center_pad_y - track_fit_y,
-                                              q / a_peak_fit[it_x]);
-          }
-        }
-
-        // fill PRF
-        _PRF_histo->Fill( center_pad_y - track_fit_y,
-                          q / a_peak_fit[it_x]);
-        _PRF_histo_col[it_x]->Fill( center_pad_y - track_fit_y,
-                                    q / a_peak_fit[it_x]);
-
-        if (cluster_N[it_x] == 2)
-          _PRF_histo_2pad->Fill(center_pad_y - track_fit_y,
-                                q / a_peak_fit[it_x]);
-        else if (cluster_N[it_x] == 3)
-          _PRF_histo_3pad->Fill(center_pad_y - track_fit_y,
-                                q / a_peak_fit[it_x]);
-        else if (cluster_N[it_x] == 4)
-          _PRF_histo_4pad->Fill(center_pad_y - track_fit_y,
-                                q / a_peak_fit[it_x]);
-
-        if (padId > 9)
-          continue;
-
-        _dx[it_x][padId]    = center_pad_y - track_fit_y;
-        _qfrac[it_x][padId] = q / a_peak_fit[it_x];
-
-        // robust_pads are assumed sorted!!
-        ++padId;
-      }
-    } // loop over colums
-    _sw_partial[4]->Stop();
-    for (int i = 0; i < geom::GetMaxColumn(_invert); ++i)
-      if (fit1[i] && _correction) {
-        delete fit1[i];
-        fit1[i] = NULL;
+      if (_verbose >= v_prf) {
+        std::cout << "PRF fill\t" << _dx[clusterId][padId];
+        std::cout << "\t" << _qfrac[clusterId][padId];
+        std::cout << "\t" << _time[clusterId][padId] - _time[clusterId][0] << std::endl;
       }
 
-    delete fit;
+      // fill PRF
+      _PRF_histo->Fill( _dx[clusterId][padId],
+                        _qfrac[clusterId][padId]
+                        );
+      _PRF_histo_col[clusterId]->Fill( _dx[clusterId][padId],
+                                       _qfrac[clusterId][padId]
+                                       );
 
-    if(_test_mode) this->DrawSelectionCan(event,trackId);
-  } // loop over tracks
+      if (_multiplicity[clusterId] == 2)
+        _PRF_histo_2pad->Fill( _dx[clusterId][padId],
+                               _qfrac[clusterId][padId]
+                               );
+      else if (_multiplicity[clusterId] == 3)
+        _PRF_histo_3pad->Fill( _dx[clusterId][padId],
+                               _qfrac[clusterId][padId]
+                               );
+      else if (_multiplicity[clusterId] == 4)
+        _PRF_histo_4pad->Fill( _dx[clusterId][padId],
+                               _qfrac[clusterId][padId]
+                               );
+
+      if (padId > 0)
+        _PRF_time->Fill(_dx[clusterId][padId], _time[clusterId][padId] - _time[clusterId][0]);
+
+      // robust_pads are assumed sorted!!
+      ++padId;
+    }
+  } // loop over columns
+  _sw_partial[4]->Stop();
+  for (int i = 0; i < Nclusters; ++i)
+    if (fit1[i] && _correction) {
+      delete fit1[i];
+      fit1[i] = NULL;
+    }
+
+  if(_test_mode) this->DrawSelectionCan(event);
+  if (!_batch)
+    Draw();
+  delete fit;
 
   _tree->Fill();
 
@@ -753,60 +1103,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   return true;
 }
 
-TCanvas* SpatialResolAna::DrawSelectionCan(const TEvent* event, int trkID) {
-  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
-                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
-  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
-
-  for (auto x = 0; x < geom::nPadx; ++x) {
-    for (auto y = 0; y < geom::nPady; ++y) {
-      auto max = 0;
-      for (auto t = 0; t < geom::Nsamples; ++t) {
-        if (_padAmpl[x][y][t] > max) {
-          max = _padAmpl[x][y][t];
-        }
-      } // over t
-      if (max)
-        MM->Fill(x, y, max);
-    }
-  }
-
-  // sel hits
-  for (auto h:event->GetTracks()[trkID]->GetHits()){
-    if(!h->GetQ()) continue;
-    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
-    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
-  }
-
-  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
-  canv->Divide(3,1);
-  canv->cd(1);
-  if (MM->Integral())
-    MM->Draw("colz");
-  //_PRF_histo->Draw("COLZ");
-  canv->cd(2);
-  MMsel->Draw("COLZ");
-
-  canv->cd(3);
-  event3D->Draw("x:y:z:c","","box2");
-  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
-  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
-  htemp->GetYaxis()->SetLimits(0,geom::nPady);
-  htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");
-  canv->Update();
-  return canv;
-  //canv->WaitPrimitive();
-  /*delete htemp;
-  delete canv;
-
-  delete MM;
-  delete MMsel;
-  delete event3D;*/
-}
-
+//******************************************************************************
 bool SpatialResolAna::WriteOutput() {
+//******************************************************************************
   if (!_file_out)
     return true;
 
@@ -820,10 +1119,12 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
   std::cout << "PRF fit..................................";
 
-  _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
-  _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
-  _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
-  _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
+  // MAGIC
+  for (auto i = 0; i < 3; ++i)
+    _PRF_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+  // _PRF_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
+  // _PRF_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
+  // _PRF_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
 
   std::cout << "done" << std::endl;
   std::cout << "Process x histoes........................";
@@ -836,10 +1137,10 @@ bool SpatialResolAna::WriteOutput() {
 
   TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
 
-  for (auto i = 0; i <= geom::GetMaxColumn(_invert) - 1; ++i)
+  for (auto i = 0; i <= Nclusters - 1; ++i)
       _resol_total->Add(_resol_col_hist[i]);
 
-  for (auto i = 1; i < geom::GetMaxColumn(_invert) - 1; ++i) {
+  for (auto i = 1; i < Nclusters - 1; ++i) {
 
     TH1F* res     = _resol_col_hist[i];
     TH1F* res_e   =  _resol_col_hist_except[i];
@@ -850,8 +1151,9 @@ bool SpatialResolAna::WriteOutput() {
     sigma = 0.5 * GetFWHM(res, mean);
 
     if (!res->Integral()) {
-      std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Empty residuals" << std::endl;
-      exit(1);
+      if (i < 10)
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty residuals at " << i << std::endl;
+      continue;
     }
 
     if (_gaussian_residuals) {
@@ -864,7 +1166,7 @@ bool SpatialResolAna::WriteOutput() {
       TF1* func = res->GetFunction("gaus");
 
       if (!func) {
-        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
         continue;
       }
 
@@ -874,7 +1176,7 @@ bool SpatialResolAna::WriteOutput() {
 
       TF1* func_ex = res_e->GetFunction("gaus");
       if (!func_ex) {
-        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Exeptional residual fit fail" << std::endl;
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Exeptional residual fit fail" << std::endl;
         continue;
       }
 
@@ -928,7 +1230,7 @@ bool SpatialResolAna::WriteOutput() {
       TF1* func = res->GetFunction("gaus");
 
       if (!func) {
-        std::cerr << "ERROR. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
+        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
         exit(1);
       }
 
@@ -948,8 +1250,6 @@ bool SpatialResolAna::WriteOutput() {
     } // loop over prf uncertainty bins
   } // if (_do_separate_fit)
 
-  // Output histoes postprocession done
-
   std::cout << "done" << std::endl;
 
   if (_PRF_graph->GetFunction("PRF_function")) {
@@ -962,12 +1262,16 @@ bool SpatialResolAna::WriteOutput() {
     std::cout << std::endl;
 
     _resol_total->Fit("gaus", "Q");
-    auto func = _resol_total->GetFunction("gaus");
-    TString output = "NaN";
-    if (func)
-      output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
+    if (!_resol_total->Integral()) {
+      std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty global residual" << std::endl;
+    } else {
+      auto func = _resol_total->GetFunction("gaus");
+      TString output = "NaN";
+      if (func)
+        output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
 
-    std::cout << "Spatial resolution\t" << output << std::endl;
+      std::cout << "Spatial resolution\t" << output << std::endl;
+    }
   }
 
   // Write objects
@@ -993,6 +1297,7 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   std::cout << "*************** Time consuming **************" << std::endl;
+  std::cout << "Reading 3D array:\t"        << _sw_partial[5]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
   std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / _EventList.size() << std::endl;
@@ -1001,16 +1306,20 @@ bool SpatialResolAna::WriteOutput() {
   return true;
 }
 
+//******************************************************************************
 bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
+//******************************************************************************
   if (!PRF_h)
     return false;
+
+  gr->Set(0);
 
   // Float_t threshold = 0.05 * PRF_h->GetMaximum();
   Float_t threshold = 0.;
 
   for (auto i = 1; i < PRF_h->GetXaxis()->GetNbins(); ++i) {
 
-    TH1D* temp_h = PRF_h->ProjectionY(Form("projections_bin_%i", i), i, i);
+    TH1F* temp_h = (TH1F*)PRF_h->ProjectionY(Form("projections_bin_%i", i), i, i);
     if (!temp_h)
       return false;
 
@@ -1020,38 +1329,72 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
     double x = PRF_h->GetXaxis()->GetBinCenter(i);
     double y = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
-    float start = -1.;
-    float end   = -1.;
-    float max = temp_h->GetMaximum();
-
-    for (Int_t bin = 0; bin < temp_h->GetXaxis()->GetNbins(); ++bin) {
-      if (start == -1. && temp_h->GetBinContent(bin) >= max / 2.)
-        start = temp_h->GetBinCenter(bin);
-
-      if (end == -1. && start != -1. && temp_h->GetBinContent(bin) <= max / 2.)
-        end = temp_h->GetBinCenter(bin);
-    }
-
-    float e = end - start;
-
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1, 0, e/2.);
+    gr->SetPointError(gr->GetN()-1, 0, GetFWHM(temp_h)/2.);
   } // end of PRF histo profiling
 
   return true;
 }
 
+//******************************************************************************
+bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PRF_time_e) {
+//******************************************************************************
+  if (!PRF_h)
+    return false;
+
+  // Float_t threshold = 0.05 * PRF_h->GetMaximum();
+  Float_t threshold = 1.;
+
+  auto start = PRF_h->GetYaxis()->FindBin(0.);
+
+  for (auto i = start+1; i < PRF_h->GetYaxis()->GetNbins(); ++i) {
+
+    TH1F* temp_h = (TH1F*)PRF_h->ProjectionX(Form("projections_bin_%i", i), i, i);
+    if (!temp_h)
+      return false;
+
+    if (temp_h->GetMaximum() < threshold)
+      continue;
+
+    for (auto j = temp_h->GetXaxis()->FindBin(0.); j < temp_h->GetXaxis()->GetNbins(); ++j)
+      temp_h->SetBinContent(j, 0.);
+
+    double y = PRF_h->GetYaxis()->GetBinCenter(i);
+    double x = temp_h->GetBinCenter(temp_h->GetMaximumBin());
+
+    gr->SetPoint(gr->GetN(), x, y);
+    gr->SetPointError(gr->GetN()-1,  GetFWHM(temp_h)/2., 0.);
+    PRF_time_e->Fill(y, GetFWHM(temp_h)/2);
+  } // end of PRF histo profiling
+
+  return true;
+}
+
+//******************************************************************************
+Double_t SpatialResolAna::GetFWHM(const TH1F* h) {
+//******************************************************************************
+  auto mean = 0.;
+  return GetFWHM(h, mean);
+}
+
+//******************************************************************************
 Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
+//******************************************************************************
+  if (!h->Integral())
+    return -1.;
+
   mean = h->GetMean();
-  float max   = h->GetMaximum();
-  float start = h->GetBinLowEdge(h->FindFirstBinAbove(max/2));
-  float end   = h->GetBinLowEdge(h->FindLastBinAbove(max/2)) +
-  h->GetBinWidth(h->FindLastBinAbove(max/2));
+  auto max   = h->GetMaximum();
+  auto start = h->GetBinLowEdge(h->FindFirstBinAbove(max/2));
+  auto end   = h->GetBinLowEdge(h->FindLastBinAbove(max/2)) +
+               h->GetBinWidth(h->FindLastBinAbove(max/2));
 
   return end - start;
 }
 
-TF1* SpatialResolAna::InitializePRF(const TString name) {
+//******************************************************************************
+TF1* SpatialResolAna::InitializePRF(const TString name, bool shift) {
+//******************************************************************************
   TF1* func;
   if (_gaus_lorentz_PRF) {
     func = new TF1(name,
@@ -1069,23 +1412,103 @@ TF1* SpatialResolAna::InitializePRF(const TString name) {
     return func;
   }
 
+  TString formula;
+  if (!shift)
+    formula = "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)";
+  else
+    formula = "[0]*(1+[1]*(x-[5])*(x-[5]) + [2] * (x-[5])*(x-[5])*(x-[5])*(x-[5])) / (1+[3]*(x-[5])*(x-[5])+[4]*(x-[5])*(x-[5])*(x-[5])*(x-[5]))";
+
   func  = new TF1(name,
-    "[0]*(1+[1]*x*x + [2] * x*x*x*x) / (1+[3]*x*x+[4]*x*x*x*x)",
+    formula,
     prf_min, prf_max);
   func->SetParName(0, "Const");
   func->SetParName(1, "a2");
   func->SetParName(2, "a4");
   func->SetParName(3, "b2");
   func->SetParName(4, "b4");
+  if (shift)
+    func->SetParName(5, "shift");
 
-  double co = 1.;
-  double a2 = 2.35167e3;
-  double a4 = 6.78962e7;
-  double b2 = 3.36748e3;
-  double b4 = 6.45311e8;
-  func->SetParameters(co, a2, a4, b2, b4);
+  double co = 0.85436010;
+  double a2 = -1919.1462;
+  double a4 = 17575063.;
+  double b2 = 627.88307;
+  double b4 = 1.0339875e+09;
+  double s = 0.;
 
+  if (!shift) {
+    func->SetParameters(co, a2, a4, b2, b4);
+    return func;
+  }
+
+  func->SetParameters(co, a2, a4, b2, b4, s);
   return func;
+}
+
+bool SpatialResolAna::Draw() {
+  std::cout << "Draw event " << _ev << std::endl;
+  TCanvas c("c_SR", "c_SR", 800, 600);
+  TCanvas c2("c_resid", "c_resid", 800, 0, 800, 600);
+  TGraphErrors* gr = new TGraphErrors();
+  TGraphErrors* gr_f = new TGraphErrors();
+  TGraphErrors* gr_c = new TGraphErrors();
+  TGraphErrors* gr_res_cl = new TGraphErrors();
+  TGraphErrors* gr_res_av = new TGraphErrors();
+  auto scale = 1.e3;
+  for (auto colIt = 0; colIt < 70; ++colIt) {
+    if (_clust_pos[colIt] == -999)
+      continue;
+
+    gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_clust_pos[colIt]);
+    gr_f->SetPoint(gr_f->GetN(), scale*_x_av[colIt], scale*_track_pos[colIt]);
+
+    gr_res_av->SetPoint(gr_res_av->GetN(),
+                        scale*_x_av[colIt],
+                        scale*(_clust_pos[colIt] - _track_pos[colIt]));
+  }
+
+  for (auto colIt = 0; colIt < 70; ++colIt) {
+    if (_clust_pos[colIt] == -999)
+      continue;
+
+    gr_c->SetPoint(gr_c->GetN(), scale*_x[colIt], scale*_clust_pos[colIt]);
+
+    double track_pos = 0.;
+    if (_track_fit_func)
+      track_pos = _track_fit_func->Eval(_x[colIt]);
+    gr_res_cl->SetPoint(gr_res_cl->GetN(),
+                        scale*_x[colIt],
+                        scale*(_clust_pos[colIt] - track_pos));
+  }
+
+  c.cd();
+  gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));
+  gr_c->GetYaxis()->SetTitle("Reference Y, [mm]");
+  gr_c->GetXaxis()->SetTitle("Reference X, [mm]");
+  gPad->SetGrid();
+  gr_c->SetMarkerStyle(kPlus);
+  gr_c->Draw("ap");
+  gr->Draw("same p");
+
+
+  gr_f->SetLineColor(kRed);
+  gr_f->Draw("same l");
+  c.Update();
+
+
+  c2.cd();
+  gPad->SetGrid();
+  gr_res_cl->SetMarkerStyle(kPlus);
+  gr_res_cl->GetYaxis()->SetTitle("Track Y, [mm]");
+  gr_res_cl->GetXaxis()->SetTitle("Track X, [mm]");
+  gr_res_cl->Draw("ap");
+
+  gr_res_av->Draw("p same");
+  c2.Update();
+
+
+  c2.WaitPrimitive();
+  return true;
 }
 
 int main(int argc, char** argv) {
@@ -1096,3 +1519,61 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
+
+//******************************************************************************
+TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
+//******************************************************************************
+  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
+                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
+  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      auto max = 0;
+      for (auto t = 0; t < geom::Nsamples; ++t) {
+        if (_padAmpl[x][y][t] > max) {
+          max = _padAmpl[x][y][t];
+        }
+      } // over t
+      if (max)
+        MM->Fill(x, y, max);
+    }
+  }
+
+  // sel hits
+  for (auto h:event->GetHits()){
+    if(!h->GetQ()) continue;
+    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
+    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
+  }
+
+  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  canv->Divide(3,1);
+  canv->cd(1);
+  if (MM->Integral())
+    MM->Draw("colz");
+  //_PRF_histo->Draw("COLZ");
+  canv->cd(2);
+  MMsel->Draw("COLZ");
+
+  canv->cd(3);
+  event3D->Draw("x:y:z:c","","box2");
+  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
+  htemp->GetYaxis()->SetLimits(0,geom::nPady);
+  htemp->GetZaxis()->SetLimits(0,500);
+  htemp->SetTitle("");
+  canv->Update();
+  return canv;
+  //canv->WaitPrimitive();
+  /*delete htemp;
+  delete canv;
+
+  delete MM;
+  delete MMsel;
+  delete event3D;*/
+}
+
+

@@ -1,81 +1,97 @@
 #include <algorithm>
+#include <unistd.h>
+#define GetCurrentDir getcwd
 
 #include "TROOT.h"
 
 #include "AnalysisBase.hxx"
 
+//******************************************************************************
 AnalysisBase::AnalysisBase(int argc, char** argv) :
+  _clustering(NULL),
   _file_in_name(""),
   _file_out_name(""),
-  _event_list_file_name(""),
+  _param_file_name(""),
   _start_ID(-1),
   _end_ID(-1),
   _selected(0),
   _event(NULL),
-  _store_event_tree(false),
   _work_with_event_file(false),
   _file_in(NULL),
   _file_out(NULL),
   _chain(NULL),
+  _Prev_iter_name(TString("")),
+  _iteration(0),
+  _correction(false),
   _reconstruction(NULL),
+  _max_mult(6),
+  _cut_gap(true),
+  _min_clusters(30),
   _verbose(1),
   _batch(false),
   _test_mode(false),
   _overwrite(false),
   _invert(false),
-  _app(NULL),
-  _useCern(false)
+  _gaus_lorentz_PRF(false),
+  _individual_column_PRF(false),
+  _PRF_free_centre(false),
+  _do_linear_fit(false),
+  _do_para_fit(false),
+  _to_store_wf(true),
+  _app(NULL)
 {
+//******************************************************************************
 
   // TODO redefine CLI.
   // now written in an ugly way
   // prevent copy-past between the daughter-parent classes
+  // read CLI
   const struct option longopts[] = {
-    {"input",           no_argument,    0,    'i'},  // 0
-    {"output",          no_argument,    0,    'o'},
-    {"batch",           no_argument,    0,    'b'},
-    {"verbose",         no_argument,    0,    'v'},
-    {"rewrite",         no_argument,    0,    'r'},
-    {"correction",      no_argument,    0,    'c'},
-    {"full_track_fit",    no_argument,  0,     0},  // 6
-    {"separate_pad_fit",  no_argument,  0,     0},  // 7
-    {"linear_fit",        no_argument,  0,     0},  // 8
-    {"gaus_lorentz",      no_argument,  0,     0}, // 9
-    {"help",            no_argument,    0,    'h'},
-    {"start",           required_argument,    0,     0},  // 11
-    {"end",             required_argument,    0,     0},  // 12
-    {0,                 0,              0,     0}
+    {"input",           no_argument,    0,    'i'},         // 0
+    {"output",          no_argument,    0,    'o'},         // 1
+    {"batch",           no_argument,    0,    'b'},         // 2
+    {"verbose",         no_argument,    0,    'v'},         // 3
+    {"rewrite",         no_argument,    0,    'r'},         // 4
+    {"correction",      no_argument,    0,    'c'},         // 5
+    {"start",           required_argument,      0,     0},  // 6
+    {"end",             required_argument,      0,     0},  // 7
+
+    {"param",           required_argument, 0,   0},         // 8
+
+    {"prev",            required_argument, 0,   0},         // 9
+
+    {"help",            no_argument,    0,    'h'},         // 10
+
+    {0,                 0,              0,      0}
   };
 
   int index;
 
   // read CLI
   for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drhst:ca", longopts, &index);
+    int c = getopt_long(argc, argv, "i:o:bv:drhst:cp:", longopts, &index);
     if (c < 0) break;
     switch (c) {
       case 0  :
-        if (index == 11) _start_ID         =  atoi(optarg);
-        if (index == 12) _end_ID           =  atoi(optarg);
+        if (index == 5) _correction       =  true;
+        if (index == 6) _start_ID         =  atoi(optarg);
+        if (index == 7) _end_ID           =  atoi(optarg);
+        if (index == 8) _param_file_name  = optarg;
+        if (index == 9) _Prev_iter_name   = optarg;
+        if (index == 10) help(argv[0]);
         break;
       case 'i' : _file_in_name     = optarg;       break;
       case 'o' : _file_out_name    = optarg;       break;
+      case 't' : _iteration        = atoi(optarg); break;
       case 'b' : _batch            = true;         break;
       case 'v' : _verbose          = atoi(optarg); break;
       case 'd' : _test_mode        = true;         break;
+      case 'p' : _param_file_name = optarg;        break;
       case 'r' :
         _overwrite        = true;
         std::cout << "Output will be overwritten" << std::endl;
         break;
       case 'h' : help(argv[0]);                    break;
-      case 'a' :
-        _invert           = true;
-        std::cout << "Inverted geometry is used" << std::endl;
-        break;
-      case 's' :
-        _store_event_tree = true;
-        std::cout << "Tree with TEvents will be written" << std::endl;
-        break;
       //case '?' : help(argv[0]);
     }
   }
@@ -85,11 +101,39 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
     exit(1);
   }
 
+  if (_iteration == -1) {
+    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
+    std::cout << " Iteration should be defined as a input param" << std::endl;
+    exit(1);
+  }
+
   if (!_batch)
     _app = new TApplication("app", &argc, argv);
 }
 
+//******************************************************************************
 bool AnalysisBase::Initialize() {
+//******************************************************************************
+
+  // WARNING
+  // A very dirty adoptation of angles
+  CL_col = new Clustering(0., 0);
+  CL_diag = new Clustering(units::a45, 1);
+  CL_2by1 = new Clustering(units::a2, 2);
+  CL_3by1 = new Clustering(units::a3, 3);
+  // CL_3by2 = new Clustering(units::a32, 2./3.);
+
+  // Read parameter file
+  if (!ReadParamFile()) {
+    std::cerr << "ERROR! AnalysisBase::Initialize(). Parameter file is not read" << std::endl;
+    exit(1);
+  }
+
+  if (_invert) {
+    CL_2by1->angle = units::a2_inv;
+    CL_3by1->angle = units::a3_inv;
+    // CL_3by2->angle = units::a32_inv;
+  }
 
   // read the first root file and decide
   // is it a raw file for the reconstruction or a file with TEvent
@@ -97,7 +141,8 @@ bool AnalysisBase::Initialize() {
   TFile* file;
   TString filename = _file_in_name;
 
-  // in case of list input
+  // extract the name of the input ROOT file
+  // in case of list input take the first ROOT file
   if (!_file_in_name.Contains(".root")) {
     std::ifstream fList(_file_in_name.Data());
     if (!fList.good()) {
@@ -112,68 +157,18 @@ bool AnalysisBase::Initialize() {
   file = new TFile(filename.Data(), "READ");
 
   // find out which tree was send as an input
-  // padAmpl or TEvent
-
+  // padAmpl[][][] or TRawEvent
   if ((TTree*)file->Get("tree")) {
     std::cout << "Raw data is using" << std::endl;
     tree_name = "tree";
     _work_with_event_file = false;
-  } else if((TTree*)file->Get("event_tree")) {
-    std::cout << "TEvent data is using" << std::endl;
-    tree_name = "event_tree";
-    _work_with_event_file = true;
-  } else if ((TTree*)file->Get("padData")) {
-    _useCern = true;
-    tree_name = "padData";
-    std::cout << "Running over CERN data" << std::endl;
-    _tgeom= (TTree*)file->Get("femGeomTree");
-    //std::vector<int> *iPad(0);
-    //std::vector<int> *jPad(0);
-    _tgeom->SetBranchAddress("jPad", &_jPad );
-    _tgeom->SetBranchAddress("iPad", &_iPad );
-    _tgeom->GetEntry(0); // put into memory geometry info
-  } else {
-    std::cerr << "ERROR. AnalysisBase::Initialize. Unknown tree name" << std::endl;
-    exit(1);
-  }
-
-  file->Close();
-
-  if (_work_with_event_file && _store_event_tree) {
-    std::cerr << "ERROR. AnalysisBase::Initialize. Prohibited to generate TEvent over TEvent. Exit" << std::endl;
-    exit(1);
-  }
-
-  std::cout << "Initializing analysis base...............";
-  // read and chain input files
-  _chain = new TChain(tree_name);
-  TString first_file_name = "";
-
-  if (_file_in_name.Contains(".root")) {
-    _chain->AddFile(_file_in_name);
-    first_file_name = _file_in_name;
-  } else {
-    std::ifstream fList(_file_in_name.Data());
-    if (!fList.good()) {
-      std::cerr << "Can not read input " << _file_in_name << std::endl;
+    ChainInputFiles(tree_name);
+    if (!_chain) {
+      std::cerr << "Error while chaining files" << std::endl;
       exit(1);
     }
-    while (fList.good()) {
-      std::string temp_filename;
-      getline(fList, temp_filename);
-      if (fList.eof()) break;
-      _chain->AddFile(temp_filename.c_str());
-      if (first_file_name.CompareTo("") == 0)
-        first_file_name = temp_filename;
-    }
-  }
-
-  if (_useCern) {
-
-    _chain->SetBranchAddress("PadphysChannels", &_listOfChannels );
-    _chain->SetBranchAddress("PadADCvsTime"   , &_listOfSamples );
-
-  } else if (!_work_with_event_file) {
+    // Check the time binning. As we used both 510 and 511 time bins
+    // the correct binning should be used for reading file
     TString branch_name = _chain->GetBranch("PadAmpl")->GetTitle();
     if (branch_name.Contains("[510]")) {
       _saclay_cosmics = true;
@@ -187,8 +182,20 @@ bool AnalysisBase::Initialize() {
       std::cerr << "Read from file " << branch_name  << std::endl;
       exit(1);
     }
-  } else
+  } else if((TTree*)file->Get("event_tree")) {
+    std::cout << "TRawEvent data is using" << std::endl;
+    tree_name = "event_tree";
+    ChainInputFiles(tree_name);
+    _work_with_event_file = true;
     _chain->SetBranchAddress("Event", &_event);
+  } else {
+    std::cerr << "ERROR. AnalysisBase::Initialize. Unknown tree name" << std::endl;
+    exit(1);
+  }
+
+  file->Close();
+
+  std::cout << "Initializing analysis base...............";
 
   // setup the T2K style
   Int_t T2KstyleIndex = 2;
@@ -208,39 +215,19 @@ bool AnalysisBase::Initialize() {
     _EventList.push_back(i);
 
   // Open the output file
-  //if (!_test_mode){
-  if (1){
-
-    if(_overwrite)
-      _file_out = new TFile(_file_out_name.Data(), "RECREATE");
-    else
-      _file_out = new TFile(_file_out_name.Data(), "NEW");
+  if(_overwrite)
+    _file_out = new TFile(_file_out_name.Data(), "RECREATE");
+  else
+    _file_out = new TFile(_file_out_name.Data(), "NEW");
 
 
-    if (!_file_out->IsOpen()) {
-      std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
-      std::cerr << "File already exists or directory is not writable" << std::endl;
-      std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
-      exit(1);
-    }
+  if (!_file_out->IsOpen()) {
+    std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
+    std::cerr << "File already exists or directory is not writable" << std::endl;
+    std::cerr << "To prevent overwriting of the previous result the program will exit" << std::endl;
+    exit(1);
   }
 
-  // in case we want to store TEvent in the file
-  if (_store_event_tree) {
-    // take a name from the input and dir from output
-    Ssiz_t slash_pos = 0;
-    while (_file_out_name.Index("/", 1, slash_pos+1, TString::kExact) != -1)
-      slash_pos = _file_out_name.Index("/", 1, slash_pos+1, TString::kExact);
-    TString file_dir  = _file_out_name(0, slash_pos+1);
-    slash_pos = 0;
-    while (first_file_name.Index("/", 1, slash_pos+1, TString::kExact) != -1)
-      slash_pos = first_file_name.Index("/", 1, slash_pos+1, TString::kExact);
-    TString file_name = first_file_name(slash_pos+1, first_file_name.Length());
-
-    _event_file = new TFile((file_dir + file_name).Data(), "RECREATE");
-    _event_tree = new TTree("event_tree", "");
-    _event_tree->Branch("Event",    &_event,  32000,  0);
-  }
 
   if (_file_out)
     _file_out->cd();
@@ -256,7 +243,9 @@ bool AnalysisBase::Initialize() {
   return true;
 }
 
+//******************************************************************************
 bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
+//******************************************************************************
   auto N_events = static_cast<Int_t>(EventList.size());
   if (_test_mode)
     N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
@@ -272,10 +261,12 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   _sw_partial[0]->Reset();
   _sw_partial[1] = new TStopwatch();
   _sw_partial[1]->Reset();
+  _sw_partial[5] = new TStopwatch();
+  _sw_partial[5]->Reset();
 
-  if (_verbose == 1) {
-    std::cout << "Input file..............................." << _file_in_name << std::endl;
-    std::cout << "output file.............................." << _file_out_name << std::endl;
+  if (_verbose >= v_progress) {
+    std::cout << "Input file............................... " << _file_in_name << std::endl;
+    std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << N_events << "\r[";
     _sw_event->Start(0);
@@ -285,110 +276,114 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   if (N_events < 100)
     denimonator = N_events;
   for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
-    if (_verbose > 1)
+    if (_verbose >= v_event_number) {
+      std::cout << "*************************************" << std::endl;
       std::cout << "Event " << eventID << std::endl;
+      std::cout << "*************************************" << std::endl;
+    }
 
-    if (_verbose == 1 && (eventID%(N_events/denimonator)) == 0)
+    // Dump progress in command line
+    if (_verbose == v_progress && (eventID%(N_events/denimonator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
 
     _chain->GetEntry(EventList[eventID]);
 
-    if (_useCern) {
-      std::cerr << "CERN data format is deprecated" << std::endl;
-      exit(1);
-      // memset(_padAmpl, 0, geom::nPadx * geom::nPady * geom::Nsamples * (sizeof(Int_t)));
-      // for (uint ic=0; ic< _listOfChannels->size(); ic++){
-      //   int chan= (*_listOfChannels)[ic];
-      //   if ((*_jPad)[chan] >= geom::nPadx ||
-      //         (*_iPad)[chan] >= geom::nPady)
-      //     continue;
-      //   for (uint it = 0; it < (*_listOfSamples)[ic].size(); it++){
-      //     if (it >= geom::Nsamples)
-      //       continue;
-      //     int adc = (*_listOfSamples)[ic][it];
-      //     _padAmpl[(*_jPad)[chan]][(*_iPad)[chan]][it] = adc;
-      //   }
-      // }
-    } else {
+    _sw_partial[5]->Start(false);
+
+    if (!_work_with_event_file) {
+      // create TRawEvent from 3D array
+      if (_event)
+        delete _event;
+      _event = new TRawEvent(EventList[eventID]);
+
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
+          auto hit = new THit(x, y);
+          // std::vector<int> adc;
+          auto Qmax = -1;
+          auto Tmax = -1;
           for (auto t = 0; t < geom::Nsamples; ++t) {
             // ommit last
             if (_saclay_cosmics && t == geom::Nsamples)
               continue;
             int q = 0;
-            if (_saclay_cosmics) {
-              q = _padAmpl_saclay[x][y][t] - 250;
-            } else {
-              q = _padAmpl[x][y][t] - 250;
+            q = _saclay_cosmics ?
+                _padAmpl_saclay[x][y][t] - 250 :
+                _padAmpl[x][y][t] - 250;
+
+            hit->SetADC(t, q);
+            if (q > Qmax) {
+              Qmax = q;
+              Tmax = t;
             }
-
-            _padAmpl[x][y][t] = q < 0 ? 0 : q;
-
+            /** REWEIGHT OF THE PAD*/
+            // if (x == 5 && y == 16)
+            //   _padAmpl[x][y][t] *= 0.95;
+            /** */
+          } // over time
+          // hit->SetWF_v(adc);
+          if (Qmax > 0){
+            hit->SetQ(Qmax);
+            hit->SetTime(Tmax);
+            _event->AddHit(hit);
+          } else {
+            delete hit;
+            hit = NULL;
           }
-        }
-      }
-    }
+        } // over Y
+      } // over X
+    } // if 3D array input
+
+    _sw_partial[5]->Stop();
 
     _store_event = false;
 
     _sw_partial[0]->Start(false);
 
-    if (!_work_with_event_file) {
-      if (_event && !_store_event_tree)
-        delete _event;
-      _event = new TEvent(EventList[eventID]);
+    auto reco_event = new TEvent(_event);
 
-      if (!_reconstruction->SelectEvent(_padAmpl, _event))
-        continue;
-    }
-    // else _event->SetID(EventList[eventID]);
+    if (!_reconstruction->SelectEvent(reco_event))
+      continue;
 
     _sw_partial[0]->Stop();
     _sw_partial[1]->Start(false);
-    ProcessEvent(_event);
+    ProcessEvent(reco_event);
     _sw_partial[1]->Stop();
 
-    if (_store_event) {
+    if (_store_event)
       ++_selected;
-      if (_store_event_tree)
-        _event_tree->Fill();
-    }
 
-    if (!_store_event_tree && !_work_with_event_file) {
-      delete _event;
-      _event = NULL;
-    }
+    // if (!_work_with_event_file) {
+    delete _event;
+    _event = NULL;
+    // delete reco_event;
+    // reco_event = NULL;
+    // }
   } // end of event loop
 
-  if (_verbose == 1)
+  if (_verbose == v_progress)
     std::cout << std::endl;
 
   return true;
 }
 
+//******************************************************************************
 bool AnalysisBase::ProcessEvent(const TEvent* event) {
+//******************************************************************************
   (void)event;
   std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
   exit(1);
   return true;
 }
 
+//******************************************************************************
 bool AnalysisBase::WriteOutput() {
-
+//******************************************************************************
   //if(_test_mode) return true;
   if (!_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
-  }
-
-  // Write the TEvents in the file
-  if (_store_event_tree) {
-    _event_file->cd();
-    _event_tree->Write("", TObject::kOverwrite);
-    std::cout << "Wrote TEvent events into " << _event_file->GetName() << std::endl;
-    _event_file->Close();
   }
 
   std::cout << "Writing standard output..................";
@@ -413,7 +408,9 @@ bool AnalysisBase::WriteOutput() {
 // TODO
 // make the inheritance possible
 // e.g. draw events here but also draw some analysi specific stuff in the analysis
-void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
+//******************************************************************************
+void AnalysisBase::DrawSelection(const TEvent *event){
+//******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
@@ -427,7 +424,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   //}
 
   // sel hits
-  for (auto h:event->GetTracks()[trkID]->GetHits()){
+  for (auto h:event->GetUsedHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
@@ -471,23 +468,25 @@ void AnalysisBase::DrawSelection(const TEvent *event, int trkID){
   delete event3D;
 }
 
-std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
+//******************************************************************************
+std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) {
+//******************************************************************************
   std::vector<THit*> result;
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
-
-  // int cluster_q = 0;
-  // for (auto pad:col)
-  //   cluster_q += pad->GetQ();
-
-  // if (cluster_q > 2000)
-  //   return result;
 
   for (uint i = 0; i < col.size(); ++i) {
     auto pad    = col[i];
     auto q      = pad->GetQ();
     if (!q)
       continue;
+
+    /** cross-talk candidate */
+    // if (i > 0 &&
+    //     pad->GetTime() - col[0]->GetTime() < 4 &&
+    //     1.*q / col[0]->GetQ() < 0.08)
+    //   continue;
+    /** */
 
     // not more then 3 pads
     // if (i > 1)
@@ -510,38 +509,39 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInColumn(std::vector<THit*> col) {
   return result;
 }
 
-std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::vector<THit*> > tr) {
-  std::vector<std::vector<THit*> > result;
-  // remove first and last column
-  // also filter empty columns
-  tr.erase(std::remove_if(tr.begin(), tr.end(), [&](const std::vector<THit*> col) {
-    return  !col[0] ||
-            col[0]->GetCol(_invert) == 0 ||
-            col[0]->GetCol(_invert) == geom::GetMaxColumn(_invert)-1 ||
-            accumulate(col.begin(), col.end(), 0,
-                      [](const int& x, const THit* hit)
-                      {return x + hit->GetQ();}
-                      ) == 0;
-  }), tr.end());
+//******************************************************************************
+std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr) {
+//******************************************************************************
+  std::vector<TCluster*> result;
   // sort clusters in increasing order
-  sort(tr.begin(), tr.end(), [](std::vector<THit*> col1,
-                                std::vector<THit*> col2){
-                                  return  accumulate(col1.begin(), col1.end(), 0,
-                                                    [](const int& x, const THit* hit)
-                                                    {return x + hit->GetQ();}
-                                                    )
-                                        < accumulate(col2.begin(), col2.end(), 0,
-                                                    [](const int& x, const THit* hit)
-                                                    {return x + hit->GetQ();}
-                                                    );
-                                });
+  sort(tr.begin(), tr.end(), [](TCluster* cl1,
+                                TCluster* cl){
+                                  return  cl1->GetCharge() < cl->GetCharge();});
+
   // trancation cut
+  /* NO TRUNCATION */
   auto frac = 1.00;
   Int_t i_max = round(frac * tr.size());
   for (auto i = 0; i < i_max; ++i) {
     result.push_back(tr[i]);
   }
+  /* */
 
+  /* truncate with prominence */
+  // sort along the track
+  // sort(tr.begin(), tr.end(), [](TCluster* cl1,
+  //                               TCluster* cl){
+  //                                 return  cl1->GetX() < cl->GetX();});
+  // compute the prominence
+  // auto prom_cut = 0.6;
+  // for (uint i = 1; i < tr.size() - 1; ++i) {
+  //   auto prom = 2.*tr[i]->GetCharge() / (tr[i-1]->GetCharge() + tr[i+1]->GetCharge());
+  //   if (prom > prom_cut)
+  //     result.push_back(tr[i]);
+  // }
+  /* */
+
+  // BUG truncation with neighbours is not working with clusters
   // trancation + neibours
   // auto frac = 0.95;
   // std::vector<Int_t> bad_pads;
@@ -566,23 +566,250 @@ std::vector<std::vector<THit*> > AnalysisBase::GetRobustCols(std::vector<std::ve
   //   if (total_q < q_cut)
   //     result.push_back(col);
   // }
+
+  // sort by X for return
+  sort(result.begin(), result.end(),
+       [&](TCluster* cl1, TCluster* cl2){
+          return cl1->GetX() < cl2->GetX();
+        });
   return result;
 }
 
+//******************************************************************************
+std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) {
+//******************************************************************************
+  if (!_clustering) {
+    std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
+    exit(1);
+  }
+  std::vector<TCluster*> cluster_v;
+  for (auto pad:tr) {
+    auto col_id = pad->GetCol(_invert);
+    auto row_id = pad->GetRow(_invert);
+
+    // skip first and last row/column
+    if (row_id == 0 || row_id == geom::GetNRow(_invert)-1 ||
+        col_id == 0 || col_id == geom::GetNColumn(_invert)-1)
+      continue;
+
+    auto cons = _clustering->GetConstant(row_id, col_id);
+
+    // search if the cluster is already considered
+    std::vector<TCluster*>::iterator it;
+    for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
+      if (!((*(*it))[0])) {
+        continue;
+      }
+
+      auto cluster_col = (*(*it))[0]->GetCol(_invert);
+      auto cluster_row = (*(*it))[0]->GetRow(_invert);
+      if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
+        (*it)->AddHit(pad);
+        (*it)->AddCharge(pad->GetQ());
+        /** update X position */
+        auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
+        auto mult  = (*it)->GetSize();
+        auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
+        (*it)->SetX(x_new);
+        /** */
+
+        break;
+      }
+    } // loop over track clusters
+    // add new cluster
+    if (it == cluster_v.end()) {
+      TCluster* first_cluster = new TCluster(pad);
+      first_cluster->SetX(geom::GetXposPad(pad, _invert, _clustering->angle));
+      first_cluster->SetCharge(pad->GetQ());
+      cluster_v.push_back(first_cluster);
+    }
+  } // over pads
+
+  return cluster_v;
+}
+
+//******************************************************************************
+//******************************************************************************
+// ***** Functions below are utils: params reading, progress dump **************
+//******************************************************************************
+//******************************************************************************
+
+//******************************************************************************
+bool AnalysisBase::ReadParamFile() {
+//******************************************************************************
+
+  if (_param_file_name == ""){
+    char *homePath(getenv("SOFTDIR"));
+    if (getenv("SOFTDIR") == NULL) {
+      std::cerr << "SOFTDIR varaible is not specified!" << std::endl;
+      std::cerr << "Consider sourcing setup.sh" << std::endl;
+      return false;
+    }
+    _param_file_name = std::string(homePath) + "/params/default.ini";
+  }
+  std::cout << "*****************************************" << std::endl;
+  std::cout << "Read parameters from " << _param_file_name << std::endl;
+  std::ifstream cFile (_param_file_name);
+  if (cFile.is_open()) {
+    std::string line;
+    while(getline(cFile, line)) {
+      line.erase(std::remove_if(line.begin(),
+                                line.end(),
+                                isspace
+                                ),
+                line.end()
+                );
+
+      if(line[0] == '#' || line.empty())
+        continue;
+      auto delimiterPos = line.find("=");
+      auto name = line.substr(0, delimiterPos);
+      auto value = line.substr(delimiterPos + 1);
+      // std::cout << name << " " << value << '\n';
+      if (name == "cluster") {
+        if (value == "column") {
+          _clustering = CL_col;
+          std::cout << "Column cluster is used" << std::endl;
+        } else if (value == "diag") {
+          _clustering = CL_diag;
+          std::cout << "Diagonal cluster is used" << std::endl;
+        } else if (value == "2by1") {
+          _clustering = CL_2by1;
+          std::cout << "2by1 cluster is used" << std::endl;
+        } else if (value == "3by1") {
+          _clustering = CL_3by1;
+          std::cout << "3by1 cluster is used" << std::endl;
+        // } else if (value == "3by2") {
+        //   _clustering = CL_3by2;
+        } else {
+          std::cerr << "ERROR. Unknown clustering " << value << std::endl;
+          return false;
+        }
+      } else if (name  == "invert") {
+        if (value == "1") {
+          _invert = true;
+          std::cout << "Inverted geometry used" << std::endl;
+        }
+      } else if (name == "prf_shape") {
+        if (value == "gaus_lorentz") {
+          _gaus_lorentz_PRF = true;
+          std::cout << "PRF is fit with Gaussian-Lorentzian" << std::endl;
+        } else if (value == "pol4") {
+          std::cout << "PRF is fit with 4th degree polinom" << std::endl;
+        } else {
+          std::cerr << "ERROR. Unknown PRF function " << value << std::endl;
+          return false;
+        }
+      }  else if (name == "individual_prf") {
+        if (value == "1") {
+          _individual_column_PRF = true;
+          std::cout << "Individual PRF for each column is used" << std::endl;
+        }
+      } else if (name == "prf_centre_freedom") {
+        if (value == "1") {
+          _PRF_free_centre = true;
+          std::cout << "PRF centre position is a free parameter of the fit" << std::endl;
+        }
+      } else if (name == "track_shape") {
+        if (value == "parabola") {
+          _do_para_fit = true;
+          std::cout << "Parabola track fit is used" << std::endl;
+        } else if (value == "linear") {
+          _do_linear_fit = true;
+          std::cout << "Linear track fit is used" << std::endl;
+        } else if (value == "arc") {
+          std::cout << "Arc track fit is used" << std::endl;
+        } else {
+          std::cerr << "ERROR. Unknown track shape " << value << std::endl;
+          return false;
+        }
+      } else if (name == "max_mult") {
+        _max_mult = TString(value).Atoi();
+      } else if (name == "cut_gap") {
+        if (value == "0") {
+          _cut_gap = false;
+        }
+      } else if (name == "cluster_min") {
+        _min_clusters = TString(value).Atoi();
+      } else if (name == "max_phi") {
+        _max_phi = TString(value).Atof();
+      } else if (name == "max_theta") {
+        _max_theta = TString(value).Atof();
+      //switch to WF storage
+      } else if (name == "to_store_wf") {
+        if (value == "0") {
+          _to_store_wf = false;
+          std::cout << "WFs will NOT be stored" << std::endl;
+        } else {
+          std::cout << "WFs will be stored. Analysis will be slowed down" << std::endl;
+        }
+      } else if (name == "cross_talk") {
+        if (value == "suppress") {
+          _cross_talk_treat = suppress;
+          std::cout << "Cross-talk will be suppressed" << std::endl;
+        } else if (value == "cherry_pick") {
+          _cross_talk_treat = cherry_pick;
+          std::cout << "Cross-talk will be cherry-picked" << std::endl;
+        } else {
+          _cross_talk_treat = def;
+          std::cout << "Cross-talk will not be treated" << std::endl;
+        }
+      }
+    }
+  } else {
+    return false;
+  }
+  std::cout << "*****************************************" << std::endl;
+  return true;
+}
+
+//******************************************************************************
 void AnalysisBase::help(const std::string& name) {
+//******************************************************************************
   std::cout << name << " usage\n" << std::endl;
   std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
   std::cout << "   -o <output_path>     : output files path" << std::endl;
+  std::cout << std::endl;
+  std::cout << "   --start     <i>      :start from event i" << std::endl;
+  std::cout << "   --end       <i>      :end with event i" << std::endl;
+  std::cout << "   -t <interation>      : iteration number" << std::endl;
+  std::cout << std::endl;
+  std::cout << "   --param, p  <file>   : parameter file to use" << std::endl;
+  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
   std::cout << "   -b                   : run in batch mode" << std::endl;
-  std::cout << "   -v <verbose_lvel>    : verbosity level" << std::endl;
+  std::cout << "   -v <verbose_level>   : verbosity level" << std::endl;
   std::cout << "   -d                   : test mode. run over first 30 events" << std::endl;
   std::cout << "   -h                   : print ROOT help" << std::endl;
   std::cout << "   -m                   : print " << name << " help" << std::endl;
   exit(1);
 }
 
-void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
-{
+//******************************************************************************
+bool AnalysisBase::ChainInputFiles(TString tree_name) {
+//******************************************************************************
+  _chain = new TChain(tree_name);
+  if (_file_in_name.Contains(".root")) {
+    _chain->AddFile(_file_in_name);
+  } else {
+    std::ifstream fList(_file_in_name.Data());
+    if (!fList.good()) {
+      std::cerr << "Can not read input " << _file_in_name << std::endl;
+      exit(1);
+    }
+    while (fList.good()) {
+      std::string temp_filename;
+      getline(fList, temp_filename);
+      if (fList.eof()) break;
+      _chain->AddFile(temp_filename.c_str());
+    }
+  }
+
+  return true;
+}
+
+//******************************************************************************
+void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set) {
+//******************************************************************************
     vm_usage     = 0.0;
     resident_set = 0.0;
 
@@ -602,7 +829,9 @@ void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set)
     resident_set = rss * page_size_kb;
 }
 
+//******************************************************************************
 void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
+//******************************************************************************
   double real, virt;
   process_mem_usage(virt, real);
   double CPUtime  = _sw_event->CpuTime();
@@ -620,7 +849,7 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  // std::cout << "\t Memory  " <<  real << "\t" << virt;
+  std::cout << "\t Memory  " <<  real << "\t" << virt;
   std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed CPU " << CPUtime << " ms/event";

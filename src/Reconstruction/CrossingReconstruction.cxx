@@ -13,7 +13,7 @@ bool CrossingReconstruction::Initialize() {
 }
 
 bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::nPady][geom::Nsamples],
-                                TEvent* event) {
+                                TRawEvent* event) {
 
   std::vector<float> front_cluster_t;
   std::vector<float> front_cluster_y;
@@ -235,143 +235,136 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
     } // track end
   } // track start
 
-  if (!track_container.size())
+  if (track_container.size() != 1)
     return false;
 
-  std::vector<TTrack*> track_v;
-  for (uint trackId = 0; trackId < track_container.size(); ++trackId) {
-    for (int it_x = 0; it_x < geom::nPadx; ++it_x) {
-      int it_y = 0;
-      while (!track_container[trackId][it_x][it_y] && it_y < geom::nPady-1)
-        ++it_y;
+  uint trackId = 0;
+  for (int it_x = 0; it_x < geom::nPadx; ++it_x) {
+    int it_y = 0;
+    while (!track_container[trackId][it_x][it_y] && it_y < geom::nPady-1)
+      ++it_y;
 
-      if (it_y == geom::nPady-1)
-        continue;
-
-      int it_y_track = it_y;
-
-      int first_time    = std::max(PadTime[it_x][it_y_track] - scan_time_down, 0);
-      int last_time     = std::min(PadTime[it_x][it_y_track] + scan_time_up, geom::Nsamples);
-
-      while (PadDisplay[it_x][it_y] && it_y < geom::nPady-1
-        && abs(it_y - it_y_track) < track_collection_dist) {
-
-        // if the maximum is inside the time box --> take it
-        if(PadTime[it_x][it_y] - PadTime[it_x][it_y_track] < box_width_t2 && PadTime[it_x][it_y_track] - PadTime[it_x][it_y] < box_width_t1) {
-          track_container[trackId][it_x][it_y]      = PadDisplay[it_x][it_y];
-          track_container_time[trackId][it_x][it_y] = PadTime[it_x][it_y];
-        // if not --> scan ADC vs. time for this pad
-        } else {
-          int adc_max_inbox = -1;
-          int adc_max_t     = -1;
-
-          int it_t = first_time;
-          while (it_t < geom::Nsamples) {
-            if (adc_max_inbox && !padAmpl[it_x][it_y][it_t])
-              break;
-
-            if (adc_max_inbox == -1 && it_t > last_time)
-               break;
-
-            if (padAmpl[it_x][it_y][it_t] > adc_max_inbox) {
-               adc_max_inbox       = padAmpl[it_x][it_y][it_t];
-               adc_max_t  = it_t;
-             }
-             ++it_t;
-          } // loop over time
-
-          // if the hit in the box is befor the max hit --> OK
-          // if not --> check that we are taking the peak not the tail
-          if (adc_max_t > PadTime[it_x][it_y] && adc_max_t - PadTime[it_x][it_y] < scan_time_up && pile_up_cut) {
-            pileup = true;
-            break;
-          }
-          if (adc_max_inbox != -1) {
-            track_container[trackId][it_x][it_y]      = adc_max_inbox;
-            track_container_time[trackId][it_x][it_y] = adc_max_t;
-          } else {
-            if (PadDisplay[it_x][it_y] > cluster_threshold && pile_up_cut) {
-              //pileup = true;
-            }
-            break;
-          }
-        } // look for the hit in time window
-        ++it_y;
-      } // go up
-
-      it_y = it_y_track;
-      while (PadDisplay[it_x][it_y] && it_y > 0
-        && abs(it_y - it_y_track) < track_collection_dist) {
-        // if the maximum is inside the time box --> take it
-        if(PadTime[it_x][it_y] - PadTime[it_x][it_y_track] < box_width_t2 && PadTime[it_x][it_y_track] - PadTime[it_x][it_y] < box_width_t1) {
-          track_container[trackId][it_x][it_y] = PadDisplay[it_x][it_y];
-          track_container_time[trackId][it_x][it_y] = PadTime[it_x][it_y];
-        // if not --> scan ADC vs. time for this pad
-        } else {
-          int adc_max_inbox = -1;
-          int adc_max_t     = -1;
-
-
-          int it_t = first_time;
-          while (it_t < geom::Nsamples) {
-            if (adc_max_inbox && !padAmpl[it_x][it_y][it_t])
-              break;
-
-            if (adc_max_inbox == -1 && it_t > last_time)
-               break;
-
-            if (padAmpl[it_x][it_y][it_t] > adc_max_inbox) {
-               adc_max_inbox       = padAmpl[it_x][it_y][it_t];
-               adc_max_t  = it_t;
-             }
-             ++it_t;
-           } // loop over time
-
-          // if the hit in the box is befor the max hit --> OK
-          // if not --> check that we are taking the peak not the tail
-          if (adc_max_t > PadTime[it_x][it_y] && adc_max_t - PadTime[it_x][it_y] < scan_time_up && pile_up_cut) {
-            pileup = true;
-            break;
-          }
-
-          if (adc_max_inbox != -1) {
-            track_container[trackId][it_x][it_y] = adc_max_inbox;
-            track_container_time[trackId][it_x][it_y] = adc_max_t;
-          } else {
-            if (PadDisplay[it_x][it_y] > cluster_threshold && pile_up_cut) {
-              //pileup = true;
-            }
-
-            break;
-          }
-        } // look for the hit in time window
-        --it_y;
-      } // go down (it_y)
-    if (pileup && pile_up_cut)
-      break;
-    } // it_x
-    if (pileup && pile_up_cut)
+    if (it_y == geom::nPady-1)
       continue;
 
-    TTrack* track = new TTrack();
-    for (auto x = 0; x < geom::nPadx; ++x) {
-      for (auto y = 0; y < geom::nPady; ++y) {
-        if (track_container[trackId][x][y]) {
-          THit* hit = new THit();
-          hit->SetQ(track_container[trackId][x][y]);
-          hit->SetCol(x);
-          hit->SetRow(y);
-          hit->SetTime(track_container_time[trackId][x][y]);
+    int it_y_track = it_y;
 
-          track->AddHit(hit);
-        } // not empty
-      } // y
-    }// x
-    track_v.push_back(track);
+    int first_time    = std::max(PadTime[it_x][it_y_track] - scan_time_down, 0);
+    int last_time     = std::min(PadTime[it_x][it_y_track] + scan_time_up, geom::Nsamples);
 
-  } // loop over tracks
+    while (PadDisplay[it_x][it_y] && it_y < geom::nPady-1
+      && abs(it_y - it_y_track) < track_collection_dist) {
 
-  event->SetTracks(track_v);
+      // if the maximum is inside the time box --> take it
+      if(PadTime[it_x][it_y] - PadTime[it_x][it_y_track] < box_width_t2 && PadTime[it_x][it_y_track] - PadTime[it_x][it_y] < box_width_t1) {
+        track_container[trackId][it_x][it_y]      = PadDisplay[it_x][it_y];
+        track_container_time[trackId][it_x][it_y] = PadTime[it_x][it_y];
+      // if not --> scan ADC vs. time for this pad
+      } else {
+        int adc_max_inbox = -1;
+        int adc_max_t     = -1;
+
+        int it_t = first_time;
+        while (it_t < geom::Nsamples) {
+          if (adc_max_inbox && !padAmpl[it_x][it_y][it_t])
+            break;
+
+          if (adc_max_inbox == -1 && it_t > last_time)
+             break;
+
+          if (padAmpl[it_x][it_y][it_t] > adc_max_inbox) {
+             adc_max_inbox       = padAmpl[it_x][it_y][it_t];
+             adc_max_t  = it_t;
+           }
+           ++it_t;
+        } // loop over time
+
+        // if the hit in the box is befor the max hit --> OK
+        // if not --> check that we are taking the peak not the tail
+        if (adc_max_t > PadTime[it_x][it_y] && adc_max_t - PadTime[it_x][it_y] < scan_time_up && pile_up_cut) {
+          pileup = true;
+          break;
+        }
+        if (adc_max_inbox != -1) {
+          track_container[trackId][it_x][it_y]      = adc_max_inbox;
+          track_container_time[trackId][it_x][it_y] = adc_max_t;
+        } else {
+          if (PadDisplay[it_x][it_y] > cluster_threshold && pile_up_cut) {
+            //pileup = true;
+          }
+          break;
+        }
+      } // look for the hit in time window
+      ++it_y;
+    } // go up
+
+    it_y = it_y_track;
+    while (PadDisplay[it_x][it_y] && it_y > 0
+      && abs(it_y - it_y_track) < track_collection_dist) {
+      // if the maximum is inside the time box --> take it
+      if(PadTime[it_x][it_y] - PadTime[it_x][it_y_track] < box_width_t2 && PadTime[it_x][it_y_track] - PadTime[it_x][it_y] < box_width_t1) {
+        track_container[trackId][it_x][it_y] = PadDisplay[it_x][it_y];
+        track_container_time[trackId][it_x][it_y] = PadTime[it_x][it_y];
+      // if not --> scan ADC vs. time for this pad
+      } else {
+        int adc_max_inbox = -1;
+        int adc_max_t     = -1;
+
+
+        int it_t = first_time;
+        while (it_t < geom::Nsamples) {
+          if (adc_max_inbox && !padAmpl[it_x][it_y][it_t])
+            break;
+
+          if (adc_max_inbox == -1 && it_t > last_time)
+             break;
+
+          if (padAmpl[it_x][it_y][it_t] > adc_max_inbox) {
+             adc_max_inbox       = padAmpl[it_x][it_y][it_t];
+             adc_max_t  = it_t;
+           }
+           ++it_t;
+         } // loop over time
+
+        // if the hit in the box is befor the max hit --> OK
+        // if not --> check that we are taking the peak not the tail
+        if (adc_max_t > PadTime[it_x][it_y] && adc_max_t - PadTime[it_x][it_y] < scan_time_up && pile_up_cut) {
+          pileup = true;
+          break;
+        }
+
+        if (adc_max_inbox != -1) {
+          track_container[trackId][it_x][it_y] = adc_max_inbox;
+          track_container_time[trackId][it_x][it_y] = adc_max_t;
+        } else {
+          if (PadDisplay[it_x][it_y] > cluster_threshold && pile_up_cut) {
+            //pileup = true;
+          }
+
+          break;
+        }
+      } // look for the hit in time window
+      --it_y;
+    } // go down (it_y)
+  if (pileup && pile_up_cut)
+    break;
+  } // it_x
+  if (pileup && pile_up_cut)
+    return false;
+
+  for (auto x = 0; x < geom::nPadx; ++x) {
+    for (auto y = 0; y < geom::nPady; ++y) {
+      if (track_container[trackId][x][y]) {
+        THit* hit = new THit();
+        hit->SetQ(track_container[trackId][x][y]);
+        hit->SetCol(x);
+        hit->SetRow(y);
+        hit->SetTime(track_container_time[trackId][x][y]);
+
+        event->AddHit(hit);
+      } // not empty
+    } // y
+  }// x
 
   return true;
 }
