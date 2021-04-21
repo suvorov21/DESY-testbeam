@@ -81,9 +81,8 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _clust_pos[Nclusters];
   /// X position of the cluster
   Float_t _x[Nclusters];
-  /// Position of the "clean" cluster
-  /** e.g. average 2 neighbour diagonals **/
-  Float_t _cluster_av[Nclusters];
+  /// Y Position of the cluster
+  // Float_t _cluster_av[Nclusters];
   /// X position of the avareged cluster
   Float_t _x_av[Nclusters];
   /// Position of the track

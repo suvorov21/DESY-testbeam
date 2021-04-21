@@ -555,7 +555,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _track_pos[colId]     = -999;
     _x[colId]             = -999;
     _x_av[colId]          = -999;
-    _cluster_av[colId]    = -999;
+    // _cluster_av[colId]    = -999;
     _dEdx               = -999;
 
     // WARNING TMP
@@ -659,7 +659,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
     _multiplicity[clusterId] = robust_pads.size();
 
-    _clust_pos[clusterId] = 0.;
+    _cluster_pos[clusterId] = 0.;
     _charge[clusterId] = 0;
 
     int colQ = 0;
@@ -717,7 +717,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         } // cross-talk cherry picking
       } // cross-talk block
 
-      _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
+      _cluster_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
                                                         _invert,
                                                         _clustering->angle);
       _charge[clusterId] += pad->GetQ();
@@ -746,19 +746,19 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     	}
       ++padId;
     } // loop over pads
-    _clust_pos[clusterId] /= _charge[clusterId];
+    _cluster_pos[clusterId] /= _charge[clusterId];
     _x[clusterId] = cluster->GetX();
 
-    double CoC =  _clust_pos[clusterId];
+    double CoC =  _cluster_pos[clusterId];
 
     ++Ndots;
 
     if (_multiplicity[clusterId] > 1 && _iteration > 0){
       track_pos[clusterId] = _fitter->FitCluster(robust_pads,
                                                  _charge[clusterId],
-                                                 _clust_pos[clusterId]
+                                                 _cluster_pos[clusterId]
                                                  );
-      _clust_pos[clusterId] = track_pos[clusterId];
+      _cluster_pos[clusterId] = track_pos[clusterId];
       // WARNING temp
       auto it_main = std::max_element((*cluster).begin(), (*cluster).end(),
                                       [](const THit* n1, const THit* n2) { return n1->GetQ() < n2->GetQ(); });
@@ -808,7 +808,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         }
       }
     } else {
-      track_pos[clusterId] = _clust_pos[clusterId];
+      track_pos[clusterId] = _cluster_pos[clusterId];
     }
 
     cluster->SetY(track_pos[clusterId]);
@@ -1001,13 +1001,13 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     }
 
     // fill SR
-    _cluster_av[clusterId] = cluster->GetY();
+    _cluster_pos[clusterId] = cluster->GetY();
     _track_pos[clusterId] = track_fit_y;
-    _residual[clusterId] = _cluster_av[clusterId] - track_fit_y;
-    _residual_corr[clusterId] = _cluster_av[clusterId] - track_fit_y1;
+    _residual[clusterId] = _cluster_pos[clusterId] - track_fit_y;
+    _residual_corr[clusterId] = _cluster_pos[clusterId] - track_fit_y1;
 
-    _resol_col_hist[clusterId]->Fill(_cluster_av[clusterId] - track_fit_y);
-    _resol_col_hist_except[clusterId]->Fill(_cluster_av[clusterId] - track_fit_y1);
+    _resol_col_hist[clusterId]->Fill(_cluster_pos[clusterId] - track_fit_y);
+    _resol_col_hist_except[clusterId]->Fill(_cluster_pos[clusterId] - track_fit_y1);
   }
 
 // ************ STEP 6 *********************************************************
@@ -1456,29 +1456,29 @@ bool SpatialResolAna::Draw() {
   TGraphErrors* gr_res_av = new TGraphErrors();
   auto scale = 1.e3;
   for (auto colIt = 0; colIt < 70; ++colIt) {
-    if (_cluster_av[colIt] == -999)
+    if (_cluster_pos[colIt] == -999)
       continue;
 
-    gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_cluster_av[colIt]);
+    gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_cluster_pos[colIt]);
     gr_f->SetPoint(gr_f->GetN(), scale*_x_av[colIt], scale*_track_pos[colIt]);
 
     gr_res_av->SetPoint(gr_res_av->GetN(),
                         scale*_x_av[colIt],
-                        scale*(_cluster_av[colIt] - _track_pos[colIt]));
+                        scale*(_cluster_pos[colIt] - _track_pos[colIt]));
   }
 
   for (auto colIt = 0; colIt < 70; ++colIt) {
-    if (_clust_pos[colIt] == -999)
+    if (_cluster_pos[colIt] == -999)
       continue;
 
-    gr_c->SetPoint(gr_c->GetN(), scale*_x[colIt], scale*_clust_pos[colIt]);
+    gr_c->SetPoint(gr_c->GetN(), scale*_x[colIt], scale*_cluster_pos[colIt]);
 
     double track_pos = 0.;
     if (_track_fit_func)
       track_pos = _track_fit_func->Eval(_x[colIt]);
     gr_res_cl->SetPoint(gr_res_cl->GetN(),
                         scale*_x[colIt],
-                        scale*(_clust_pos[colIt] - track_pos));
+                        scale*(_cluster_pos[colIt] - track_pos));
   }
 
   c.cd();
