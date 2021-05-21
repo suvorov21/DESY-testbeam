@@ -317,6 +317,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
               Qmax = q;
               Tmax = t;
             }
+            //
             /** REWEIGHT OF THE PAD*/
             // if (x == 5 && y == 16)
             //   _padAmpl[x][y][t] *= 0.95;
@@ -324,6 +325,17 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
           } // over time
           // hit->SetWF_v(adc);
           if (Qmax > 0){
+            // compute FWHM
+            int fwhm = 0;
+            int width = 0;
+            for (auto t = 0; t < geom::Nsamples; ++t) {
+              if (hit->GetADC(t) > Qmax / 2)
+                fwhm += 1;
+              if (hit->GetADC(t) > 0)
+                width += 1;
+            }
+            hit->SetFWHM(fwhm);
+            hit->SetWidth(width);
             hit->SetQ(Qmax);
             hit->SetTime(Tmax);
             _event->AddHit(hit);

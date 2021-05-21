@@ -25,6 +25,8 @@ class THit : public TObject{
     fFEC      = fec;
     fASIC     = asic;
     fChannel  = channel;
+    fwhm      = -999;
+    fw       = -999;
     for (auto i = 0; i < 511; ++i)
       fwf[i] = 0;
   }
@@ -37,6 +39,9 @@ class THit : public TObject{
     fCharge  = 0;
     for (auto i = 0; i < 511; ++i)
       fwf[i] = 0;
+
+    fwhm = -999;
+    fw = -999;
   }
   // dtor
   virtual ~THit() {;}
@@ -53,6 +58,9 @@ class THit : public TObject{
     fwf[i] = adc;
   }
 
+  void SetWidth(int val) {fw = val;}
+  void SetFWHM(int val) {fwhm = val;}
+
   // getters
   int GetRow(bool invert = false)    const;
   int GetCol(bool invert = false)    const;
@@ -68,6 +76,9 @@ class THit : public TObject{
   UInt_t GetASIC()            const   {return fASIC;}
   UInt_t GetChannel()         const   {return fChannel;}
 
+  int GetWidth() {return fw;}
+  int GetFWHM() {return fwhm;}
+
   ClassDef (THit,1);
 
  private:
@@ -79,6 +90,9 @@ class THit : public TObject{
   UInt_t fFEC;
   UInt_t fASIC;
   UInt_t fChannel;
+
+  int fwhm;
+  int fw;
 
 };
 

@@ -119,6 +119,12 @@ class SpatialResolAna: public AnalysisBase {
   /// pad Y position === row
   Int_t _pad_y[Nclusters][10];
 
+  /// Waveform width
+  Int_t _wf_width[Nclusters][10];
+  /// Waveform width at half maximum
+  Int_t _wf_fwhm[Nclusters][10];
+
+
   //Int_t _pad_wf_t[Nclusters][10][520];
   Int_t _pad_wf_q[Nclusters][10][520];
 
