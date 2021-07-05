@@ -535,7 +535,11 @@ std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr
   auto frac = 1.00;
   Int_t i_max = round(frac * tr.size());
   for (auto i = 0; i < i_max; ++i) {
-    result.push_back(tr[i]);
+    // DESY-2021 specific.
+    // Column 25 was found to be broken, hence excluded from analysis
+    if (tr[i]->GetHits().size() && tr[i]->GetHits()[0]->GetCol(_invert) != 25 && !_invert ||
+        tr[i]->GetHits().size() && tr[i]->GetHits()[0]->GetRow(_invert) != 25 && _invert)
+      result.push_back(tr[i]);
   }
   /* */
 

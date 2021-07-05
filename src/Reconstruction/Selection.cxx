@@ -51,9 +51,14 @@ bool sel::GetNoGap(const std::vector<TCluster*> &track,
     std::vector<int> row;
     std::vector<int> col;
     for (auto pad:*cluster) if (pad) {
-      row.push_back(pad->GetRow(invert));
+      if (pad->GetCol(invert) != 25 || invert)
+        row.push_back(pad->GetRow(invert));
       col.push_back(pad->GetCol(invert));
     } // loop over pads
+
+    // WARNING DESY - 2021 hotfix
+    if (col[0] != 25)
+      return true;
 
     sort(row.begin(), row.end());
     sort(col.begin(), col.end());

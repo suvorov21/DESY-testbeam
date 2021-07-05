@@ -11,27 +11,31 @@ from itertools import chain
 def main():
     # **********************************************************************************
     #define input
-    n_iter = 5
+    n_iter = 10
     doiter = True
+    max_subruns = 3
 
-    generate_TEvent = True
-    submit = False
-    launch = True
+    generate_TEvent = False
+    submit = True
+    launch = False
 
-    bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build_911/"
+    bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build_cl/"
     bin_name  = "SpatialResol.exe"
-    bin_flag  = "-b -r"
+    bin_flag  = "-b"
 
     input_prefix  = ["/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/v1/",
-                     "/eos/experiment/neutplatform/t2knd280/ERAM_2/",
-                     "/eos/experiment/neutplatform/t2knd280/MM2_data/",
-                     "/eos/experiment/neutplatform/t2knd280/ERAM2-data/",
-                     "/eos/experiment/neutplatform/t2knd280/ERAM_3/",
-                     # "/eos/user/s/ssuvorov/DESY_testbeam/cosmic_strict_v2/"
+                     # "/eos/experiment/neutplatform/t2knd280/ERAM_2/",
+                     # "/eos/experiment/neutplatform/t2knd280/MM2_data/",
+                     # "/eos/experiment/neutplatform/t2knd280/ERAM2-data/",
+                     # "/eos/experiment/neutplatform/t2knd280/ERAM_3/",
+                     # "/afs/cern.ch/work/s/shassani/public/Cosmics/",
+                     # "/eos/experiment/neutplatform/t2knd280/HATPC-Cosmics-2021/ERAM1/",
+                     "/eos/experiment/neutplatform/t2knd280/DESY-2021/ROOT/v1/"
+                     # "/eos/user/s/ssuvorov/DESY_testbeam/hs/"
                      ]
 
-    outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
-    outpt_version = "phi_test"
+    outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam2021/"
+    outpt_version = "z_scan"
     output_post   = ""
 
     # espresso     = 20 minutes
@@ -109,18 +113,22 @@ def main():
             first_file_name = ""
 
             # search for inout files
+            subruns = 0
             for root, dirt, find_file in chain.from_iterable(os.walk(path) for path in input_prefix):
                 if "soft" in root:
                     continue
                 for file in find_file:
+                    if subruns > max_subruns:
+                        continue
                     if in_file[:21] in file and ".root" in file[-5:]:
                         temp_file.write(os.path.join(root, file) + "\n")
+                        subruns += 1
                         if first_file_name == "":
                             first_file_name = file
 
             temp_file.close()
 
-            print(first_file_name, "--> ", f'{outpt_version}/{ot_file}', " with ", "".join(add_flags))
+            print(first_file_name, "--> ", f'{outpt_version}/{ot_file}', " with ", "".join(add_flags), f'{subruns} subruns')
 
             file_out = open(script_path + str(i) + ".sh", "w")
             command = ""
