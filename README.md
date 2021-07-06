@@ -29,6 +29,7 @@ source setup.sh
 Then the code can be run with e.g.
 ```bash
 ./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b
+./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter1.root -t1 -b
 ```
 The detailed description of the input flags is provided in src/SpatialResol/README.md.
 
@@ -124,3 +125,7 @@ Micromegas:
 ```
 
 The time information is stored as a 510 bins array or 511 bins array. The package make an automatic guess which one to use and will exit if the data format is unknown.
+
+
+
+x = 25 y = 15
