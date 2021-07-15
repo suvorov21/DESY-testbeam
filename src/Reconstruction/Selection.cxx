@@ -6,6 +6,7 @@
 //******************************************************************************
 bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
                                   const int  &max_mult,
+                                  const int  &max_mean_mult,
                                   const bool &cut_gap,
                                   const float &max_phi,
                                   const float &max_theta,
@@ -13,7 +14,9 @@ bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
                                   const int  &verbose) {
 //******************************************************************************
 
-  auto m_max = sel::GetMaxMultiplicity(track);
+  Float_t m_mean;
+  Int_t m_max;
+  sel::GetMultiplicity(track, m_mean, m_max);
   auto no_gap = sel::GetNoGap(track, invert);
   if (verbose > 1) {
     std::cout << "SELECTION " << std::endl;
@@ -23,6 +26,7 @@ bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
     std::cout << "Linear theta\t" << GetLinearTheta(track, invert) << std::endl;
   }
   if (m_max > max_mult) return false;
+  if (m_mean > max_mean_mult) return false;
   if (!no_gap && cut_gap) return false;
 
   if (max_phi > 0 && abs(GetLinearPhi(track, invert)) > max_phi) return false;
@@ -32,15 +36,24 @@ bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
 }
 
 //******************************************************************************
-int sel::GetMaxMultiplicity(const std::vector<TCluster*> &track) {
+void sel::GetMultiplicity(const std::vector<TCluster*> &track,
+                          Float_t& m_mean,
+                          Int_t& m_max
+                          ) {
 //******************************************************************************
-  auto it_max = std::max_element(track.begin(), track.end(),
-                       [](const TCluster* cl1, const TCluster* cl2) {
-                          return cl1->GetSize() < cl2->GetSize();
-                        });
-  if (it_max != track.end())
-    return (*it_max)->GetSize();
-  return 999;
+  m_max = -1;
+  m_mean = 0.;
+  Int_t n = 0;
+  for (auto col:track) {
+    auto mult = col->GetSize();
+    if (mult < 1)
+      continue;
+    m_mean += mult;
+    n += 1;
+    if (mult > m_max)
+      m_max = mult;
+  }
+  m_mean /= n;
 }
 
 //******************************************************************************

@@ -208,6 +208,9 @@ class AnalysisBase {
   /// The maximum multiplicity of the track
   Int_t _max_mult;
 
+  /// The maximum mean multiplicity for track
+  Float_t _max_mean_mult;
+
   /// Whether to cut tracks with gap in the cluster
   /** E.g. one missed pad in the middle of the column or in the
   * middle of the diagonal

@@ -76,6 +76,12 @@ class SpatialResolAna: public AnalysisBase {
   /// offset
   Float_t _offset;
 
+  /// maximum of the multiplicity
+  Int_t _m_max;
+
+  /// mean multiplicity
+  Float_t _m_mean;
+
   /// Cluster vars
   /// Position of the cluster
   Float_t _clust_pos[Nclusters];

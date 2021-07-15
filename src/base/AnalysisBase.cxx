@@ -25,6 +25,7 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _correction(false),
   _reconstruction(NULL),
   _max_mult(6),
+  _max_mean_mult(5),
   _cut_gap(true),
   _min_clusters(30),
   _verbose(1),
@@ -487,6 +488,16 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) 
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
 
+  // leading pad
+  auto col_id = col[0]->GetCol();
+  auto row_id = col[0]->GetRow();
+  // DESY-2021 specific.
+  // Column 25 row 15 was found to be broken
+  // hence excluded from analysis the whole cluster if leading pad is nearby
+  if (col_id == 25 && row_id > 13 && row_id < 17) {
+    return result;
+  }
+
   for (uint i = 0; i < col.size(); ++i) {
     auto pad    = col[i];
     auto q      = pad->GetQ();
@@ -535,11 +546,7 @@ std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr
   auto frac = 1.00;
   Int_t i_max = round(frac * tr.size());
   for (auto i = 0; i < i_max; ++i) {
-    // DESY-2021 specific.
-    // Column 25 was found to be broken, hence excluded from analysis
-    if (tr[i]->GetHits().size() && tr[i]->GetHits()[0]->GetCol(_invert) != 25 && !_invert ||
-        tr[i]->GetHits().size() && tr[i]->GetHits()[0]->GetRow(_invert) != 25 && _invert)
-      result.push_back(tr[i]);
+    result.push_back(tr[i]);
   }
   /* */
 
@@ -741,6 +748,8 @@ bool AnalysisBase::ReadParamFile() {
         }
       } else if (name == "max_mult") {
         _max_mult = TString(value).Atoi();
+      } else if (name == "max_mean_mult") {
+        _max_mean_mult = TString(value).Atof();
       } else if (name == "cut_gap") {
         if (value == "0") {
           _cut_gap = false;

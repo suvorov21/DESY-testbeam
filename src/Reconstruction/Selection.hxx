@@ -17,15 +17,20 @@ namespace sel
   * around this "missed pad" are detected.
   */
   bool                 CrossingTrackSelection(const std::vector<TCluster*> &track,
-                                              const int  &max_mult  = 6,
+                                              const int  &max_mult  = 10,
+                                              const int  &max_mean_mult  = 6,
                                               const bool &cut_gap   = true,
                                               const float &max_phi  = -1.,
                                               const float &max_theta= -1.,
                                               const bool &invert    = false,
-                                              const int  &verbose   = 0);
+                                              const int  &verbose   = 0
+                                              );
 
   /// Return a maximum cluster multiplicity of the track
-  int               GetMaxMultiplicity (const std::vector<TCluster*> &track);
+  void               GetMultiplicity (const std::vector<TCluster*> &track,
+                                      Float_t& m_mean,
+                                      Int_t& m_max
+                                      );
   /// Look if there a gap in the clusters (missed row/column)
   bool                  GetNoGap       (const std::vector<TCluster*> &track,
                                         const bool &invert = false);

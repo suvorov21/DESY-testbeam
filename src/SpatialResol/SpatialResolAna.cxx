@@ -239,6 +239,9 @@ bool SpatialResolAna::Initialize() {
   _tree->Branch("sina",         &_sin_alpha);
   _tree->Branch("offset",       &_offset);
 
+  _tree->Branch("max_mult",     &_m_max);
+  _tree->Branch("mean_mult",    &_m_mean);
+
   _tree->Branch("multiplicity",
                 &_multiplicity,
                 TString::Format("multiplicity[%i]/I", Nclusters)
@@ -308,16 +311,16 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
                 );
 
-  // WARNING TEMP
-  _tree->Branch("fit_up",
-                &_fit_up,
-                TString::Format("fit_up[%i]/F", Nclusters)
-                );
+  // // WARNING TEMP
+  // _tree->Branch("fit_up",
+  //               &_fit_up,
+  //               TString::Format("fit_up[%i]/F", Nclusters)
+  //               );
 
-  _tree->Branch("fit_bt",
-                &_fit_bt,
-                TString::Format("fit_bt[%i]/F", Nclusters)
-                );
+  // _tree->Branch("fit_bt",
+  //               &_fit_bt,
+  //               TString::Format("fit_bt[%i]/F", Nclusters)
+  //               );
 
   _output_vector.push_back(_tree);
 
@@ -542,6 +545,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   _sin_alpha  = -999.;
   _offset     = -999.;
   _rob_clusters = -999;
+  _m_max      = -999;
+  _m_mean     = -999.;
 
   int cluster_N[Nclusters];
   double track_pos[Nclusters];
@@ -613,6 +618,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   // selection
   if (!sel::CrossingTrackSelection(clusters,
                                    _max_mult,
+                                   _max_mean_mult,
                                    _cut_gap,
                                    _max_phi,
                                    _max_theta,
@@ -663,6 +669,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   //if (robust_clusters.size() < 30) continue;
         //continue;
 
+  _m_mean = 0;
+  auto n = 0;
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
     auto cluster = robust_clusters[clusterId];
     if (!(&cluster[0]))
@@ -671,6 +679,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // loop over rows
     auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
     _multiplicity[clusterId] = robust_pads.size();
+    _m_mean += robust_pads.size();
+    n += 1;
+    if (robust_pads.size() > _m_max)
+      _m_max = robust_pads.size();
 
     _clust_pos[clusterId] = 0.;
     _charge[clusterId] = 0;
@@ -807,8 +819,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           bool ok = fitter_cluster.FitFCN();
           (void)ok;
           const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
-          if (ok && r_up > 0.04)
-            _fit_up[clusterId] = result_cluster.GetParams()[0];
+          // if (ok && r_up > 0.04)
+          //   _fit_up[clusterId] = result_cluster.GetParams()[0];
 
           // if (_fit_up[clusterId] > -0.009 && _fit_up[clusterId] < -0.0087)
           //   std::cout << r_up << "\t" << _fit_up[clusterId] << "\t" << _PRF_function->Eval(geom::GetYposPad((*it_up)) - _fit_up[clusterId]) / _PRF_function->Eval(geom::GetYposPad((*it_main)) - _fit_up[clusterId]) << std::endl;
@@ -877,6 +889,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (colQ) QsegmentS.push_back(colQ);
 
   } // loop over clusters
+  _m_mean /= n;
 
   std::vector<TCluster*> clusters_clean;
 
