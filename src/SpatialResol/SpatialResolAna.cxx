@@ -1,4 +1,6 @@
 /** @cond */
+#include <csignal>
+
 #include "TVector3.h"
 #include "Math/Functor.h"
 #include "Fit/Fitter.h"
@@ -664,9 +666,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   std::vector <double> QsegmentS; QsegmentS.clear();
   std::vector <int> pad_wf_v; //WF
 
-  //if (robust_clusters.size() < 30) continue;
-        //continue;
-
   _m_mean = 0;
   auto n = 0;
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
@@ -679,8 +678,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _multiplicity[clusterId] = robust_pads.size();
     _m_mean += robust_pads.size();
     n += 1;
-    if (robust_pads.size() > _m_max)
-      _m_max = robust_pads.size();
+    if (_multiplicity[clusterId] > _m_max) {
+      _m_max = _multiplicity[clusterId];
+    }
+
 
     _clust_pos[clusterId] = 0.;
     _charge[clusterId] = 0;
