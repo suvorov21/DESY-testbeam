@@ -253,8 +253,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
   if (_start_ID < 0)
     _start_ID = 0;
-  if (_end_ID > 0)
+  if (_end_ID > 0) {
     N_events = _end_ID;
+    if (_end_ID - _start_ID > _EventList.size())
+      _end_ID = _start_ID + _EventList.size();
+  }
 
   _sw_event = new TStopwatch();
 
