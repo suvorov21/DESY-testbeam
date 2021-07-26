@@ -508,8 +508,6 @@ bool SpatialResolAna::Initialize() {
                              );
 
   if (_clustering->n_pads > 1 && _iteration) {
-    std::cout << _PRF_function_arr[0]->GetName() << std::endl;
-    std::cout << _PRF_function_arr[1]->GetName() << std::endl;
     _fitter->SetPRFarr(_PRF_function_arr, _clustering->n_pads);
     _fitter->SetComplicatedPatternPRF(true);
   }
