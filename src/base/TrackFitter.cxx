@@ -213,7 +213,7 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     double y   = clusters[clusterId]->GetY();
     double y_e = clusters[clusterId]->GetYE();
 
-    if (int(clusterId) == miss_id)
+    if (int(clusterId) == miss_id || x != x || y != y)
       continue;
 
     if (_verbose > 3)
