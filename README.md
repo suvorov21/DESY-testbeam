@@ -1,3 +1,6 @@
+[![Codacy](https://app.codacy.com/project/badge/Grade/f0558fa6988e43d28f0d0915b2d77883)](https://www.codacy.com/gl/t2k-beamtest/desy_testbeam/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=t2k-beamtest/desy_testbeam&amp;utm_campaign=Badge_Grade)
+[![Pipeline](https://gitlab.com/t2k-beamtest/desy_testbeam/badges/develop/pipeline.svg)](https://gitlab.com/t2k-beamtest/desy_testbeam/-/commits/develop)
+
 # DESY beam test analysis package
 
 ![](doc/desy.png)
