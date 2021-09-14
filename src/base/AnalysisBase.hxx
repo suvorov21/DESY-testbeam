@@ -252,7 +252,7 @@ class AnalysisBase {
   bool _individual_column_PRF;
 
   /// Wheather to make PRF center position a free parameter
-  bool _PRF_free_centre;
+  bool _prf_free_centre;
 
   /// Whether to use arc function for track fitting
   bool _do_linear_fit;

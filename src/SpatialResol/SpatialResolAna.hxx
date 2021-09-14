@@ -13,26 +13,26 @@ const int Nclusters = 70;
 class SpatialResolAna: public AnalysisBase {
  public:
   SpatialResolAna(int argc, char** argv);
-  virtual ~SpatialResolAna() {;}
+  ~SpatialResolAna() override = default;
 
   /// Initialise histoes, input files, selections
-  bool Initialize();
+  bool Initialize() override;
   /// Process the selection output called Event
-  bool ProcessEvent(const TEvent* event);
+  bool ProcessEvent(const TEvent* event) override;
 
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TRawEvent* event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
-  bool WriteOutput();
+  bool WriteOutput() override;
 
   /// Profile PRF with peak and RMS
-  bool ProfilePRF(const TH2F* _PRF_h, TGraphErrors* gr);
+  bool ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr);
   /// Profile PRF along X axis
   bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
   /// Initialise PRF with expected params
-  TF1* InitializePRF(const TString name, bool shift=false);
+  TF1* InitializePRF(TString name, bool shift=false);
 
   /// Get mean and FWHM for the histo
   Double_t GetFWHM(const TH1F* h, Double_t& mean);
@@ -51,7 +51,7 @@ class SpatialResolAna: public AnalysisBase {
 
  protected:
   /// Previous iteration output to extract PRF
-  TFile*  _Prev_iter_file;
+  TFile*  _prev_iter_file;
 
   /// output tree
   TTree*  _tree;
@@ -131,35 +131,35 @@ class SpatialResolAna: public AnalysisBase {
   /** Histograms **/
   /** Pad response function block **/
   /// PRF function from the previous step. Used for Chi2 fit
-  TF1*  _PRF_function;
-  TF1**  _PRF_function_arr;
+  TF1*  _prf_function;
+  TF1**  _prf_function_arr;
   /// PRF histoes
-  TH2F* _PRF_histo;
+  TH2F* _prf_histo;
   // PRF profiling graphs
-  TGraphErrors* _PRF_graph;
+  TGraphErrors* _prf_graph;
 
-  // TF1*    _PRF_function_2pad;
-  // TF1*    _PRF_function_3pad;
-  // TF1*    _PRF_function_4pad;
+  // TF1*    _prf_function_2pad;
+  // TF1*    _prf_function_3pad;
+  // TF1*    _prf_function_4pad;
 
-  TH2F* _PRF_histo_2pad;
-  TH2F* _PRF_histo_3pad;
-  TH2F* _PRF_histo_4pad;
+  TH2F* _prf_histo_2pad;
+  TH2F* _prf_histo_3pad;
+  TH2F* _prf_histo_4pad;
 
-  TGraphErrors* _PRF_graph_2pad;
-  TGraphErrors* _PRF_graph_3pad;
-  TGraphErrors* _PRF_graph_4pad;
+  TGraphErrors* _prf_graph_2pad;
+  TGraphErrors* _prf_graph_3pad;
+  TGraphErrors* _prf_graph_4pad;
 
   /// Pad response function in time
-  TH2F* _PRF_time;
+  TH2F* _prf_time;
 
   /// analytical PRF time function
-  TF1* _PRF_time_func;
+  TF1* _prf_time_func;
 
   /// uncertainties of the time profile
-  TGraphErrors* _PRF_time_error;
+  TGraphErrors* _prf_time_error;
 
-  TH1F* _PRF_time_e;
+  TH1F* _prf_time_e;
 
   /// WARNING TEMP
   Float_t _fit_up[Nclusters];
@@ -188,10 +188,10 @@ class SpatialResolAna: public AnalysisBase {
   TH1F*   _chi2_ratio;
 
   /// Chi2 function of the track fit
-  TH1F* _Chi2_track;
+  TH1F* _chi2_track;
 
   /// How many columns are used for fit
-  TH1F* _Cols_used;
+  TH1F* _cols_used;
 
   /// Residuals X_track - X_fit histoes
   TH1F* _resol_total;
@@ -211,10 +211,10 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _residual_sigma_unbiased;
   TGraphErrors* _residual_sigma_biased;
 
-  TH2F* _PRF_histo_col[Nclusters];
+  TH2F* _prf_histo_col[Nclusters];
 
   /// separate pad fit study
-  TH1F* _Fit_quality_plots[3][Nclusters];
+  TH1F* _fit_quality_plots[3][Nclusters];
   TAxis* _prf_scale_axis;
 
   /// errors vs the PRF value
@@ -234,12 +234,12 @@ class SpatialResolAna: public AnalysisBase {
   TAxis* _x_scan_axis;
   TH1F* _resol_col_x_scan[Nclusters][x_scan_bin];
   TH1F* _mult_x_scan[Nclusters][x_scan_bin];
-  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
+//  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
 
   TH1F* _resol_col_x_scan_lim_mult[Nclusters][x_scan_bin];
 
-  TH2F* _PRF_histo_xscan[4];
-  TGraphErrors* _PRF_graph_xscan[4];
+  TH2F* _prf_histo_xscan[4];
+  TGraphErrors* _prf_graph_xscan[4];
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty;
