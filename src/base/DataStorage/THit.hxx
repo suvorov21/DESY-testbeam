@@ -21,8 +21,9 @@ class THit : public TObject{
        fRow(row), fColumn(col), fTime(time), fCharge(q), fFEC(fec), fASIC(asic), fChannel(channel)  {
     fwhm      = -999;
     fw       = -999;
+
     for (int & i : fwf)
-        fwf[i] = 0;
+        i = 0;
   }
 
   // default ctor
@@ -37,7 +38,7 @@ class THit : public TObject{
     fChannel = -1;
 
     for (int & i : fwf)
-        fwf[i] = 0;
+        i = 0;
 
     fwhm = -999;
     fw = -999;
