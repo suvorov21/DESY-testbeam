@@ -6,7 +6,7 @@ stages:
   # unittests
   - test
   # test run with expected output from basic analysis
-  - validate
+  - validation
   # doxygen
   - docs
   - deploy
