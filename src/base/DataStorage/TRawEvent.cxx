@@ -3,9 +3,7 @@
 //// TRawEvent
 TRawEvent::~TRawEvent() {
   for (auto hit:fHits) {
-    if (hit)
-      delete hit;
-    hit = NULL;
+    delete hit;
   }
   fHits.clear();
 }

@@ -35,14 +35,14 @@ namespace geom
 
     static const int pedestal = 250;
 
-    static const float x_pos[nPadx] = {-0.1974, -0.18612, -0.17484, -0.16356,
+    static const Double_t x_pos[nPadx] = {-0.1974, -0.18612, -0.17484, -0.16356,
         -0.15228, -0.141, -0.12972, -0.11844, -0.10716, -0.09588, -0.0846,
         -0.07332, -0.06204, -0.05076, -0.03948, -0.0282, -0.01692, -0.00564,
         0.00564, 0.01692, 0.0282, 0.03948, 0.05076, 0.06204, 0.07332, 0.0846,
         0.09588, 0.10716, 0.11844, 0.12972, 0.141, 0.15228, 0.16356, 0.17484,
         0.18612, 0.1974};
 
-    static const float y_pos[nPady] = {-0.157945, -0.147755, -0.137565,
+    static const Double_t y_pos[nPady] = {-0.157945, -0.147755, -0.137565,
         -0.127375, -0.117185, -0.106995, -0.096805, -0.086615, -0.076425,
         -0.066235, -0.056045, -0.045855, -0.035665, -0.025475, -0.015285,
         -0.005095, 0.005095, 0.015285, 0.025475, 0.035665, 0.045855, 0.056045,
@@ -52,12 +52,12 @@ namespace geom
     static const int Nsamples = 511;
     static const int Nsamples_saclay = 510;
 
-    float GetYposPad(const THit* h, bool invert = false, Float_t angle = 0);
-    float GetXposPad(const THit* h, bool invert = false, Float_t angle = 0);
+    Double_t GetYposPad(const THit* h, bool invert = false, Float_t angle = 0);
+    Double_t GetXposPad(const THit* h, bool invert = false, Float_t angle = 0);
 
-    float GetYpos(int it_y, bool invert = false);
+    Double_t GetYpos(int it_y, bool invert = false);
 
-    float GetXpos(int it_x, bool invert = false);
+    Double_t GetXpos(int it_x, bool invert = false);
 
     /// return max index (!!) of a column
     int GetNColumn(bool invert = false);

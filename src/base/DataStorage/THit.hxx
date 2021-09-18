@@ -17,34 +17,33 @@ class THit : public TObject{
        const int q          = -1,
        const UInt_t fec     = -1,
        const UInt_t asic    = -1,
-       const UInt_t channel = -1 ){
-    fRow      =  row;
-    fColumn   = col;
-    fTime     = time;
-    fCharge   = q;
-    fFEC      = fec;
-    fASIC     = asic;
-    fChannel  = channel;
+       const UInt_t channel = -1 ):
+       fRow(row), fColumn(col), fTime(time), fCharge(q), fFEC(fec), fASIC(asic), fChannel(channel)  {
     fwhm      = -999;
     fw       = -999;
-    for (auto i = 0; i < 511; ++i)
-      fwf[i] = 0;
+    for (int & i : fwf)
+        fwf[i] = 0;
   }
 
   // default ctor
-  THit(){
+  THit() {
     fRow  = -999;
     fColumn  = -999;
     fTime  = -999;
     fCharge  = 0;
-    for (auto i = 0; i < 511; ++i)
-      fwf[i] = 0;
+
+    fFEC = -1;
+    fASIC = -1;
+    fChannel = -1;
+
+    for (int & i : fwf)
+        fwf[i] = 0;
 
     fwhm = -999;
     fw = -999;
   }
   // dtor
-  virtual ~THit() {;}
+  ~THit() override {;}
   // setters
   void SetRow(int row)    {fRow = row;}
   void SetCol(int col)    {fColumn = col;}
@@ -76,8 +75,8 @@ class THit : public TObject{
   UInt_t GetASIC()            const   {return fASIC;}
   UInt_t GetChannel()         const   {return fChannel;}
 
-  int GetWidth() {return fw;}
-  int GetFWHM() {return fwhm;}
+  int GetWidth() const {return fw;}
+  int GetFWHM() const {return fwhm;}
 
   ClassDef (THit,1);
 

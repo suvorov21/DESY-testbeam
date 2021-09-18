@@ -1,15 +1,14 @@
 #include "THit.hxx"
 
 int THit::GetRow(bool invert) const {
+    invert? return fRow: return fColumn;
   if (!invert)
     return fRow;
-  else
-    return fColumn;
+  return fColumn;
 }
 
 int THit::GetCol(bool invert) const {
   if (!invert)
     return fColumn;
-  else
-    return fRow;
+  return fRow;
 }

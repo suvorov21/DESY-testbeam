@@ -37,13 +37,13 @@ public:
   /// Number of pads in a row
   int n_pads;
   /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
-  Float_t coeff;
+  Double_t coeff;
   /// Function of row and column that is constant for a given cluster
-  int GetConstant(int row, int col) {
+  int GetConstant(int row, int col) const {
     if (n_pads == 0)
       return col;
     else {
-      return (floor(coeff * col - row));
+      return floor(coeff * col - row);
     }
   }
 };
@@ -85,13 +85,13 @@ class AnalysisBase {
    * Another use case is to ommit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
-  std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
+  static std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
   /// Return only robust clusters
   /** E.g. apply a trunccation - ommit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.
    * Any condition can be specified.
    */
-  std::vector<TCluster*> GetRobustClusters(std::vector<TCluster*> tr);
+  static std::vector<TCluster*> GetRobustClusters(std::vector<TCluster*> tr);
 
   // TODO consider a better implementation. No need to create all instances
   Clustering* CL_col;
@@ -100,7 +100,7 @@ class AnalysisBase {
   Clustering* CL_3by1;
   Clustering* CL_3by2;
 
-  /// An actual clustering precedure
+  /// An actual clustering procedure
   Clustering* _clustering;
 
   /// Split track into clusters
@@ -109,40 +109,40 @@ class AnalysisBase {
   * The function takes (row, column) and return a value
   * that is constant for a given cluster.
   * For example for clustering with columns the rule column == const is constant.
-  * For diagonals column - row = connst and so on.
+  * For diagonals column - row = const and so on.
   */
-  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr);
+  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr) const;
 
 
   /************************** Utilities functions *****************************/
 
   /// Print usage
-  void help(const std::string& name);
+  static void help(const std::string& name);
 
   /// Dump progress in the command line
   virtual void CL_progress_dump(int eventID, int Nevents);
 
   /// Dump RAM usage in CL
-  void process_mem_usage(double& vm_usage, double& resident_set);
+  static void process_mem_usage(double& vm_usage, double& resident_set);
 
   /// Set a vector of events that will be processed.
   /** Used in the analysis with few iterations. After the first iteration
-  * the list of files that passde the selection is established and
+  * the list of files that passed the selection is established and
   * there is no need to go through all events again, but only through
-  * those who passed the resonstruction and selection.
+  * those who passed the reconstruction and selection.
   */
-  void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
-  std::vector<Int_t> GetEventList() const {return _EventList;}
+  void SetEventList(const std::vector<Int_t>& var) {_eventList.clear(); _eventList = var;}
+  std::vector<Int_t> GetEventList() const {return _eventList;}
 
   /// Draw the selected event
   virtual void DrawSelection(const TEvent *event);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
-    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+    std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}
   bool operator==(const AnalysisBase* ana){(void)ana;
-    std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+    std::cerr << "Comparison is deprecated" << std::endl; exit(1);}
 
-  bool ChainInputFiles(TString tree_name);
+  bool ChainInputFiles(const TString& tree_name);
 
   /// verbosity levels
   enum verbosity_base {
@@ -161,7 +161,7 @@ class AnalysisBase {
   TString _param_file_name;
 
   /// vector of event IDs that will be analysed
-  std::vector<Int_t> _EventList;
+  std::vector<Int_t> _eventList;
   /// Whether to store particular event
   bool    _store_event;
   /// Event to start the loop
@@ -176,7 +176,7 @@ class AnalysisBase {
   bool    _work_with_event_file;
 
   /// input file
-  /* May be a single ROOT file or a list of files*/
+  /* Maybe a single ROOT file or a list of files*/
   TFile* _file_in;
   /// output file
   TFile* _file_out;
@@ -185,7 +185,7 @@ class AnalysisBase {
   TChain* _chain;
 
   /// Name of the file from previous iteration
-  TString _Prev_iter_name;
+  TString _prev_iter_name;
   /// iteration number. Starting from 0
   Int_t   _iteration;
 
@@ -248,17 +248,17 @@ class AnalysisBase {
   /// Whether to use Gaussian lorentzian PRf fit over polynomial
   bool _gaus_lorentz_PRF;
 
-  /// Wheather to use individual PRF
+  /// Whether to use individual PRF
   bool _individual_column_PRF;
 
-  /// Wheather to make PRF center position a free parameter
+  /// Whether to make PRF center position a free parameter
   bool _prf_free_centre;
 
   /// Whether to use arc function for track fitting
   bool _do_linear_fit;
   bool _do_para_fit;
 
-  /// Wether to store the WFs
+  /// Whether to store the WFs
   bool _to_store_wf;
 
   /// Time control system

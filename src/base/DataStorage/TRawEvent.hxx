@@ -9,13 +9,13 @@
 class TRawEvent : public TObject{
  public:
   //ctor
-  explicit TRawEvent(){;}
+  explicit TRawEvent(): ID(0) {;}
   explicit TRawEvent(Int_t var): ID(var) {;}
   explicit TRawEvent(const TRawEvent* event);
   // dtor
-  virtual ~TRawEvent();
+  ~TRawEvent() override;
   // getters
-  Int_t GetID() const  {return ID;}
+  UInt_t GetID() const  {return ID;}
   std::vector <THit*>   GetHits()       const  {return fHits;}
   // setters
   void SetHits(const std::vector <THit*>& inhits )        {fHits = inhits;}
