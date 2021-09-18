@@ -62,19 +62,19 @@ bool SpatialResolAna::Initialize() {
 
   // load information from previous iteration
   if (_iteration) {
-    if (_Prev_iter_name.Length() == 0) {
-      _Prev_iter_name = _file_out_name;
-      _Prev_iter_name   = _Prev_iter_name(0, _Prev_iter_name.Index("iter"));
-      _Prev_iter_name  += "iter";
-      _Prev_iter_name  += TString::Itoa(_iteration - 1, 10);
-      _Prev_iter_name  += ".root";
+    if (_prev_iter_name.Length() == 0) {
+      _prev_iter_name = _file_out_name;
+      _prev_iter_name   = _prev_iter_name(0, _prev_iter_name.Index("iter"));
+      _prev_iter_name  += "iter";
+      _prev_iter_name  += TString::Itoa(_iteration - 1, 10);
+      _prev_iter_name  += ".root";
     }
 
-    _prev_iter_file = new TFile(_Prev_iter_name.Data(), "READ");
+    _prev_iter_file = new TFile(_prev_iter_name.Data(), "READ");
     if (!_prev_iter_file->IsOpen()) {
       std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
       std::cerr << "File from previous iteration is not found" << std::endl;
-      std::cerr << "File name: " << _Prev_iter_name << std::endl;
+      std::cerr << "File name: " << _prev_iter_name << std::endl;
       exit(1);
     }
 
@@ -103,7 +103,7 @@ bool SpatialResolAna::Initialize() {
     if (!_prf_function || !uncertainty_graph) {
       std::cerr << "ERROR. SpatialResolAna::Initialize().";
       std::cout << "PRF function or resolution is not specified" << std::endl;
-      std::cerr << "Search in " << _Prev_iter_name << std::endl;
+      std::cerr << "Search in " << _prev_iter_name << std::endl;
       exit(1);
     }
 
@@ -164,7 +164,7 @@ bool SpatialResolAna::Initialize() {
     if (!_prf_time_error || !ProfilePRF_X(histo_prev_t, _prf_time_error, _prf_time_e)) {
       std::cerr << "ERROR. SpatialResolAna::Initialize().";
       std::cout << "PRF time function is not specified" << std::endl;
-      std::cerr << "Search in " << _Prev_iter_name << std::endl;
+      std::cerr << "Search in " << _prev_iter_name << std::endl;
       exit(1);
     }
     histo_prev_t->Fit("pol2", "Q");
@@ -1310,12 +1310,12 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   std::cout << "*************** Time consuming **************" << std::endl;
-  std::cout << "Reading 3D array:\t"        << _sw_partial[5]->CpuTime() * 1.e3 / (double)_EventList.size() << std::endl;
-  std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / (double)_EventList.size() << std::endl;
-  std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / (double)_EventList.size() << std::endl;
-  std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / (double)_EventList.size() << std::endl;
-  std::cout << "  Fitters:     \t"        << _sw_partial[3]->CpuTime() * 1.e3 / (double)_EventList.size() << std::endl;
-  std::cout << "  Filling:     \t"        << _sw_partial[4]->CpuTime() * 1.e3 / (double)_EventList.size() << std::endl;
+  std::cout << "Reading 3D array:\t"        << _sw_partial[5]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "  Fitters:     \t"        << _sw_partial[3]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "  Filling:     \t"        << _sw_partial[4]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
   return true;
 }
 

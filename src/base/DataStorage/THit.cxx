@@ -1,7 +1,6 @@
 #include "THit.hxx"
 
 int THit::GetRow(bool invert) const {
-    invert? return fRow: return fColumn;
   if (!invert)
     return fRow;
   return fColumn;
