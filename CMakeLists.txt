@@ -27,15 +27,15 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 #---Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
 include(${ROOT_USE_FILE})
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/base/DataStorage) #---Event format
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/base/)            #---Base processors
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/Reconstruction/)  #---Reconstruction
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/utils/)           #---utils
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/base/DataStorage) #---Event format
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/base/)            #---Base processors
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Reconstruction/)  #---Reconstruction
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/utils/)           #---utils
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/SpatialResol/)    #---SR analysis
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src//SpatialResol/)    #---SR analysis
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/base/)
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/base/)
 
 #---Create  a main program using the library
-add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx ${PROJECT_SOURCE_DIR}/SpatialResol/SpatialResolAna.cxx)
+add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx ${PROJECT_SOURCE_DIR}/src/SpatialResol/SpatialResolAna.cxx app/SpatialResolutionApp.cxx)
 target_link_libraries(SpatialResol.exe TRawEvent TBase)

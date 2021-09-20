@@ -56,24 +56,46 @@ public:
 */
 class AnalysisBase {
  public:
-  AnalysisBase(int argc, char** argv);
+  AnalysisBase();
   virtual ~AnalysisBase() {;}
 
+  /// Helper for CLI arguments parser
+  /**
+   * Look for the option in the CLI.
+   * @param argString the value of the argv[i]
+   * @param nextValue the next value argv[i+1] if any
+   * @param optionList vector of strings. The order is strictly fixed:
+   *                    {short option, long option}, e.g. {"-i", "--input"}
+   * @param defaultValue the default value if argument is not present
+   * @return std::string provided by the parameter
+   */
+  static std::string lookForOption(const std::string& argString,
+                            const std::string& nextValue,
+                            std::vector<std::string> optionList,
+                            std::string defaultValue);
+
+  /// Read CL arguments
+  virtual bool ReadCLI(int argc, char** argv);
+
   /// Initialise histoes, input files, selections
-  virtual bool Initialize();
+  virtual bool Initialize(int argc, char** argv);
+
   /// Loop over TChain entries. Can use pre-defined event list
   /** Normally for the first iteration loop over all events is performed.
   * For the following iterations only events that passed reconstruction
   * and selection are used.
+  * @param EventList Vector of the TTRee entries that will be read from the file.
   */
   virtual bool Loop(std::vector<Int_t> EventList);
   /// Process the reconstruction output
   /**
   * Function should be defined in the derived analysis. It is responsible
   * for applying the selection for the successfully reconstructed tracks,
-  * performing the analysis itself, fill jistograms and TTree branches.
+  * performing the analysis itself, fill Histograms and TTree branches.
+  * @param event The event that is returned by pattern recognition
   */
   virtual bool ProcessEvent(const TEvent* event);
+
   /// Write the output file (histos, trees)
   virtual bool WriteOutput();
 
@@ -87,7 +109,7 @@ class AnalysisBase {
    */
   static std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
   /// Return only robust clusters
-  /** E.g. apply a trunccation - ommit clusters with relatively large charge
+  /** E.g. apply a truncation - omit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.
    * Any condition can be specified.
    */
@@ -183,14 +205,6 @@ class AnalysisBase {
 
   /// chain with inpout files
   TChain* _chain;
-
-  /// Name of the file from previous iteration
-  TString _prev_iter_name;
-  /// iteration number. Starting from 0
-  Int_t   _iteration;
-
-  /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool _correction;
 
   /// choose the input array size, whether to use 510 or 511 time bins
   bool _saclay_cosmics;

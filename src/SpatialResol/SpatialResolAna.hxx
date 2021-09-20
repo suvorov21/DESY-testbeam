@@ -12,11 +12,15 @@ const int Nclusters = 70;
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
  public:
-  SpatialResolAna(int argc, char** argv);
+  SpatialResolAna();
   ~SpatialResolAna() override = default;
 
   /// Initialise histoes, input files, selections
-  bool Initialize() override;
+  bool Initialize(int argc, char** argv) override;
+
+  /// Read CLI
+  bool ReadCLI(int argc, char **argv) override;
+
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event) override;
 
@@ -52,6 +56,14 @@ class SpatialResolAna: public AnalysisBase {
  protected:
   /// Previous iteration output to extract PRF
   TFile*  _prev_iter_file;
+
+  /// Name of the file from previous iteration
+  TString _prev_iter_name;
+  /// iteration number. Starting from 0
+  Int_t   _iteration;
+
+  /// Whether to apply correction of spatial resolution (take geometrical mean)
+  bool _correction;
 
   /// output tree
   TTree*  _tree;

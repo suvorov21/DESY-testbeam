@@ -8,9 +8,12 @@
 #include "line.hxx"
 
 //******************************************************************************
-SpatialResolAna::SpatialResolAna(int argc, char** argv):
-  AnalysisBase(argc, argv),
+SpatialResolAna::SpatialResolAna():
+  AnalysisBase(),
   _prev_iter_file(nullptr),
+  _prev_iter_name(TString("")),
+  _iteration(0),
+  _correction(false),
   _tree(nullptr),
   _do_full_track_fit(false),
   _do_separate_pad_fit(false),
@@ -22,7 +25,31 @@ SpatialResolAna::SpatialResolAna(int argc, char** argv):
 }
 
 //******************************************************************************
-bool SpatialResolAna::Initialize() {
+bool SpatialResolAna::ReadCLI(int argc, char **argv) {
+//******************************************************************************
+  if (!AnalysisBase::ReadCLI(argc, argv))
+    return false;
+  char * pEnd;
+
+  for (auto i = 1; i < argc; ++i) {
+    std::string argString = argv[i];
+    _prev_iter_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
+                                    {"--prev"}, _prev_iter_name.Data());
+    _iteration = (int)strtol(lookForOption(
+        argString, i == argc - 1 ? "" : argv[i + 1], {"-t", "--iter"}, std::to_string(_iteration)).c_str(), &pEnd, 10);
+
+    std::string corrOpt = lookForOption(
+        argString, "t", {"-c", "--corr"}, "f");
+
+    if (corrOpt == "t")
+      _correction = true;
+  }
+
+  return true;
+}
+
+//******************************************************************************
+bool SpatialResolAna::Initialize(int argc, char** argv) {
 //******************************************************************************
   std::cout << "*****************************************" << std::endl;
   std::cout << "***   Spatial resolution analysis    ****" << std::endl;
@@ -33,7 +60,7 @@ bool SpatialResolAna::Initialize() {
   std::cout << "Iteration     :   " << _iteration     << std::endl;
 
 
-  AnalysisBase::Initialize();
+  AnalysisBase::Initialize(argc, argv);
 
   std::cout << "Initializing spatial resolution ana......";
 
@@ -72,7 +99,7 @@ bool SpatialResolAna::Initialize() {
 
     _prev_iter_file = new TFile(_prev_iter_name.Data(), "READ");
     if (!_prev_iter_file->IsOpen()) {
-      std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
+      std::cerr << "ERROR! " << __func__ << std::endl;
       std::cerr << "File from previous iteration is not found" << std::endl;
       std::cerr << "File name: " << _prev_iter_name << std::endl;
       exit(1);
@@ -87,7 +114,7 @@ bool SpatialResolAna::Initialize() {
     }
     histo_prev->SetName("prev_hsto");
     if (!ProfilePRF(histo_prev, _prf_graph)) {
-      std::cerr << "ERROR! SpatialResolAna::Initialize()" << std::endl;
+      std::cerr << "ERROR! " << __func__  << std::endl;
       std::cerr << "PRF can not be profiled" << std::endl;
       exit(1);
     }
@@ -101,8 +128,8 @@ bool SpatialResolAna::Initialize() {
     auto uncertainty_graph = (TH1F*)_prev_iter_file->Get("resol_total");
 
     if (!_prf_function || !uncertainty_graph) {
-      std::cerr << "ERROR. SpatialResolAna::Initialize().";
-      std::cout << "PRF function or resolution is not specified" << std::endl;
+      std::cerr << "ERROR. " << __func__ ;
+      std::cerr << "PRF function or resolution is not specified" << std::endl;
       std::cerr << "Search in " << _prev_iter_name << std::endl;
       exit(1);
     }
@@ -1523,16 +1550,6 @@ bool SpatialResolAna::Draw() {
   c2.WaitPrimitive();
   return true;
 }
-
-int main(int argc, char** argv) {
-  auto ana = new SpatialResolAna(argc, argv);
-  if (!ana->Initialize())               return -1;
-  if (!ana->Loop(ana->GetEventList()))  return -1;
-  if (!ana->WriteOutput())              return -1;
-
-  return 0;
-}
-
 
 //******************************************************************************
 TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {

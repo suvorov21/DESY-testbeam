@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <unistd.h>
+//#include <unistd.h>
 #include <cstdlib>
 
 #include "TROOT.h"
@@ -7,7 +7,7 @@
 #include "AnalysisBase.hxx"
 
 //******************************************************************************
-AnalysisBase::AnalysisBase(int argc, char** argv) :
+AnalysisBase::AnalysisBase() :
   _clustering(nullptr),
   _file_in_name(""),
   _file_out_name(""),
@@ -20,9 +20,6 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _file_in(nullptr),
   _file_out(nullptr),
   _chain(nullptr),
-  _prev_iter_name(TString("")),
-  _iteration(0),
-  _correction(false),
   _reconstruction(nullptr),
   _max_mult(6),
   _cut_gap(true),
@@ -42,81 +39,104 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
 {
 //******************************************************************************
 
-  // TODO redefine CLI.
-  // now written in an ugly way
-  // prevent copy-past between the daughter-parent classes
-  // read CLI
-  const struct option longopts[] = {
-    {"input",           no_argument,    nullptr,    'i'},         // 0
-    {"output",          no_argument,    nullptr,    'o'},         // 1
-    {"batch",           no_argument,    nullptr,    'b'},         // 2
-    {"verbose",         no_argument,    nullptr,    'v'},         // 3
-    {"rewrite",         no_argument,    nullptr,    'r'},         // 4
-    {"correction",      no_argument,    nullptr,    'c'},         // 5
-    {"start",           required_argument,      nullptr,     0},  // 6
-    {"end",             required_argument,      nullptr,     0},  // 7
+}
 
-    {"param",           required_argument, nullptr,   0},         // 8
+std::string AnalysisBase::lookForOption(const std::string& argString,
+                          const std::string& nextValue,
+                          std::vector<std::string> optionList,
+                          std::string defaultValue) {
+  if (optionList.size() == 1)
+    optionList.emplace_back("");
 
-    {"prev",            required_argument, nullptr,   0},         // 9
+  // "normal" regime option_value
+  if (argString == optionList[0] || argString == optionList[1])
+    return nextValue.empty() ? defaultValue : nextValue;
 
-    {"help",            no_argument,    nullptr,    'h'},         // 10
+  // short arg with the value just after
+  if (argString.substr(0, 2) == optionList[0])
+    return argString.substr(2);
 
-    {nullptr,                 0,              nullptr,      0}
-  };
+  // arg not found in CLI
+  return defaultValue;
+}
 
-  int index;
+bool AnalysisBase::ReadCLI(int argc, char **argv) {
+  if (argc < 2)
+    return false;
+
   char * pEnd;
-  // read CLI
-  for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drhst:cp:", longopts, &index);
-    if (c < 0) break;
-    switch (c) {
-      case 0  :
-        if (index == 5) _correction       =  true;
-        if (index == 6) _start_ID         =  (int)strtol(optarg, &pEnd, 10);
-        if (index == 7) _end_ID           =  (int)strtol(optarg, &pEnd, 10);
-        if (index == 8) _param_file_name  = optarg;
-        if (index == 9) _prev_iter_name   = optarg;
-        if (index == 10) help(argv[0]);
-        break;
-      case 'i' : _file_in_name     = optarg;       break;
-      case 'o' : _file_out_name    = optarg;       break;
-      case 't' : _iteration        = (int)strtol(optarg, &pEnd, 10); break;
-      case 'b' : _batch            = true;         break;
-      case 'v' : _verbose          = (int)strtol(optarg, &pEnd, 10); break;
-      case 'd' : _test_mode        = true;         break;
-      case 'p' : _param_file_name = optarg;        break;
-      case 'r' :
-        _overwrite        = true;
-        std::cout << "Output will be overwritten" << std::endl;
-        break;
-      case 'h' : help(argv[0]);                    break;
-      default : help(argv[0]);
+
+  for (auto i = 1; i < argc; ++i) {
+    std::string argString = argv[i];
+
+    // check if the CLI argument is valid
+    if (argString.length() < 2 || argString[0] != '-' ||
+        argString.length() > 2 && argString[1] != '-') {
+      continue;
+    }
+
+    // input file
+    _file_in_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
+                                  {"-i", "--input"}, _file_in_name.Data());
+
+    // output file
+    _file_out_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
+                                   {"-o", "--output"}, _file_out_name.Data());
+
+    // parameter file
+    _param_file_name = lookForOption(
+        argString, i == argc - 1 ? "" : argv[i + 1], {"-p", "--param"}, _param_file_name.Data());
+
+    _verbose = (int)strtol(lookForOption(
+        argString, i == argc - 1 ? "" : argv[i + 1], {"-v", "--verbose"}, std::to_string(_verbose)).c_str(), &pEnd, 10);
+
+    _start_ID = (int)strtol(lookForOption(
+        argString, i == argc - 1 ? "" : argv[i + 1], {"-start"}, std::to_string(_start_ID)).c_str(), &pEnd, 10);
+
+    _end_ID = (int)strtol(lookForOption(
+        argString, i == argc - 1 ? "" : argv[i + 1], {"-end"}, std::to_string(_end_ID)).c_str(), &pEnd, 10);
+
+    // parse short triggers
+    if (argString[1] != '-') {
+      for (const auto & symbol : argString.substr(1)) {
+        switch (symbol) {
+        case 'b':
+          _batch = true;
+          break;
+        case 'd':
+          _test_mode = true;
+          break;
+        case 'r':
+          _overwrite = true;
+          std::cout << "Output will be overwritten" << std::endl;
+        default:
+          break;
+        }
+      }
+    }
+
+    // print usage
+    std::string helpOpt = lookForOption(
+        argString, "t", {"-h", "--help"}, "f");
+
+    if (helpOpt == "t") {
+      help(argv[0]);
+      exit(0);
     }
   }
 
-  if (_file_in_name == "") {
-    std::cerr << "ERROR. AnalysisBase::AnalysisBase. No input file specified" << std::endl;
-    exit(1);
-  }
-
-  if (_iteration == -1) {
-    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
-    std::cout << " Iteration should be defined as a input param" << std::endl;
-    exit(1);
-  }
-
-  if (!_batch)
-    _app = new TApplication("app", &argc, argv);
+  return true;
 }
 
 //******************************************************************************
-bool AnalysisBase::Initialize() {
+bool AnalysisBase::Initialize(int argc, char** argv) {
 //******************************************************************************
 
+  ReadCLI(argc, argv);
+  if (!_batch)
+    _app = new TApplication("app", &argc, argv);
   // WARNING
-  // A very dirty adoptation of angles
+  // A very dirty adaptation of angles
   CL_col = new Clustering(0., 0);
   CL_diag = new Clustering(units::a45, 1);
   CL_2by1 = new Clustering(units::a2, 2);
@@ -140,6 +160,16 @@ bool AnalysisBase::Initialize() {
   TString tree_name = "";
   TFile* file;
   TString filename = _file_in_name;
+
+  if (_file_in_name == "") {
+    std::cerr << "ERROR. " << __func__ << " No input file specified" << std::endl;
+    exit(1);
+  }
+  if (_file_out_name == "") {
+    std::cerr << "ERROR. " << __func__ << " No output file specified" << std::endl;
+    exit(1);
+  }
+
 
   // extract the name of the input ROOT file
   // in case of list input take the first ROOT file
@@ -775,20 +805,20 @@ bool AnalysisBase::ReadParamFile() {
 void AnalysisBase::help(const std::string& name) {
 //******************************************************************************
   std::cout << name << " usage\n" << std::endl;
-  std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
-  std::cout << "   -o <output_path>     : output files path" << std::endl;
+  std::cout << "   -i, --input <input_file>       : input file name with a path" << std::endl;
+  std::cout << "   -o, --output <output_path>     : output files name" << std::endl;
   std::cout << std::endl;
-  std::cout << "   --start     <i>      :start from event i" << std::endl;
-  std::cout << "   --end       <i>      :end with event i" << std::endl;
-  std::cout << "   -t <interation>      : iteration number" << std::endl;
-  std::cout << std::endl;
-  std::cout << "   --param, p  <file>   : parameter file to use" << std::endl;
-  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
+  std::cout << "   --start     <i>                :start from event i" << std::endl;
+  std::cout << "   --end       <i>                :end with event i" << std::endl;
+//  std::cout << "   -t <interation>      : iteration number" << std::endl;
+//  std::cout << std::endl;
+  std::cout << "   -p, -param  <file>   : parameter file to use" << std::endl;
+//  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
   std::cout << "   -b                   : run in batch mode" << std::endl;
   std::cout << "   -v <verbose_level>   : verbosity level" << std::endl;
   std::cout << "   -d                   : test mode. run over first 30 events" << std::endl;
-  std::cout << "   -h                   : print ROOT help" << std::endl;
-  std::cout << "   -m                   : print " << name << " help" << std::endl;
+  std::cout << "   -h, --help           : print help" << std::endl;
+//  std::cout << "   -m                   : print " << name << " help" << std::endl;
   exit(1);
 }
 
