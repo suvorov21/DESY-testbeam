@@ -308,9 +308,20 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_y[%i][10]/I", Nclusters)
                 );
 
-  if (_to_store_wf) _tree->Branch("pad_wf_q",
+  if (_to_store_wf)
+                _tree->Branch("pad_wf_q",
                 &_pad_wf_q,
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
+                );
+
+      _tree->Branch("pad_lenTr",
+                &_pad_lenTr,
+                TString::Format("_pad_lenTr[%i][10]/F", Nclusters)
+                );
+
+  _tree->Branch("cluster_lenTr",
+                &_cluster_lenTr,
+                TString::Format("_cluster_lenTr[%i]/F", Nclusters)
                 );
 
   // // WARNING TEMP
@@ -573,6 +584,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     // _cluster_av[colId]    = -999;
     _dEdx               = -999;
 
+    _cluster_lenTr[colId]     = -999;
+
     // WARNING TMP
     _fit_up[colId]        = -999.;
     _fit_bt[colId]        = -999.;
@@ -587,6 +600,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _pad_time[colId][padId] = -999;
       _pad_x[colId][padId] = -999;
       _pad_y[colId][padId] = -999;
+      _pad_lenTr[colId][padId] = -999;
+
 
       _wf_width[colId][padId] = -999;
       _wf_fwhm[colId][padId] = -999;
@@ -595,7 +610,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     //_pad_wf_t[colId][padId][nSmp] = -999;
     _pad_wf_q[colId][padId][nSmp] = -999;
 
-    	}
+      }
 
     }
 
@@ -748,7 +763,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
       //dEdx part
-    	pad_wf_v.clear();
+      pad_wf_v.clear();
 
       colQ+= pad->GetQ();
 
@@ -767,9 +782,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
         for (uint tz = 0; tz < geom::Nsamples; ++tz) {
-    	    _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
+          _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
         }
-    	}
+      }
       ++padId;
     } // loop over pads
     _clust_pos[clusterId] /= _charge[clusterId];
@@ -1037,7 +1052,48 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _resol_col_hist_except[clusterId]->Fill(_clust_pos[clusterId] - track_fit_y1);
   }
 
+//************ STEP before 6 ***************************************************
+
+    //fill vectors
+    std::vector<double> fitforLin_Y; fitforLin_Y.clear();
+    std::vector<double> fitforLin_X; fitforLin_X.clear();
+
+
+  for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
+    auto cluster = clusters[clusterId];
+    if (cluster->GetSize() == 1)
+      continue;
+    auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
+    int padId = 0;
+
+    for (auto pad:robust_pads) {
+      if (!pad)
+        continue;
+       if (padId > 9)
+        continue;
+
+      double center_pad_y = geom::GetYposPad(pad,
+                                             _invert,
+                                             _clustering->angle
+                                             );
+
+      double x = geom::GetXposPad(pad, _invert, _clustering->angle);
+      double track_fit_y    = fit->Eval(x);
+
+      double delta = center_pad_y - track_fit_y;
+
+      if (delta <= sqrt(pow(geom::dx,2)+pow(geom::dy,2))/2){
+        fitforLin_Y.push_back(track_fit_y);
+        fitforLin_X.push_back(x);
+
+      }
+    }
+
+  }
+
 // ************ STEP 6 *********************************************************
+
+  int trueIter = 0;
 
   for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
     auto cluster = clusters[clusterId];
@@ -1066,6 +1122,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       double track_fit_y    = fit->Eval(x);
 
+      double pad_x = geom::GetXposPad(pad, _invert);
+      double pad_y = geom::GetYposPad(pad, _invert);
+
       /// WARNING only 10 first pads are used
       if (padId > 9)
         continue;
@@ -1075,6 +1134,201 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _time[clusterId][padId]  = time;
       _dx[clusterId][padId]    = center_pad_y - track_fit_y;
       _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
+
+
+
+        double x0_pos = pad_x - (geom::dx*0.5);//dx = 0.01128
+        double x1_pos = pad_x + (geom::dx*0.5); //dx = 0.01128
+
+        double y0_pos = pad_y + (geom::dy*0.5); //dy = 0.01019
+        double y1_pos = pad_y - (geom::dy*0.5); //dy = 0.01019
+
+        //NEW COORDINATES
+        double x00_pos_n = (x0_pos*cos(_clustering->angle)) - (y1_pos*sin(_clustering->angle));
+        double x11_pos_n = (x1_pos*cos(_clustering->angle)) - (y0_pos*sin(_clustering->angle));
+
+        double x01_pos_n = (x0_pos*cos(_clustering->angle)) - (y0_pos*sin(_clustering->angle));
+        double x10_pos_n = (x1_pos*cos(_clustering->angle)) - (y1_pos*sin(_clustering->angle));
+
+        double y00_pos_n = y1_pos*cos(_clustering->angle) + x0_pos * sin(_clustering->angle);
+        double y01_pos_n = y0_pos*cos(_clustering->angle) + x0_pos * sin(_clustering->angle);
+        double y11_pos_n = y0_pos*cos(_clustering->angle) + x1_pos * sin(_clustering->angle);
+        double y10_pos_n = y1_pos*cos(_clustering->angle) + x1_pos * sin(_clustering->angle);
+
+        double len_diag_00_11 = sqrt(pow(x00_pos_n-x11_pos_n,2)+pow(y00_pos_n-y11_pos_n,2));
+
+
+
+      if (_dx[clusterId][padId] < len_diag_00_11/2){
+
+
+        TGraph *graph00_01 = new TGraph();
+        TGraph *graph01_11 = new TGraph();
+        TGraph *graph11_10 = new TGraph();
+        TGraph *graph10_00 = new TGraph();
+
+        TGraph *graph_linF = new TGraph();
+
+        graph00_01->SetPoint(graph00_01->GetN(), x00_pos_n, y00_pos_n);
+        graph00_01->SetPoint(graph00_01->GetN(), x01_pos_n, y01_pos_n);
+
+        graph01_11->SetPoint(graph01_11->GetN(), x01_pos_n, y01_pos_n);
+        graph01_11->SetPoint(graph01_11->GetN(), x11_pos_n, y11_pos_n);
+
+        graph11_10->SetPoint(graph11_10->GetN(), x11_pos_n, y11_pos_n);
+        graph11_10->SetPoint(graph11_10->GetN(), x10_pos_n, y10_pos_n);
+
+        graph10_00->SetPoint(graph10_00->GetN(), x10_pos_n, y10_pos_n);
+        graph10_00->SetPoint(graph10_00->GetN(), x00_pos_n, y00_pos_n);
+
+
+        int secIter = trueIter - 1;
+        if (padId == 0) secIter = trueIter+1;
+
+        graph_linF->SetPoint(graph_linF->GetN(), fitforLin_X[trueIter], fitforLin_Y[trueIter]);
+        graph_linF->SetPoint(graph_linF->GetN(), fitforLin_X[secIter], fitforLin_Y[secIter]);
+
+        graph00_01->Fit("pol1","Q");
+        graph01_11->Fit("pol1","Q");
+        graph11_10->Fit("pol1","Q");
+        graph10_00->Fit("pol1","Q");
+
+        graph_linF->Fit("pol1","Q");
+
+
+        TF1* fit00_01 = (TF1*)graph00_01->GetFunction("pol1");
+        TF1* fit01_11 = (TF1*)graph01_11->GetFunction("pol1");
+        TF1* fit11_10 = (TF1*)graph11_10->GetFunction("pol1");
+        TF1* fit10_00 = (TF1*)graph10_00->GetFunction("pol1");
+
+        TF1* fit_Lin = (TF1*)graph_linF->GetFunction("pol1");
+
+
+        double A_00_01 = fit00_01->GetParameter(1);
+        double B_00_01 = fit00_01->GetParameter(0);
+
+        double A_01_11 = fit01_11->GetParameter(1);
+        double B_01_11 = fit01_11->GetParameter(0);
+
+        double A_11_10 = fit11_10->GetParameter(1);
+        double B_11_10 = fit11_10->GetParameter(0);
+
+        double A_10_00 = fit10_00->GetParameter(1);
+        double B_10_00 = fit10_00->GetParameter(0);
+
+
+        double A = fit_Lin->GetParameter(1);
+        double B = fit_Lin->GetParameter(0);
+
+
+        double Xintersect_00_01 = (B_00_01 - B)/(A - A_00_01);
+        double Xintersect_01_11 = (B_01_11 - B)/(A - A_01_11);
+        double Xintersect_11_10 = (B_11_10 - B)/(A - A_11_10);
+        double Xintersect_10_00 = (B_10_00 - B)/(A - A_10_00);
+
+        double Yintersect_00_01 = A*Xintersect_00_01 + B;
+       //Double_t Yintersect_00_01_eval = fit->Eval(Xintersect_00_01);
+        double Yintersect_01_11 = A*Xintersect_01_11 + B;
+       //Double_t Yintersect_01_11_eval = fit->Eval(Xintersect_01_11);
+        double Yintersect_11_10 = A*Xintersect_11_10 + B;
+       //Double_t Yintersect_11_10_eval = fit->Eval(Xintersect_11_10);
+        double Yintersect_10_00 = A*Xintersect_10_00 + B;
+       //Double_t Yintersect_10_00_eval = fit->Eval(Xintersect_10_00);
+
+        double leng_01_11_11_10 = sqrt(pow(Xintersect_01_11-Xintersect_11_10,2)+pow(Yintersect_01_11-Yintersect_11_10,2)); //UR
+        double leng_01_11_10_00 = sqrt(pow(Xintersect_01_11-Xintersect_10_00,2)+pow(Yintersect_01_11-Yintersect_10_00,2)); //UD
+        double leng_00_01_11_10 = sqrt(pow(Xintersect_00_01-Xintersect_11_10,2)+pow(Yintersect_00_01-Yintersect_11_10,2)); //LR
+        double leng_00_01_10_00 = sqrt(pow(Xintersect_00_01-Xintersect_10_00,2)+pow(Yintersect_00_01-Yintersect_10_00,2)); //LD
+
+        bool UR = 1;
+        bool UD = 1;
+        bool LR = 1;
+        bool LD = 1;
+
+        double XborderL = x11_pos_n;
+        double XborderR = x01_pos_n;
+        double YborderL = y11_pos_n;
+        double YborderR = y01_pos_n;
+
+        if (x01_pos_n < x11_pos_n){
+          XborderL = x01_pos_n;
+          XborderR = x11_pos_n;
+        }
+
+        if (y01_pos_n < y11_pos_n){
+          YborderL = y01_pos_n;
+          YborderR = y11_pos_n;
+        }
+
+        if (!(Xintersect_01_11 >= XborderL && Xintersect_01_11 <= XborderR)){ UD = 0; UR = 0;}
+        if (!(Yintersect_01_11 >= YborderL && Yintersect_01_11 <= YborderR)){ UD = 0; UR = 0;}
+
+
+        XborderL = x11_pos_n;
+        XborderR = x10_pos_n;
+        YborderL = y11_pos_n;
+        YborderR = y10_pos_n;
+
+        if (x10_pos_n < x11_pos_n){
+          XborderL = x10_pos_n;
+          XborderR = x11_pos_n;
+        }
+
+        if (y10_pos_n < y11_pos_n){
+          YborderL = y10_pos_n;
+          YborderR = y11_pos_n;
+        }
+
+        if (!(Xintersect_11_10 >= XborderL && Xintersect_11_10 <= XborderR)) { LR = 0; UR = 0;}
+        if (!(Yintersect_11_10 >= YborderL && Yintersect_11_10 <= YborderR)) { LR = 0; UR = 0;}
+
+
+        XborderL = x00_pos_n;
+        XborderR = x10_pos_n;
+        YborderL = y00_pos_n;
+        YborderR = y10_pos_n;
+
+        if (x10_pos_n < x00_pos_n){
+          XborderL = x10_pos_n;
+          XborderR = x00_pos_n;
+        }
+
+        if (y10_pos_n < y00_pos_n){
+          YborderL = y10_pos_n;
+          YborderR = y00_pos_n;
+        }
+
+        if (!(Xintersect_10_00 >= XborderL && Xintersect_10_00 <= XborderR)) { LD = 0; UD = 0;}
+        if (!(Yintersect_10_00 >= YborderL && Yintersect_10_00 <= YborderR)) { LD = 0; UD = 0;}
+
+
+        XborderL = x00_pos_n;
+        XborderR = x01_pos_n;
+        YborderL = y00_pos_n;
+        YborderR = y01_pos_n;
+
+        if (x01_pos_n < x00_pos_n){
+          XborderL = x01_pos_n;
+          XborderR = x00_pos_n;
+        }
+
+        if (y01_pos_n < y00_pos_n){
+          YborderL = y01_pos_n;
+          YborderR = y00_pos_n;
+        }
+
+        if (!(Xintersect_00_01 >= XborderL && Xintersect_00_01 <= XborderR)) { LD = 0; LR = 0;}
+        if (!(Yintersect_00_01 >= YborderL && Yintersect_00_01 <= YborderR)) { LD = 0; LR = 0;}
+
+        if (UR) _pad_lenTr[clusterId][padId] = leng_01_11_11_10;
+        if (UD) _pad_lenTr[clusterId][padId] = leng_01_11_10_00;
+        if (LR) _pad_lenTr[clusterId][padId] = leng_00_01_11_10;
+        if (LD) _pad_lenTr[clusterId][padId] = leng_00_01_10_00;
+
+      _cluster_lenTr[clusterId] = _pad_lenTr[clusterId][padId];
+      ++trueIter;
+
+    }
 
       if (_verbose >= v_prf) {
         std::cout << "PRF fill\t" << _dx[clusterId][padId];
@@ -1109,6 +1363,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       // robust_pads are assumed sorted!!
       ++padId;
     }
+
   } // loop over columns
   _sw_partial[4]->Stop();
   for (int i = 0; i < Nclusters; ++i)

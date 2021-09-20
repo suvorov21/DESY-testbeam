@@ -133,6 +133,12 @@ class SpatialResolAna: public AnalysisBase {
 
   //Int_t _pad_wf_t[Nclusters][10][520];
   Int_t _pad_wf_q[Nclusters][10][520];
+  //Track length per pad
+  Float_t _pad_lenTr[Nclusters][10];
+  //Track length per cluster
+  Float_t _cluster_lenTr[Nclusters];
+
+
 
   /** Histograms **/
   /** Pad response function block **/
