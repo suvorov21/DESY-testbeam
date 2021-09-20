@@ -264,6 +264,9 @@ class AnalysisBase {
   /// Wether to store the WFs
   bool _to_store_wf;
 
+    /// Wether to store the track length per pad
+  bool _calc_pad_len;
+
   /// Time control system
   TApplication* _app;
   TStopwatch* _sw_event;

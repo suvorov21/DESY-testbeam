@@ -313,17 +313,17 @@ bool SpatialResolAna::Initialize() {
                 &_pad_wf_q,
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
                 );
-
-      _tree->Branch("pad_lenTr",
+  if (_calc_pad_len){
+                _tree->Branch("pad_lenTr",
                 &_pad_lenTr,
                 TString::Format("_pad_lenTr[%i][10]/F", Nclusters)
                 );
 
-  _tree->Branch("cluster_lenTr",
+                _tree->Branch("cluster_lenTr",
                 &_cluster_lenTr,
                 TString::Format("_cluster_lenTr[%i]/F", Nclusters)
                 );
-
+  }
   // // WARNING TEMP
   // _tree->Branch("fit_up",
   //               &_fit_up,
@@ -1058,6 +1058,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     std::vector<double> fitforLin_Y; fitforLin_Y.clear();
     std::vector<double> fitforLin_X; fitforLin_X.clear();
 
+if (_calc_pad_len){
 
   for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
     auto cluster = clusters[clusterId];
@@ -1090,7 +1091,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     }
 
   }
-
+}
 // ************ STEP 6 *********************************************************
 
   int trueIter = 0;
@@ -1136,7 +1137,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
 
 
-
+  if (_calc_pad_len){
         double x0_pos = pad_x - (geom::dx*0.5);//dx = 0.01128
         double x1_pos = pad_x + (geom::dx*0.5); //dx = 0.01128
 
@@ -1329,7 +1330,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       ++trueIter;
 
     }
-
+  }
       if (_verbose >= v_prf) {
         std::cout << "PRF fill\t" << _dx[clusterId][padId];
         std::cout << "\t" << _qfrac[clusterId][padId];
