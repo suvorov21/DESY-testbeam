@@ -308,11 +308,17 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_y[%i][10]/I", Nclusters)
                 );
 
-  if (_to_store_wf)
+  if (_to_store_wf){
                 _tree->Branch("pad_wf_q",
                 &_pad_wf_q,
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
                 );
+
+                _tree->Branch("cluster_WF_q",
+                &_cluster_WF_q,
+                TString::Format("_cluster_WF_q[%i]/I", Nclusters)
+                );
+  }
   if (_calc_pad_len){
                 _tree->Branch("pad_lenTr",
                 &_pad_lenTr,
@@ -585,6 +591,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _dEdx               = -999;
 
     _cluster_lenTr[colId]     = -999;
+    _cluster_WF_q[colId]        = -999.;
 
     // WARNING TMP
     _fit_up[colId]        = -999.;
@@ -679,7 +686,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     std::cout << "start cluster fit" << std::endl;
 
   std::vector <double> QsegmentS; QsegmentS.clear();
-  std::vector <int> pad_wf_v; //WF
+  //std::vector <int> pad_wf_v; //WF
 
   _m_mean = 0;
   auto n = 0;
@@ -703,6 +710,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     int colQ = 0;
     int padId = 0;
+    int all_wf[geom::Nsamples] = {0};
 
     auto pad_id = -1;
     for (auto pad:robust_pads) {
@@ -763,7 +771,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
       //dEdx part
-      pad_wf_v.clear();
+      //pad_wf_v.clear();
 
       colQ+= pad->GetQ();
 
@@ -780,13 +788,29 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
         // pad_wf_v = pad->GetWF_v();
 
-
         for (uint tz = 0; tz < geom::Nsamples; ++tz) {
           _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
+          if(_pad_wf_q[clusterId][padId][tz] < -250) continue;
+          all_wf[tz] += _pad_wf_q[clusterId][padId][tz];
         }
       }
       ++padId;
     } // loop over pads
+
+
+    if (_to_store_wf){
+      Int_t max  = 0;
+      Int_t max_x  = 0;
+
+        for (uint tz = 0; tz < geom::Nsamples; ++tz) {
+               if(max < all_wf[tz]){ max = all_wf[tz]; max_x = tz;}
+      }
+
+
+      _cluster_WF_q[clusterId] = max;
+      //_cluster_WF_t[clusterId] = max_x;
+    }
+    
     _clust_pos[clusterId] /= _charge[clusterId];
     _x[clusterId] = cluster->GetX();
 
@@ -1326,7 +1350,9 @@ if (_calc_pad_len){
         if (LR) _pad_lenTr[clusterId][padId] = leng_00_01_11_10;
         if (LD) _pad_lenTr[clusterId][padId] = leng_00_01_10_00;
 
-      _cluster_lenTr[clusterId] = _pad_lenTr[clusterId][padId];
+      if (_cluster_lenTr[clusterId] < 0) _cluster_lenTr[clusterId] = _pad_lenTr[clusterId][padId];
+      if (_cluster_lenTr[clusterId] >= 0) _cluster_lenTr[clusterId] += _pad_lenTr[clusterId][padId];
+
       ++trueIter;
 
     }

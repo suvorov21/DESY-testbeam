@@ -130,9 +130,10 @@ class SpatialResolAna: public AnalysisBase {
   /// Waveform width at half maximum
   Int_t _wf_fwhm[Nclusters][10];
 
-
   //Int_t _pad_wf_t[Nclusters][10][520];
   Int_t _pad_wf_q[Nclusters][10][520];
+  // Max of the summed WFs of each pad in the cluster
+  Int_t _cluster_WF_q[Nclusters];
   //Track length per pad
   Float_t _pad_lenTr[Nclusters][10];
   //Track length per cluster
