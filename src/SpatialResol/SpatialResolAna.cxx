@@ -55,12 +55,12 @@ bool SpatialResolAna::Initialize(int argc, char** argv) {
   std::cout << "***   Spatial resolution analysis    ****" << std::endl;
   std::cout << "*****************************************" << std::endl;
 
+  AnalysisBase::Initialize(argc, argv);
+
   std::cout << "Batch mode    :   " << _batch         << std::endl;
   std::cout << "Verbosity     :   " << _verbose       << std::endl;
   std::cout << "Iteration     :   " << _iteration     << std::endl;
-
-
-  AnalysisBase::Initialize(argc, argv);
+  std::cout << "Debug         :   " << _test_mode     << std::endl;
 
   std::cout << "Initializing spatial resolution ana......";
 

@@ -69,12 +69,6 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
   for (auto i = 1; i < argc; ++i) {
     std::string argString = argv[i];
 
-    // check if the CLI argument is valid
-    if (argString.length() < 2 || argString[0] != '-' ||
-        argString.length() > 2 && argString[1] != '-') {
-      continue;
-    }
-
     // input file
     _file_in_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
                                   {"-i", "--input"}, _file_in_name.Data());
@@ -97,7 +91,7 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
         argString, i == argc - 1 ? "" : argv[i + 1], {"-end"}, std::to_string(_end_ID)).c_str(), &pEnd, 10);
 
     // parse short triggers
-    if (argString[1] != '-') {
+    if (argString[1] != '-' && argString[0] == '-') {
       for (const auto & symbol : argString.substr(1)) {
         switch (symbol) {
         case 'b':
@@ -328,7 +322,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
-          auto hit = new THit(x, y);
+          auto hit = new THit(35-x, y);
           // std::vector<int> adc;
           auto Qmax = -1;
           auto Tmax = -1;
