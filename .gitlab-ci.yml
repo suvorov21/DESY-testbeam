@@ -45,6 +45,7 @@ build_tests:
 clang:
     stage: test
     before_script:
+      - git submodule update --init --recursive
       - yum install -y llvm-toolset-7-clang-tools-extra
       - . /opt/rh/llvm-toolset-7/enable
       - yum install -y llvm-toolset-7-clang.x86_64
