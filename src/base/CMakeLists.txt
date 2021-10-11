@@ -27,4 +27,4 @@ target_link_libraries(TBase TRawEvent)
 
 add_custom_command(TARGET TBase POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy
-                   ${CMAKE_CURRENT_BINARY_DIR}/DataStorage/libEventDict_rdict.pcm ${CMAKE_CURRENT_BINARY_DIR}/../)
+                   ${CMAKE_CURRENT_BINARY_DIR}/DataStorage/libEventDict_rdict.pcm ${CMAKE_CURRENT_BINARY_DIR}/../../)
