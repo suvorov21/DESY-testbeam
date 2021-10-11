@@ -24,11 +24,6 @@ cmake ../src
 make
 ```
 
-Before running the code please specify the `SOFTDIR` environment variable that will point to the package root folder. You can do it with:
-```bash
-source setup.sh
-```
-
 Then the code can be run with e.g.
 ```bash
 ./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b

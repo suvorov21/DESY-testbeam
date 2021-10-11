@@ -15,6 +15,8 @@ stages:
 
 compile_gcc:
   stage: build
+  before_script:
+    - git submodule update --init --recursive
   script:
     - mkdir build; cd build
     - gcc -v > ../gcc.log
