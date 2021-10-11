@@ -1597,13 +1597,13 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
   htemp->SetTitle("");
   canv->Update();
   return canv;
-  //canv->WaitPrimitive();
-  /*delete htemp;
-  delete canv;
-
-  delete MM;
-  delete MMsel;
-  delete event3D;*/
 }
 
-
+//******************************************************************************
+void SpatialResolAna::help(const std::string& name) {
+//******************************************************************************
+  AnalysisBase::help(name);
+  std::cout << "   -t <iteration>       : iteration number" << std::endl;
+  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
+  std::cout << std::endl;
+}

@@ -139,7 +139,7 @@ bool AnalysisBase::Initialize(int argc, char** argv) {
 
   // Read parameter file
   if (!ReadParamFile()) {
-    std::cerr << "ERROR! AnalysisBase::Initialize(). Parameter file is not read" << std::endl;
+    std::cerr << "ERROR! " << __func__ << "(). Parameter file is not read" << std::endl;
     exit(1);
   }
 
@@ -156,11 +156,11 @@ bool AnalysisBase::Initialize(int argc, char** argv) {
   TString filename = _file_in_name;
 
   if (_file_in_name == "") {
-    std::cerr << "ERROR. " << __func__ << " No input file specified" << std::endl;
+    std::cerr << "ERROR. " << __func__ << "() No input file specified" << std::endl;
     exit(1);
   }
   if (_file_out_name == "") {
-    std::cerr << "ERROR. " << __func__ << " No output file specified" << std::endl;
+    std::cerr << "ERROR. " << __func__ << "() No output file specified" << std::endl;
     exit(1);
   }
 
@@ -322,7 +322,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
-          auto hit = new THit(35-x, y);
+          auto hit = new THit(x, y);
           // std::vector<int> adc;
           auto Qmax = -1;
           auto Tmax = -1;
@@ -413,7 +413,7 @@ bool AnalysisBase::ProcessEvent(const TEvent* event) {
 bool AnalysisBase::WriteOutput() {
 //******************************************************************************
   //if(_test_mode) return true;
-  if (!_file_out->IsOpen()){
+  if (!_file_out || !_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
   }
@@ -423,10 +423,10 @@ bool AnalysisBase::WriteOutput() {
 
   _file_out->cd();
 
-  auto size = static_cast<int>(_output_vector.size());
+  auto size = _output_vector.size();
   for (auto i = 0; i < size; ++i) {
     if (!_output_vector[i])
-      std::cerr << "ERROR! AnalysisBase::WriteOutput()  output object pointer is nullptr" << std::endl;
+      std::cerr << "ERROR! " << __func__ << "()  output object pointer is nullptr" << std::endl;
     _output_vector[i]->Write();
   }
 
@@ -669,15 +669,10 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) 
 //******************************************************************************
 bool AnalysisBase::ReadParamFile() {
 //******************************************************************************
-
   if (_param_file_name == ""){
-    char *homePath(getenv("SOFTDIR"));
-    if (getenv("SOFTDIR") == nullptr) {
-      std::cerr << "SOFTDIR varaible is not specified!" << std::endl;
-      std::cerr << "Consider sourcing setup.sh" << std::endl;
-      return false;
-    }
-    _param_file_name = std::string(homePath) + "/params/default.ini";
+    auto source = std::string(__FILE__);
+    auto found = source.find_last_of('/');
+    _param_file_name = source.substr(0, found) + "/../../params/default.ini";
   }
   std::cout << "*****************************************" << std::endl;
   std::cout << "Read parameters from " << _param_file_name << std::endl;
@@ -804,16 +799,11 @@ void AnalysisBase::help(const std::string& name) {
   std::cout << std::endl;
   std::cout << "   --start     <i>                :start from event i" << std::endl;
   std::cout << "   --end       <i>                :end with event i" << std::endl;
-//  std::cout << "   -t <interation>      : iteration number" << std::endl;
-//  std::cout << std::endl;
   std::cout << "   -p, -param  <file>   : parameter file to use" << std::endl;
-//  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
   std::cout << "   -b                   : run in batch mode" << std::endl;
   std::cout << "   -v <verbose_level>   : verbosity level" << std::endl;
   std::cout << "   -d                   : test mode. run over first 30 events" << std::endl;
   std::cout << "   -h, --help           : print help" << std::endl;
-//  std::cout << "   -m                   : print " << name << " help" << std::endl;
-  exit(1);
 }
 
 //******************************************************************************

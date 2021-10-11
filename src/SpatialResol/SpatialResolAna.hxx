@@ -24,6 +24,7 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event) override;
 
+  void help(const std::string& name) override;
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TRawEvent* event);
   /// Write output files (histos, trees)

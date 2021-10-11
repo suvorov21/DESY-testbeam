@@ -139,7 +139,7 @@ class AnalysisBase {
   /************************** Utilities functions *****************************/
 
   /// Print usage
-  static void help(const std::string& name);
+  virtual void help(const std::string& name);
 
   /// Dump progress in the command line
   virtual void CL_progress_dump(int eventID, int Nevents);
