@@ -19,6 +19,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+add_compile_options(-fprofile-arcs -ftest-coverage)
+add_link_options(-fprofile-arcs -ftest-coverage)
+
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 
 #---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
@@ -39,3 +42,6 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/src/base/)
 #---Create  a main program using the library
 add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx ${PROJECT_SOURCE_DIR}/src/SpatialResol/SpatialResolAna.cxx app/SpatialResolutionApp.cxx)
 target_link_libraries(SpatialResol.exe TRawEvent TBase)
+
+add_subdirectory(Google_tests)
+include_directories(Google_tests/lib/googletest/include)

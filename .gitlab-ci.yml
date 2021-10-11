@@ -7,13 +7,14 @@ stages:
   - test
   # test run with expected output from basic analysis
   - validation
+  # analyze test + validation coverage
+  - coverage
   # doxygen
   - docs
   - deploy
 
 compile_gcc:
   stage: build
-  before_script:
   script:
     - mkdir build; cd build
     - gcc -v > ../gcc.log
@@ -21,10 +22,8 @@ compile_gcc:
     - make 2>&1 | tee -a ../gcc.log
   artifacts:
     paths:
-      - ./build/SpatialResol.exe
-      - ./build/dEdx.exe
+      - build
       - gcc.log
-      - build/compile_commands.json
 
 build_tests:
   stage: build
@@ -52,6 +51,11 @@ clang:
     artifacts:
       paths:
         - clang-tidy.log
+
+Google_test:
+  stage: test
+  script:
+    - ./build/Google_tests/Google_Tests_run
 
 # run tests using the binary built before
 SpatialResol_raw_test:
@@ -111,6 +115,15 @@ Spatial_resol_slope_3by1:
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
 
+
+coverage:
+  stage: coverage
+  script:
+    - lcov --directory build/ --output-file main_coverage.info -c
+    - genhtml main_coverage.info --output-directory out
+  artifacts:
+    paths:
+      - out
 
 # documentation, etc.
 docs:
