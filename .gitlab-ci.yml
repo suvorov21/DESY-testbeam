@@ -17,6 +17,7 @@ stages:
 compile_gcc:
   stage: build
   before_script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
     - git submodule update --init --recursive
   script:
     - mkdir build; cd build
@@ -32,6 +33,7 @@ build_tests:
   stage: build
   before_script:
     - cd test/
+    - $COMMON_INSTALL_PREFIX/setup.sh
   script:
     - make all
   artifacts:
@@ -57,6 +59,8 @@ clang:
 
 Google_test:
   stage: test
+  before_script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
   script:
     - ./build/Google_tests/Google_Tests_run
 
@@ -64,6 +68,7 @@ Google_test:
 SpatialResol_raw_test:
   stage: validation
   before_script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
@@ -78,6 +83,7 @@ SpatialResol_raw_test:
 Spatial_resol_slope_diagonal:
   stage: validation
   before_script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
     - mv download input.root
@@ -92,6 +98,7 @@ Spatial_resol_slope_diagonal:
 Spatial_resol_slope_column:
   stage: validation
   before_script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
@@ -106,6 +113,7 @@ Spatial_resol_slope_column:
 Spatial_resol_slope_3by1:
   stage: validation
   before_script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
@@ -122,6 +130,7 @@ Spatial_resol_slope_3by1:
 coverage:
   stage: coverage
   script:
+    - $COMMON_INSTALL_PREFIX/setup.sh
     - lcov --directory build/ --output-file main_coverage.info -c
     - genhtml main_coverage.info --output-directory out
   artifacts:
