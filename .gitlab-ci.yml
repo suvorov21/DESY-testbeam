@@ -1,4 +1,5 @@
-image: rootproject/root:6.22.00-centos7
+#image: rootproject/root:6.22.00-centos7
+image: bars21/dev_hep_root:6.24.00gcc9
 
 stages:
   # build with
