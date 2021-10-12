@@ -167,8 +167,8 @@ coverage:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - . /opt/rh/devtoolset-7/enable
     - lcov --directory build/ --output-file main_coverage.info -c
-    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '7/*'
-    - genhtml main_coverage.info --output-directory out || 1
+    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '7/*' -o main_coverage_filtered.info
+    - genhtml main_coverage_filtered.info --output-directory out
   artifacts:
     paths:
       - out
