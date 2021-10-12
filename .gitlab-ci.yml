@@ -1,5 +1,5 @@
 #image: rootproject/root:6.22.00-centos7
-image: bars21/dev_hep_root:6.24.00gcc9
+image: bars21/dev_hep_root:6.24.00gcc7
 
 stages:
   # build with
@@ -76,7 +76,6 @@ SpatialResol_raw_test:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
@@ -96,7 +95,6 @@ Spatial_resol_slope_diagonal:
     - mv download input.root
     - sed -i '29s@.*@cluster = diag@' params/default.ini
     - sed -i '51s@.*@cluster_min  = 52@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
@@ -114,7 +112,6 @@ Spatial_resol_slope_column:
     - mv download input.root
     - sed -i '40s@.*@max_mult = 7@' params/default.ini
     - sed -i '34s@.*@invert  = 1@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
@@ -133,7 +130,6 @@ Spatial_resol_slope_3by1:
     - sed -i '29s@.*@cluster = 3by1@' params/default.ini
     - sed -i '40s@.*@max_mult = 6@' params/default.ini
     - sed -i '51s@.*@cluster_min  = 31@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
