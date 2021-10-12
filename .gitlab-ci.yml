@@ -150,11 +150,12 @@ coverage:
   stage: coverage
   before_script:
     - yum install -y lcov
+    - git submodule update --init --recursive
   script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - . /opt/rh/devtoolset-7/enable
     - lcov --directory build/ --output-file main_coverage.info -c
-    - genhtml main_coverage.info --output-directory out
+    - genhtml main_coverage.info --output-directory out || 1
   artifacts:
     paths:
       - out
