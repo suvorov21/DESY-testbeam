@@ -1137,9 +1137,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
   _tree->Fill();
 
-  for (auto cluster : clusters)
-    delete cluster;
-
   if (_store_event)
     _passed_events.push_back(event->GetID());
 

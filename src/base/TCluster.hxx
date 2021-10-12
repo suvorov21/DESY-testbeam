@@ -42,9 +42,9 @@ class TCluster {
 
   Int_t GetCharge() {return _charge;}
 
-  TCluster(){_x = -999; _y = -999; _y_error = -999;}
-  TCluster(THit* pad) {_hits.push_back(pad);}
-  virtual ~TCluster();
+  TCluster();
+  TCluster(THit* pad);
+  virtual ~TCluster() {;}
 
  private:
   std::vector<THit*> _hits;               // all hits.
