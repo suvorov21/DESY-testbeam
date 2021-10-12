@@ -130,6 +130,8 @@ Spatial_resol_slope_3by1:
 
 coverage:
   stage: coverage
+  before_script:
+    - yum install -y lcov
   script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - lcov --directory build/ --output-file main_coverage.info -c
