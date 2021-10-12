@@ -64,6 +64,10 @@ Google_test:
     - . $COMMON_INSTALL_PREFIX/setup.sh
   script:
     - ./build/Google_tests/Google_Tests_run
+  artifacts:
+    paths:
+      - test/SR_test.exe
+      - test/dEdx_test.exe
 
 # run tests using the binary built before
 SpatialResol_raw_test:
@@ -80,6 +84,10 @@ SpatialResol_raw_test:
     - ./test/SR_test.exe Spatial_test_iter0.root 400;
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
     - ./test/dEdx_test.exe Spatial_test_iter1.root
+  artifacts:
+    paths:
+      - test/SR_test.exe
+      - test/dEdx_test.exe
 
 Spatial_resol_slope_diagonal:
   stage: validation
@@ -95,6 +103,10 @@ Spatial_resol_slope_diagonal:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
+  artifacts:
+    paths:
+      - test/SR_test.exe
+      - test/dEdx_test.exe
 
 Spatial_resol_slope_column:
   stage: validation
@@ -110,6 +122,10 @@ Spatial_resol_slope_column:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
     - ./test/SR_test.exe Spatial_test_iter1.root 650;
+  artifacts:
+    paths:
+      - test/SR_test.exe
+      - test/dEdx_test.exe
 
 Spatial_resol_slope_3by1:
   stage: validation
@@ -126,6 +142,10 @@ Spatial_resol_slope_3by1:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
+  artifacts:
+    paths:
+      - test/SR_test.exe
+      - test/dEdx_test.exe
 
 
 coverage:
