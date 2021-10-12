@@ -145,6 +145,18 @@ Spatial_resol_slope_3by1:
     paths:
       - build
 
+Spatial_resol_inverted:
+  stage: validation
+  before_script:
+    - yum -y install wget
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
+    - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
+    - mv download input.root
+  script:
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./test/SR_test.exe Spatial_test_iter1.root 300;
 
 coverage:
   stage: coverage
@@ -155,6 +167,7 @@ coverage:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - . /opt/rh/devtoolset-7/enable
     - lcov --directory build/ --output-file main_coverage.info -c
+    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '7/*'
     - genhtml main_coverage.info --output-directory out || 1
   artifacts:
     paths:
