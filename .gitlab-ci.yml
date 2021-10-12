@@ -66,8 +66,7 @@ Google_test:
     - ./build/Google_tests/Google_Tests_run
   artifacts:
     paths:
-      - test/SR_test.exe
-      - test/dEdx_test.exe
+      - build
 
 # run tests using the binary built before
 SpatialResol_raw_test:
@@ -86,8 +85,7 @@ SpatialResol_raw_test:
     - ./test/dEdx_test.exe Spatial_test_iter1.root
   artifacts:
     paths:
-      - test/SR_test.exe
-      - test/dEdx_test.exe
+      - build
 
 Spatial_resol_slope_diagonal:
   stage: validation
@@ -105,8 +103,7 @@ Spatial_resol_slope_diagonal:
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
   artifacts:
     paths:
-      - test/SR_test.exe
-      - test/dEdx_test.exe
+      - build
 
 Spatial_resol_slope_column:
   stage: validation
@@ -124,8 +121,7 @@ Spatial_resol_slope_column:
     - ./test/SR_test.exe Spatial_test_iter1.root 650;
   artifacts:
     paths:
-      - test/SR_test.exe
-      - test/dEdx_test.exe
+      - build
 
 Spatial_resol_slope_3by1:
   stage: validation
@@ -144,8 +140,7 @@ Spatial_resol_slope_3by1:
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
   artifacts:
     paths:
-      - test/SR_test.exe
-      - test/dEdx_test.exe
+      - build
 
 
 coverage:
