@@ -564,7 +564,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   if (track_hits.empty())
     return false;
 
-  _ev = event->GetID();
+  _ev = (Int_t)event->GetID();
 
   _quality    = -999.;
   _mom        = -999.;
@@ -759,7 +759,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
         } // cross-talk cherry picking
       } // cross-talk block
 
-      _clust_pos[clusterId] += (float) pad->GetQ() * geom::GetYposPad(pad,
+      _clust_pos[clusterId] += (Float_t)pad->GetQ() * (Float_t)geom::GetYposPad(pad,
                                                                       _invert,
                                                                       _clustering->angle);
       _charge[clusterId] += pad->GetQ();
@@ -844,14 +844,14 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           ok = fitter_cluster.FitFCN();
           const ROOT::Fit::FitResult & result_cluster2 = fitter_cluster.Result();
           if (ok && r_bt > 0.04)
-            _fit_bt[clusterId] = result_cluster2.GetParams()[0];
+            _fit_bt[clusterId] = (Float_t)result_cluster2.GetParams()[0];
         }
       }
     } else {
       track_pos[clusterId] = _clust_pos[clusterId];
     }
 
-    cluster->SetY(track_pos[clusterId]);
+    cluster->SetY((Float_t)track_pos[clusterId]);
     cluster->SetCharge(_charge[clusterId]);
 
     if (_verbose >= v_fit_details) {
@@ -905,6 +905,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
   std::vector<TCluster*> clusters_clean;
 
+  clusters_clean.reserve(robust_clusters.size());
   for (auto cluster:robust_clusters)
     clusters_clean.push_back(cluster);
 
@@ -931,7 +932,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 //******************** STEP 3 **************************************************
 
-  TF1* fit = NULL;
+  TF1* fit = nullptr;
   fit = _fitter->FitTrack(clusters_clean);
   _track_fit_func = fit;
 
@@ -942,7 +943,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   if (fit && _do_full_track_fit)
     fit = (TF1*)fit->Clone();
 
-  _quality = fit->GetChisquare() / fit->GetNDF();
+  _quality = (Float_t)fit->GetChisquare() / fit->GetNDF();
   _chi2_track->Fill(_quality);
 
   if (_verbose >= v_analysis_steps)
@@ -960,8 +961,8 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     _ang_reco->Fill(fit->GetParameter(1));
 
     _mom        = mom;
-    _sin_alpha  = fit->GetParameter(1);
-    _offset     = fit->GetParameter(2);
+    _sin_alpha  = (Float_t)fit->GetParameter(1);
+    _offset     = (Float_t)fit->GetParameter(2);
   }
 
   if (_do_para_fit) {
@@ -1042,7 +1043,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     // fill SR
     _clust_pos[clusterId] = cluster->GetY();
-    _track_pos[clusterId] = track_fit_y;
+    _track_pos[clusterId] = (Float_t)track_fit_y;
     _residual[clusterId] = _clust_pos[clusterId] - track_fit_y;
     _residual_corr[clusterId] = _clust_pos[clusterId] - track_fit_y1;
 
@@ -1124,10 +1125,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     }
   } // loop over columns
   _sw_partial[4]->Stop();
-  for (int i = 0; i < Nclusters; ++i)
-    if (fit1[i] && _correction) {
-      delete fit1[i];
-      fit1[i] = NULL;
+  for (auto & i : fit1)
+    if (i && _correction) {
+      delete i;
+      i = nullptr;
     }
 
   if(_test_mode) this->DrawSelectionCan(event);
@@ -1138,7 +1139,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   _tree->Fill();
 
   if (_store_event)
-    _passed_events.push_back(event->GetID());
+    _passed_events.push_back((Int_t)event->GetID());
 
   return true;
 }
@@ -1324,8 +1325,8 @@ bool SpatialResolAna::WriteOutput() {
   auto tree = new TTree("EventTree", "");
   Int_t var = 0;
   tree->Branch("PassedEvents",     &var);
-  for (uint i = 0; i < _passed_events.size(); ++i) {
-    var = _passed_events[i];
+  for (int _passed_event : _passed_events) {
+    var = _passed_event;
     tree->Fill();
   }
   tree->Write("", TObject::kOverwrite);
@@ -1489,11 +1490,11 @@ bool SpatialResolAna::Draw() {
   std::cout << "Draw event " << _ev << std::endl;
   TCanvas c("c_SR", "c_SR", 800, 600);
   TCanvas c2("c_resid", "c_resid", 800, 0, 800, 600);
-  TGraphErrors* gr = new TGraphErrors();
-  TGraphErrors* gr_f = new TGraphErrors();
-  TGraphErrors* gr_c = new TGraphErrors();
-  TGraphErrors* gr_res_cl = new TGraphErrors();
-  TGraphErrors* gr_res_av = new TGraphErrors();
+  auto* gr = new TGraphErrors();
+  auto* gr_f = new TGraphErrors();
+  auto* gr_c = new TGraphErrors();
+  auto* gr_res_cl = new TGraphErrors();
+  auto* gr_res_av = new TGraphErrors();
   auto scale = 1.e3;
   for (auto colIt = 0; colIt < 70; ++colIt) {
     if (_clust_pos[colIt] == -999)
@@ -1557,7 +1558,7 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
   TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
                                           geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
-  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+  auto *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
 
   for (auto x = 0; x < geom::nPadx; ++x) {
     for (auto y = 0; y < geom::nPady; ++y) {
@@ -1579,7 +1580,7 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
     MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
   }
 
-  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  auto *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
   if (MM->Integral())

@@ -40,8 +40,8 @@ class SpatialResolAna: public AnalysisBase {
   TF1* InitializePRF(TString name, bool shift=false);
 
   /// Get mean and FWHM for the histo
-  Double_t GetFWHM(const TH1F* h, Double_t& mean);
-  Double_t GetFWHM(const TH1F* h);
+  static Double_t GetFWHM(const TH1F* h, Double_t& mean);
+  static Double_t GetFWHM(const TH1F* h);
 
   /// Draw the histograms of interest
   bool Draw();
