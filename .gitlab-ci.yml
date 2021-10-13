@@ -171,11 +171,10 @@ coverage:
     - . /opt/rh/devtoolset-7/enable
     - lcov --directory build/ --output-file main_coverage.info -c
     - lcov --remove main_coverage.info \
+      '/builds/t2k-beamtest/desy_testbeam/build/src/base/DataStorage/EventDict.cxx' \
       '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' \
       '/usr/local/include/*' \
-      '7/*' \
-      '/7/*' \
-      '/builds/t2k-beamtest/desy_testbeam/build/src/base/DataStorage/EventDict.cxx' \
+      '/opt/rh/devtoolset-7/root/usr/include/c++/7/*' \
       -o main_coverage_filtered.info
     - genhtml main_coverage_filtered.info --output-directory out
   artifacts:
