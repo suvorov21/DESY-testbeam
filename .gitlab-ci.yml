@@ -157,6 +157,9 @@ Spatial_resol_inverted:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000 --param params/vert.ini
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000 --param params/vert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
+  artifacts:
+    paths:
+      - build
 
 coverage:
   stage: coverage
@@ -167,7 +170,13 @@ coverage:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - . /opt/rh/devtoolset-7/enable
     - lcov --directory build/ --output-file main_coverage.info -c
-    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '7/*' -o main_coverage_filtered.info
+    - lcov --remove main_coverage.info \
+      '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' \
+      '/usr/local/include/*' \
+      '7/*' \
+      '/7/*' \
+      '/builds/t2k-beamtest/desy_testbeam/build/src/base/DataStorage/EventDict.cxx' \
+      -o main_coverage_filtered.info
     - genhtml main_coverage_filtered.info --output-directory out
   artifacts:
     paths:
