@@ -4,7 +4,6 @@
 #include "gtest/gtest.h"
 #include "AnalysisBase.hxx"
 
-
 TEST(Initialisation, ParamFileRead) {
   auto ana = new AnalysisBase();
   EXPECT_EQ(ana->ReadParamFile(), true);
@@ -21,4 +20,9 @@ TEST(Initialisation, CLIread) {
 
   auto ana = new AnalysisBase();
   EXPECT_EQ(ana->ReadCLI(argc, argv), true);
+}
+
+TEST(Initialisation, outputWrite) {
+  auto ana = new AnalysisBase();
+  EXPECT_EQ(ana->WriteOutput(), false);
 }

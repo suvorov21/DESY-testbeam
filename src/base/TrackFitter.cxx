@@ -14,20 +14,6 @@ TrackFitterBase::TrackFitterBase(TrackShape shape,
                                  _invert(invert),
                                  _shape(shape) {
 //******************************************************************************
-  // _circle_function_up = new TF1("circle_up",
-  //   "-sqrt([0]*[0] - TMath::Power(x+0.198 - [1] * [0], 2)) + [0] * sqrt(1-[1]*[1]) + [2]",
-  //   -0.5, 0.5);
-  // _circle_function_up->SetParName(0, "radius");
-  // _circle_function_up->SetParName(1, "sin(alpha)");
-  // _circle_function_up->SetParName(2, "target");
-
-  // _circle_function_dn = new TF1("circle_dn",
-  //   "sqrt([0]*[0] - TMath::Power(x+0.198 + [1] * [0], 2)) - [0] * sqrt(1-[1]*[1]) + [2]",
-  //   -0.5, 0.5);
-  // _circle_function_dn->SetParName(0, "radius");
-  // _circle_function_dn->SetParName(1, "sin(alpha)");
-  // _circle_function_dn->SetParName(2, "target");
-
   _circle_function = new TF1("circle",
     "-TMath::Sign(1, [0]) * sqrt(1./[0]*1./[0] - TMath::Power(x+0.198 - [1] * 1./[0], 2)) + 1./[0] * sqrt(1-[1]*[1]) + [2]",
     -0.5, 0.5);
@@ -37,13 +23,11 @@ TrackFitterBase::TrackFitterBase(TrackShape shape,
 }
 
 Double_t TrackFitterBase::FitCluster() {
-  std::cerr << "This is fitter template. Please, use a real fitter" << std::endl;
-  exit(1);
+  throw std::logic_error("This is fitter template. Please, use a real fitter");
 }
 
 TF1* TrackFitterBase::FitTrack() {
-  std::cerr << "This is fitter template. Please, use a real fitter" << std::endl;
-  exit(1);
+ throw std::logic_error("This is fitter template. Please, use a real fitter");
 }
 
 
@@ -118,8 +102,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
         PRF_tmp = _PRF_arr[colId];
 
       if (!PRF_tmp) {
-        std::cerr << "ERROR in TrackFitCern::FitCluster(). PRF is NULL" << std::endl;
-        exit(1);
+        throw std::logic_error("PRF is NULL");
       }
 
       double part = (a - PRF_tmp->Eval(center_pad_y - par[0]));

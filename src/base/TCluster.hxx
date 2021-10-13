@@ -36,14 +36,14 @@ class TCluster {
     return _hits.end();
   }
 
-  Float_t GetX() {return _x;}
-  Float_t GetY() {return _y;}
+  Float_t GetX() const {return _x;}
+  Float_t GetY() const {return _y;}
   Float_t GetYE() {return _y_error;}
 
-  Int_t GetCharge() {return _charge;}
+  Int_t GetCharge() const {return _charge;}
 
   TCluster();
-  TCluster(THit* pad);
+  explicit TCluster(THit* pad);
   virtual ~TCluster() {;}
 
  private:

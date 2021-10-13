@@ -387,12 +387,8 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_store_event)
       ++_selected;
 
-    // if (!_work_with_event_file) {
     delete _event;
     _event = nullptr;
-    // delete reco_event;
-    // reco_event = nullptr;
-    // }
   } // end of event loop
 
   if (_verbose == v_progress)
