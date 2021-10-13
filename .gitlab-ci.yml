@@ -154,8 +154,8 @@ Spatial_resol_inverted:
     - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
     - mv download input.root
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000 --param params/vert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000 --param params/vert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
 
 coverage:
