@@ -19,7 +19,7 @@ class TRawEvent : public TObject{
   std::vector <THit*>   GetHits()       const  {return fHits;}
   // setters
   void SetHits(const std::vector <THit*>& inhits )        {fHits = inhits;}
-  void SetID(Int_t var) {ID = var;}
+  virtual void SetID(Int_t var) {ID = var;}
 
   void AddHit(THit* hit) {fHits.push_back(hit);}
 

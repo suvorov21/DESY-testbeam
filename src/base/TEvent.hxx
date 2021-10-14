@@ -11,17 +11,17 @@ class TEvent: public TRawEvent {
  public:
   //ctor
   explicit TEvent() : TRawEvent() {;}
-  explicit TEvent(UInt_t var): TRawEvent(var){;}
+  explicit TEvent(Int_t var): TRawEvent(var){;}
   explicit TEvent(const TRawEvent* event) : TRawEvent(event) {;};
   // dtor
-  virtual ~TEvent() {;};
+  ~TEvent() override {;};
   // getters
   std::vector <THit*>   GetUsedHits()   const  {return fUsedHits;}
   std::vector <THit*>   GetUnusedHits() const  {return fUnusedHits;}
   // setters
   void SetUsedHits(const std::vector <THit*>& inhits )    {fUsedHits = inhits;}
   void SetUnusedHits(const std::vector <THit*>& inhits)   {fUnusedHits = inhits;}
-  void SetID(Int_t var) {ID = var;}
+  void SetID(Int_t var) override {ID = var;}
 
   void AddUsedHit(THit* hit)   {fUsedHits.push_back(hit);}
   void AddUnusedHit(THit* hit) {fUnusedHits.push_back(hit);}
@@ -31,8 +31,6 @@ class TEvent: public TRawEvent {
   std::vector <THit*>   fUsedHits;
   /// unused hits.
   std::vector <THit*>   fUnusedHits;
-
-
 };
 
 #endif
