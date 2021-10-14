@@ -170,7 +170,7 @@ coverage:
     - . /opt/rh/devtoolset-7/enable
   script:
     - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --html-details --html=coverage.html > coverage.xml
-    - wget https://coverage.codacy.com/get.sh
+    - wget --no-check-certificate https://coverage.codacy.com/get.sh
     - . get.sh report -r coverage.xml
   artifacts:
     paths:
