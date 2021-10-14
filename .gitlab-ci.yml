@@ -164,17 +164,34 @@ Spatial_resol_inverted:
 coverage:
   stage: coverage
   before_script:
-    - yum install -y lcov
+    - python3 -m pip install gcovr
     - git submodule update --init --recursive
-  script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - . /opt/rh/devtoolset-7/enable
-    - lcov --directory build/ --output-file main_coverage.info -c
-    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/build/src/base/DataStorage/EventDict.cxx' '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '/opt/rh/devtoolset-7/root/usr/include/c++/7/*' -o main_coverage_filtered.info
-    - genhtml main_coverage_filtered.info --output-directory out
+  script:
+    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --html-details --html=coverage.html > coverage.xml
   artifacts:
     paths:
-      - out
+      - coverage*
+    reports:
+      cobertura: coverage.xml
+      junit: report.xml
+
+
+#coverage:
+#  stage: coverage
+#  before_script:
+#    - yum install -y lcov
+#    - git submodule update --init --recursive
+#  script:
+#    - . $COMMON_INSTALL_PREFIX/setup.sh
+#    - . /opt/rh/devtoolset-7/enable
+#    - lcov --directory build/ --output-file main_coverage.info -c
+#    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/build/src/base/DataStorage/EventDict.cxx' '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '/opt/rh/devtoolset-7/root/usr/include/c++/7/*' -o main_coverage_filtered.info
+#    - genhtml main_coverage_filtered.info --output-directory out
+#  artifacts:
+#    paths:
+#      - out
 
 # documentation, etc.
 docs:
