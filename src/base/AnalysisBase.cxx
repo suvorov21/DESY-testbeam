@@ -316,7 +316,6 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     if (!_work_with_event_file) {
       // create TRawEvent from 3D array
-      delete _event;
       _event = new TRawEvent(EventList[eventID]);
 
       // Subtract the pedestal
@@ -374,10 +373,13 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _sw_partial[0]->Start(false);
 
+    // copy event to a child class to be filled with reconstruction
     auto reco_event = new TEvent(_event);
-
-    if (!_reconstruction->SelectEvent(reco_event))
+    if (!_reconstruction->SelectEvent(reco_event)) {
+      // in case of unsuccessful reconstruction clean the memory
+      delete reco_event;
       continue;
+    }
 
     _sw_partial[0]->Stop();
     _sw_partial[1]->Start(false);
@@ -387,10 +389,11 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     if (_store_event)
       ++_selected;
 
-    delete _event;
-    _event = nullptr;
+    // cleanup and go to next event
+    delete reco_event;
   } // end of event loop
 
+  // if progress bar is active --> go to the next line
   if (_verbose == v_progress)
     std::cout << std::endl;
 
@@ -401,8 +404,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 bool AnalysisBase::ProcessEvent(const TEvent* event) {
 //******************************************************************************
   (void)event;
-  std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
-  exit(1);
+  throw std::logic_error("Event processing should be defined in your analysis");
 }
 
 //******************************************************************************

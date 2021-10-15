@@ -14,7 +14,7 @@ class TEvent: public TRawEvent {
   explicit TEvent(Int_t var): TRawEvent(var){;}
   explicit TEvent(const TRawEvent* event) : TRawEvent(event) {;};
   // dtor
-  ~TEvent() override {;};
+  ~TEvent() override {;}
   // getters
   std::vector <THit*>   GetUsedHits()   const  {return fUsedHits;}
   std::vector <THit*>   GetUnusedHits() const  {return fUnusedHits;}

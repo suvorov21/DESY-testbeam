@@ -22,7 +22,21 @@ TEST(Initialisation, CLIread) {
   EXPECT_EQ(ana->ReadCLI(argc, argv), true);
 }
 
-TEST(Initialisation, outputWrite) {
+TEST(Initialisation, outputWriteErr) {
   auto ana = new AnalysisBase();
   EXPECT_EQ(ana->WriteOutput(), false);
+}
+
+TEST(InitialisationTest, baseProcessEvent) {
+  auto ana = new AnalysisBase();
+  auto event = new TEvent();
+  EXPECT_THROW(ana->ProcessEvent(event), std::logic_error);
+}
+
+TEST(Graphics, drawEvent) {
+  auto ana = new AnalysisBase();
+  auto event = new TEvent();
+  auto hit = new THit(10, 10, 200, 20);
+  event->AddUsedHit(hit);
+  EXPECT_NO_THROW(ana->DrawSelection(event));
 }
