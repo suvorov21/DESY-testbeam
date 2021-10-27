@@ -4,4 +4,4 @@
 	branch = tags/release-1.11.0
 [submodule "external/cpp-generic-toolbox"]
 	path = external/cpp-generic-toolbox
-	url = git@github.com:suvorov21/cpp-generic-toolbox.git
+	url = https://github.com/suvorov21/cpp-generic-toolbox.git
