@@ -46,8 +46,8 @@ bool SpatialResolAna::ReadCLI(int argc, char **argv) {
 //******************************************************************************
   AnalysisBase::ReadCLI(argc, argv);
 
-  _prev_iter_name = _clParser.getOptionVal<TString>("prev_file", "");
-  _iteration = _clParser.getOptionVal<int>("iter", _iteration);
+  _prev_iter_name = _clParser.getOptionVal<TString>("prev_file", "", 0);
+  _iteration = _clParser.getOptionVal<int>("iter", _iteration, 0);
   _correction = _clParser.isOptionTriggered("corr");
 
   return true;
