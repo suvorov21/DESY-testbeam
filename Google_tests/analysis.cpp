@@ -13,13 +13,19 @@ TEST(Initialisation, CLIread) {
   auto argc = 2;
   char argv1[] = "main";
   char argv2[] = "test";
+  char argv3[] = "-v4";
 
-  char* argv[2];
-  argv[0] =  argv1;
-  argv[1] =  argv2;
+  char* argv_test1[2];
+  argv_test1[0] =  argv1;
+  argv_test1[1] =  argv2;
+
+  char* argv_test2[2];
+  argv_test2[0] =  argv1;
+  argv_test2[1] =  argv3;
 
   auto ana = new AnalysisBase();
-  EXPECT_EQ(ana->ReadCLI(argc, argv), true);
+  EXPECT_THROW(ana->ReadCLI(argc, argv_test1), std::logic_error);
+  EXPECT_EQ(ana->ReadCLI(argc, argv_test2), true);
 }
 
 TEST(Initialisation, outputWriteErr) {

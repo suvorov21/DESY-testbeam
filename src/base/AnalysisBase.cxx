@@ -68,10 +68,10 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
   }
 
 
-  _file_in_name = _clParser.getOptionVal<TString>("input_file", "");
-  _file_out_name = _clParser.getOptionVal<TString>("output_file", "");
+  _file_in_name = _clParser.getOptionVal<TString>("input_file", "", 0);
+  _file_out_name = _clParser.getOptionVal<TString>("output_file", "", 0);
 
-  _param_file_name = _clParser.getOptionVal<TString>("param_file", "");
+  _param_file_name = _clParser.getOptionVal<TString>("param_file", "", 0);
   _verbose = _clParser.getOptionVal<int>("verbosity", _verbose, 0);
 
   _start_ID = _clParser.getOptionVal<int>("start_id", _start_ID, 0);
