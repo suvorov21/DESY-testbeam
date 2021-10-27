@@ -2,3 +2,6 @@
 	path = Google_tests/lib
 	url = https://github.com/google/googletest.git
 	branch = tags/release-1.11.0
+[submodule "external/cpp-generic-toolbox"]
+	path = external/cpp-generic-toolbox
+	url = git@github.com:suvorov21/cpp-generic-toolbox.git

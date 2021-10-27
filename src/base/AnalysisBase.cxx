@@ -4,6 +4,8 @@
 
 #include "TROOT.h"
 
+#include <GenericToolbox.h>
+
 #include "AnalysisBase.hxx"
 
 //******************************************************************************
@@ -85,10 +87,10 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
         argString, i == argc - 1 ? "" : argv[i + 1], {"-v", "--verbose"}, std::to_string(_verbose)).c_str(), &pEnd, 10);
 
     _start_ID = (int)strtol(lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"-start"}, std::to_string(_start_ID)).c_str(), &pEnd, 10);
+        argString, i == argc - 1 ? "" : argv[i + 1], {"--start"}, std::to_string(_start_ID)).c_str(), &pEnd, 10);
 
     _end_ID = (int)strtol(lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"-end"}, std::to_string(_end_ID)).c_str(), &pEnd, 10);
+        argString, i == argc - 1 ? "" : argv[i + 1], {"--end"}, std::to_string(_end_ID)).c_str(), &pEnd, 10);
 
     // parse short triggers
     if (argString[1] != '-' && argString[0] == '-') {
@@ -299,6 +301,9 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
   int denimonator = 100;
   if (N_events < 100)
     denimonator = N_events;
+
+  // Event loop
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1);
   for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
     if (_verbose >= v_event_number) {
       std::cout << "*************************************" << std::endl;
@@ -392,6 +397,9 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     // cleanup and go to next event
     delete reco_event;
   } // end of event loop
+  std::cout << "time" << std::endl;
+  std::cout << GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1) << std::endl;
+
 
   // if progress bar is active --> go to the next line
   if (_verbose == v_progress)
@@ -828,32 +836,9 @@ bool AnalysisBase::ChainInputFiles(const TString& tree_name) {
 }
 
 //******************************************************************************
-void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set) {
-//******************************************************************************
-    vm_usage     = 0.0;
-    resident_set = 0.0;
-
-    // the two fields we want
-    unsigned long vsize;
-    long rss;
-    {
-        std::string ignore;
-        std::ifstream ifs("/proc/self/stat", std::ios_base::in);
-        ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
-                >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
-                >> ignore >> ignore >> vsize >> rss;
-    }
-
-    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
-    vm_usage = (double)vsize / 1024.0;
-    resident_set = (double)rss * (double)page_size_kb;
-}
-
-//******************************************************************************
 void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
 //******************************************************************************
-  double real, virt;
-  process_mem_usage(virt, real);
+  auto mem = GenericToolbox::getProcessMemoryUsage();
   double CPUtime  = _sw_event->CpuTime();
   double REALtime = _sw_event->RealTime();
   int m, s;
@@ -868,7 +853,7 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  std::cout << "\t Memory  " <<  real << "\t" << virt;
+  std::cout << "\t Memory  " <<  mem / 1048576 << " " << "MB";
   std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed CPU " << CPUtime << " ms/event";

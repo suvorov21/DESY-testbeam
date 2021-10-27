@@ -14,6 +14,7 @@ stages:
   - docs
   - deploy
 
+# build stage
 compile_gcc:
   stage: build
   before_script:
@@ -43,7 +44,7 @@ build_tests:
       - test/SR_test.exe
       - test/dEdx_test.exe
 
-
+# tests
 clang:
     stage: test
     before_script:
@@ -71,7 +72,7 @@ Google_test:
     paths:
       - build
 
-# run tests using the binary built before
+# validation
 SpatialResol_raw_test:
   stage: validation
   before_script:
@@ -98,11 +99,9 @@ Spatial_resol_slope_diagonal:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
     - mv download input.root
-    - sed -i '29s@.*@cluster = diag@' params/default.ini
-    - sed -i '51s@.*@cluster_min  = 52@' params/default.ini
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/diag.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/diag.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
   artifacts:
     paths:
@@ -116,11 +115,9 @@ Spatial_resol_slope_column:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
-    - sed -i '40s@.*@max_mult = 7@' params/default.ini
-    - sed -i '34s@.*@invert  = 1@' params/default.ini
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 650;
   artifacts:
     paths:
@@ -138,8 +135,8 @@ Spatial_resol_slope_3by1:
     - sed -i '40s@.*@max_mult = 6@' params/default.ini
     - sed -i '51s@.*@cluster_min  = 31@' params/default.ini
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
   artifacts:
     paths:
@@ -154,13 +151,14 @@ Spatial_resol_inverted:
     - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
     - mv download input.root
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000 --param params/vert.ini
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000 --param params/vert.ini
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/vert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/vert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
   artifacts:
     paths:
       - build
 
+# coverage & docs
 coverage:
   stage: coverage
   before_script:
@@ -177,21 +175,6 @@ coverage:
       - coverage*
     reports:
       cobertura: coverage.xml
-
-#coverage:
-#  stage: coverage
-#  before_script:
-#    - yum install -y lcov
-#    - git submodule update --init --recursive
-#  script:
-#    - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
-#    - lcov --directory build/ --output-file main_coverage.info -c
-#    - lcov --remove main_coverage.info '/builds/t2k-beamtest/desy_testbeam/build/src/base/DataStorage/EventDict.cxx' '/builds/t2k-beamtest/desy_testbeam/Google_tests/*' '/usr/local/include/*' '/opt/rh/devtoolset-7/root/usr/include/c++/7/*' -o main_coverage_filtered.info
-#    - genhtml main_coverage_filtered.info --output-directory out
-#  artifacts:
-#    paths:
-#      - out
 
 # documentation, etc.
 docs:

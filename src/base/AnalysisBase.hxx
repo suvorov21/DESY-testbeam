@@ -144,9 +144,6 @@ class AnalysisBase {
   /// Dump progress in the command line
   virtual void CL_progress_dump(int eventID, int Nevents);
 
-  /// Dump RAM usage in CL
-  static void process_mem_usage(double& vm_usage, double& resident_set);
-
   /// Set a vector of events that will be processed.
   /** Used in the analysis with few iterations. After the first iteration
   * the list of files that passed the selection is established and
