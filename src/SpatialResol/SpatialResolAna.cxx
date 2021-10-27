@@ -22,28 +22,33 @@ SpatialResolAna::SpatialResolAna():
   _prf_scale_axis(nullptr),
   _x_scan_axis(nullptr) {
 //******************************************************************************
+  _clParser.addOption("prev_file",
+                      {"--prev"},
+                      "File from previous iteration",
+                      1
+                      );
+
+  _clParser.addOption("iter",
+                      {"-t", "--iter"},
+                      "Iteration number",
+                      1
+                      );
+
+  _clParser.addTriggerOption("corr",
+                             {"-c", "--corr"},
+                             "Whether to apply correction"
+                            );
 }
+
 
 //******************************************************************************
 bool SpatialResolAna::ReadCLI(int argc, char **argv) {
 //******************************************************************************
-  if (!AnalysisBase::ReadCLI(argc, argv))
-    return false;
-  char * pEnd;
+  AnalysisBase::ReadCLI(argc, argv);
 
-  for (auto i = 1; i < argc; ++i) {
-    std::string argString = argv[i];
-    _prev_iter_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
-                                    {"--prev"}, _prev_iter_name.Data());
-    _iteration = (int)strtol(lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"-t", "--iter"}, std::to_string(_iteration)).c_str(), &pEnd, 10);
-
-    std::string corrOpt = lookForOption(
-        argString, "t", {"-c", "--corr"}, "f");
-
-    if (corrOpt == "t")
-      _correction = true;
-  }
+  _prev_iter_name = _clParser.getOptionVal<TString>("prev_file", "");
+  _iteration = _clParser.getOptionVal<int>("iter", _iteration);
+  _correction = _clParser.isOptionTriggered("corr");
 
   return true;
 }
@@ -1189,7 +1194,7 @@ bool SpatialResolAna::WriteOutput() {
 
     sigma = 0.5 * GetFWHM(res, mean);
 
-    if (!res->Integral()) {
+    if (res->Integral() < 1.e-9) {
       if (i < 10)
         std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty residuals at " << i << std::endl;
       continue;
@@ -1241,9 +1246,9 @@ bool SpatialResolAna::WriteOutput() {
     _residual_sigma_unbiased->SetPointError(_residual_sigma_unbiased->GetN()-1,
                                       0, sigma_ex);
 
-    Float_t val, err;
+    Double_t val, err;
     val = sqrt(sigma * sigma_ex);
-    if (val)
+    if (val > 0)
       err = 0.5 / val;
     else err = 0.;
     err *= sigma_e * sigma_ex + sigma * sigma_ex_e;
@@ -1258,9 +1263,7 @@ bool SpatialResolAna::WriteOutput() {
   } // loop over column
 
   if (_do_separate_pad_fit && _iteration) {
-    for (auto prf_bin = 0; prf_bin < prf_error_bins-1; ++prf_bin) {
-      TH1F* res = _uncertainty_prf_bins[prf_bin];
-
+    for (auto res : _uncertainty_prf_bins) {
       Double_t mean;
       Double_t sigma = 0.5*GetFWHM(res, mean);
 
@@ -1301,7 +1304,7 @@ bool SpatialResolAna::WriteOutput() {
     std::cout << std::endl;
 
     _resol_total->Fit("gaus", "Q");
-    if (!_resol_total->Integral()) {
+    if (_resol_total->Integral() < 1.e-9) {
       std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty global residual" << std::endl;
     } else {
       auto func = _resol_total->GetFunction("gaus");
@@ -1419,7 +1422,7 @@ Double_t SpatialResolAna::GetFWHM(const TH1F* h) {
 //******************************************************************************
 Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
 //******************************************************************************
-  if (!h->Integral())
+  if (h->Integral() < 1e-9)
     return -1.;
 
   mean = h->GetMean();
@@ -1581,7 +1584,7 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
   auto *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
-  if (MM->Integral())
+  if (MM->Integral() > 1e-9)
     MM->Draw("colz");
   //_prf_histo->Draw("COLZ");
   canv->cd(2);
@@ -1596,13 +1599,4 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
   htemp->SetTitle("");
   canv->Update();
   return canv;
-}
-
-//******************************************************************************
-void SpatialResolAna::help(const std::string& name) {
-//******************************************************************************
-  AnalysisBase::help(name);
-  std::cout << "   -t <iteration>       : iteration number" << std::endl;
-  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
-  std::cout << std::endl;
 }

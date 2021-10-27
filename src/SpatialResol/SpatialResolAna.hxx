@@ -24,7 +24,6 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const TEvent* event) override;
 
-  void help(const std::string& name) override;
   /// Draw the histograms of interest
   TCanvas* DrawSelectionCan(const TRawEvent* event);
   /// Write output files (histos, trees)
@@ -32,9 +31,9 @@ class SpatialResolAna: public AnalysisBase {
   bool WriteOutput() override;
 
   /// Profile PRF with peak and RMS
-  bool ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr);
+  static bool ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr);
   /// Profile PRF along X axis
-  bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
+  static bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
   /// Initialise PRF with expected params
   TF1* InitializePRF(TString name, bool shift=false);

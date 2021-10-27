@@ -19,8 +19,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-add_compile_options(-fprofile-arcs -ftest-coverage)
-add_link_options(-fprofile-arcs -ftest-coverage)
+add_compile_options(-fprofile-arcs -ftest-coverage -Wno-inconsistent-missing-override)
+add_link_options(-fprofile-arcs -ftest-coverage -Wno-inconsistent-missing-override)
 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 
@@ -28,6 +28,7 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 find_package(ROOT REQUIRED COMPONENTS RIO Net)
 
 include_directories(external/cpp-generic-toolbox/include)
+include_directories(external/simple-cpp-cmd-line-parser/include)
 
 #---Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
 include(${ROOT_USE_FILE})
@@ -42,7 +43,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src//SpatialResol/)    #---SR analysis
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/base/)
 
 #---Create  a main program using the library
-add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx ${PROJECT_SOURCE_DIR}/src/SpatialResol/SpatialResolAna.cxx app/SpatialResolutionApp.cxx)
+add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx ${PROJECT_SOURCE_DIR}/src/SpatialResol/SpatialResolAna.cxx)
 target_link_libraries(SpatialResol.exe TRawEvent TBase)
 
 add_subdirectory(Google_tests)

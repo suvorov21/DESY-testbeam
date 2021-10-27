@@ -40,86 +40,46 @@ AnalysisBase::AnalysisBase() :
   _app(nullptr)
 {
 //******************************************************************************
+  // CLI reader
+  _clParser.setIsUnixGnuMode(true);
+  _clParser.setIsFascist((true));
 
-}
+  _clParser.addOption("input_file", {"-i", "--input"}, "Input file name", 1);
+  _clParser.addOption("output_file", {"-o", "--output"}, "Output file name", 1);
 
-std::string AnalysisBase::lookForOption(const std::string& argString,
-                          const std::string& nextValue,
-                          std::vector<std::string> optionList,
-                          std::string defaultValue) {
-  if (optionList.size() == 1)
-    optionList.emplace_back("");
+  _clParser.addOption("param_file", {"-p", "--param"}, "Parameter file name", 1);
+  _clParser.addOption("verbosity", {"-v", "--verbose"}, "Verbosity level", 1);
+  _clParser.addOption("start_id", {"--start"}, "Start event ID", 1);
+  _clParser.addOption("end_id", {"--end"}, "End event ID", 1);
 
-  // "normal" regime option_value
-  if (argString == optionList[0] || argString == optionList[1])
-    return nextValue.empty() ? defaultValue : nextValue;
+  _clParser.addTriggerOption("batch", {"-b"}, "Batch mode");
+  _clParser.addTriggerOption("debug", {"-d", "--debug"}, "Debug mode");
+  _clParser.addTriggerOption("overwrite", {"-r", "--overwrite"}, "Overwrite output file");
 
-  // short arg with the value just after
-  if (argString.substr(0, 2) == optionList[0])
-    return argString.substr(2);
-
-  // arg not found in CLI
-  return defaultValue;
+  _clParser.addTriggerOption("help", {"-h", "--help"}, "Print usage");
 }
 
 bool AnalysisBase::ReadCLI(int argc, char **argv) {
-  if (argc < 2)
-    return false;
+  _clParser.parseCmdLine(argc, argv);
 
-  char * pEnd;
-
-  for (auto i = 1; i < argc; ++i) {
-    std::string argString = argv[i];
-
-    // input file
-    _file_in_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
-                                  {"-i", "--input"}, _file_in_name.Data());
-
-    // output file
-    _file_out_name = lookForOption(argString, i == argc - 1 ? "" : argv[i + 1],
-                                   {"-o", "--output"}, _file_out_name.Data());
-
-    // parameter file
-    _param_file_name = lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"-p", "--param"}, _param_file_name.Data());
-
-    _verbose = (int)strtol(lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"-v", "--verbose"}, std::to_string(_verbose)).c_str(), &pEnd, 10);
-
-    _start_ID = (int)strtol(lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"--start"}, std::to_string(_start_ID)).c_str(), &pEnd, 10);
-
-    _end_ID = (int)strtol(lookForOption(
-        argString, i == argc - 1 ? "" : argv[i + 1], {"--end"}, std::to_string(_end_ID)).c_str(), &pEnd, 10);
-
-    // parse short triggers
-    if (argString[1] != '-' && argString[0] == '-') {
-      for (const auto & symbol : argString.substr(1)) {
-        switch (symbol) {
-        case 'b':
-          _batch = true;
-          break;
-        case 'd':
-          _test_mode = true;
-          break;
-        case 'r':
-          _overwrite = true;
-          std::cout << "Output will be overwritten" << std::endl;
-        default:
-          break;
-        }
-      }
-    }
-
-    // print usage
-    std::string helpOpt = lookForOption(
-        argString, "t", {"-h", "--help"}, "f");
-
-    if (helpOpt == "t") {
-      help(argv[0]);
-      exit(0);
-    }
+  if (_clParser.isOptionTriggered("help")) {
+    _clParser.getConfigSummary();
+    exit(1);
   }
+
+
+  _file_in_name = _clParser.getOptionVal<TString>("input_file", "");
+  _file_out_name = _clParser.getOptionVal<TString>("output_file", "");
+
+  _param_file_name = _clParser.getOptionVal<TString>("param_file", "");
+  _verbose = _clParser.getOptionVal<int>("verbosity", _verbose, 0);
+
+  _start_ID = _clParser.getOptionVal<int>("start_id", _start_ID, 0);
+  _end_ID = _clParser.getOptionVal<int>("end_id", _end_ID, 0);
+
+  _batch = _clParser.isOptionTriggered("batch");
+  _test_mode = _clParser.isOptionTriggered("debug");
+  _overwrite = _clParser.isOptionTriggered("overwrite");
 
   return true;
 }
@@ -127,7 +87,6 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
 //******************************************************************************
 bool AnalysisBase::Initialize(int argc, char** argv) {
 //******************************************************************************
-
   ReadCLI(argc, argv);
   if (!_batch)
     _app = new TApplication("app", &argc, argv);
@@ -794,22 +753,6 @@ bool AnalysisBase::ReadParamFile() {
   }
   std::cout << "*****************************************" << std::endl;
   return true;
-}
-
-//******************************************************************************
-void AnalysisBase::help(const std::string& name) {
-//******************************************************************************
-  std::cout << name << " usage\n" << std::endl;
-  std::cout << "   -i, --input <input_file>       : input file name with a path" << std::endl;
-  std::cout << "   -o, --output <output_path>     : output files name" << std::endl;
-  std::cout << std::endl;
-  std::cout << "   --start     <i>                :start from event i" << std::endl;
-  std::cout << "   --end       <i>                :end with event i" << std::endl;
-  std::cout << "   -p, -param  <file>   : parameter file to use" << std::endl;
-  std::cout << "   -b                   : run in batch mode" << std::endl;
-  std::cout << "   -v <verbose_level>   : verbosity level" << std::endl;
-  std::cout << "   -d                   : test mode. run over first 30 events" << std::endl;
-  std::cout << "   -h, --help           : print help" << std::endl;
 }
 
 //******************************************************************************

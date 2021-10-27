@@ -18,6 +18,7 @@
 #include "TGraphErrors.h"
 
 #include "SetT2KStyle.hxx"
+#include "CmdLineParser.h"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"
@@ -58,21 +59,6 @@ class AnalysisBase {
  public:
   AnalysisBase();
   virtual ~AnalysisBase() {;}
-
-  /// Helper for CLI arguments parser
-  /**
-   * Look for the option in the CLI.
-   * @param argString the value of the argv[i]
-   * @param nextValue the next value argv[i+1] if any
-   * @param optionList vector of strings. The order is strictly fixed:
-   *                    {short option, long option}, e.g. {"-i", "--input"}
-   * @param defaultValue the default value if argument is not present
-   * @return std::string provided by the parameter
-   */
-  static std::string lookForOption(const std::string& argString,
-                            const std::string& nextValue,
-                            std::vector<std::string> optionList,
-                            std::string defaultValue);
 
   /// Read CL arguments
   virtual bool ReadCLI(int argc, char** argv);
@@ -135,11 +121,7 @@ class AnalysisBase {
   */
   std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr) const;
 
-
   /************************** Utilities functions *****************************/
-
-  /// Print usage
-  virtual void help(const std::string& name);
 
   /// Dump progress in the command line
   virtual void CL_progress_dump(int eventID, int Nevents);
@@ -178,6 +160,9 @@ class AnalysisBase {
 
   /// name of the parameter file
   TString _param_file_name;
+
+  /// CLI parser
+  CmdLineParser _clParser;
 
   /// vector of event IDs that will be analysed
   std::vector<Int_t> _eventList;
