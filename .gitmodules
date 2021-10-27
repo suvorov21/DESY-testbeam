@@ -5,3 +5,6 @@
 [submodule "external/cpp-generic-toolbox"]
 	path = external/cpp-generic-toolbox
 	url = https://github.com/suvorov21/cpp-generic-toolbox.git
+[submodule "external/simple-cpp-cmd-line-parser"]
+	path = external/simple-cpp-cmd-line-parser
+	url = https://github.com/suvorov21/simple-cpp-cmd-line-parser.git
