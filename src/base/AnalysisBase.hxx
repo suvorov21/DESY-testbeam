@@ -64,7 +64,7 @@ class AnalysisBase {
   virtual bool ReadCLI(int argc, char** argv);
 
   /// Initialise histoes, input files, selections
-  virtual bool Initialize(int argc, char** argv);
+  virtual bool Initialize();
 
   /// Loop over TChain entries. Can use pre-defined event list
   /** Normally for the first iteration loop over all events is performed.
@@ -87,6 +87,17 @@ class AnalysisBase {
 
   /// Read parameter file
   bool ReadParamFile();
+
+  // setters
+  void setInputFile(const TString& var) {_file_in_name = var;}
+  void setOutputFile(const TString& var) {_file_out_name = var;}
+  void setParamFile(const TString& var) {_param_file_name = var;}
+  void setVerbosity(const int& var) {_verbose = var;}
+  void setStartID(const int& var) {_start_ID = var;}
+  void setEndID(const int& var) {_end_ID = var;}
+  void setBatchMode(const bool var) {_batch = var;}
+  void setDebugMode(const bool var) {_test_mode = var;}
+  void setOverwrite(const bool var) { _overwrite = var;}
 
   /// Process a cluster and return only pads that are suggested to be robust
   /** E.g. function can return only 2 pads in a column.
@@ -136,7 +147,7 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() const {return _eventList;}
 
   /// Draw the selected event
-  virtual void DrawSelection(const TEvent *event);
+  virtual void DrawSelection(const TEvent *event, bool wait);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}

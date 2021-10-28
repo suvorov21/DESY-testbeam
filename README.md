@@ -13,8 +13,9 @@ For the DESY beam test analysis the HighLevel tool was created. The new flexible
 The main idea is to separate the routine procedures (e.g. opening files, looping, writing the output etc.) from the analysis itself. So now the analyzer should only define the histos/canvases/trees one wants to store and the logic how to fill it.
 
 ## Compilation
-For the compilation you need to create the build folder
+For the compilation you need to create the build folder. Also you should pull dependencies first. 
 ```bash
+git submodule update --init
 mkdir build
 cd build
 ```

@@ -67,31 +67,28 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
     exit(1);
   }
 
+  setInputFile(_clParser.getOptionVal<TString>("input_file", "", 0));
+  setOutputFile(_clParser.getOptionVal<TString>("output_file", "", 0));
 
-  _file_in_name = _clParser.getOptionVal<TString>("input_file", "", 0);
-  _file_out_name = _clParser.getOptionVal<TString>("output_file", "", 0);
+  setParamFile(_clParser.getOptionVal<TString>("param_file", "", 0));
+  setVerbosity(_clParser.getOptionVal<int>("verbosity", _verbose, 0));
 
-  _param_file_name = _clParser.getOptionVal<TString>("param_file", "", 0);
-  _verbose = _clParser.getOptionVal<int>("verbosity", _verbose, 0);
+  setStartID(_clParser.getOptionVal<int>("start_id", _start_ID, 0));
+  setEndID(_clParser.getOptionVal<int>("end_id", _end_ID, 0));
 
-  _start_ID = _clParser.getOptionVal<int>("start_id", _start_ID, 0);
-  _end_ID = _clParser.getOptionVal<int>("end_id", _end_ID, 0);
+  setBatchMode(_clParser.isOptionTriggered("batch"));
+  setDebugMode(_clParser.isOptionTriggered("debug"));
+  setOverwrite(_clParser.isOptionTriggered("overwrite"));
 
-  _batch = _clParser.isOptionTriggered("batch");
-  _test_mode = _clParser.isOptionTriggered("debug");
-  _overwrite = _clParser.isOptionTriggered("overwrite");
+  if (!_batch)
+    _app = new TApplication("app", &argc, argv);
 
   return true;
 }
 
 //******************************************************************************
-bool AnalysisBase::Initialize(int argc, char** argv) {
+bool AnalysisBase::Initialize() {
 //******************************************************************************
-  ReadCLI(argc, argv);
-  if (!_batch)
-    _app = new TApplication("app", &argc, argv);
-  // WARNING
-  // A very dirty adaptation of angles
   CL_col = new Clustering(0., 0);
   CL_diag = new Clustering(units::a45, 1);
   CL_2by1 = new Clustering(units::a2, 2);
@@ -257,9 +254,9 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     _sw_event->Start(false);
   }
 
-  int denimonator = 100;
+  int denominator = 100;
   if (N_events < 100)
-    denimonator = N_events;
+    denominator = N_events;
 
   // Event loop
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1);
@@ -271,7 +268,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     }
 
     // Dump progress in command line
-    if (_verbose == v_progress && (eventID%(N_events/denimonator)) == 0)
+    if (_verbose == v_progress && (eventID%(N_events/denominator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
 
     _chain->GetEntry(EventList[eventID]);
@@ -406,7 +403,7 @@ bool AnalysisBase::WriteOutput() {
 // make the inheritance possible
 // e.g. draw events here but also draw some analysi specific stuff in the analysis
 //******************************************************************************
-void AnalysisBase::DrawSelection(const TEvent *event){
+void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
 //******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
@@ -456,7 +453,8 @@ void AnalysisBase::DrawSelection(const TEvent *event){
   htemp->GetZaxis()->SetLimits(0,500);
   htemp->SetTitle("");
   canv->Update();
-  canv->WaitPrimitive();
+  if (wait)
+    canv->WaitPrimitive();
   delete htemp;
   delete canv;
 
@@ -517,7 +515,7 @@ std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr
   // truncation cut
   /* NO TRUNCATION */
   auto frac = 1.00;
-  Int_t i_max = round(frac * (double)tr.size());
+  auto i_max = (int)round(frac * (double)tr.size());
   result.reserve(i_max);
   for (auto i = 0; i < i_max; ++i) {
     result.push_back(tr[i]);

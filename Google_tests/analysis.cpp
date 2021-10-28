@@ -16,6 +16,12 @@ TEST(InitialisationTest, ParamFileRead) {
   EXPECT_EQ(ana->ReadParamFile(), true);
 }
 
+TEST(InitialisationTest, ParamFileNotRead) {
+  auto ana = new AnalysisBase();
+  ana->setParamFile("blabla.ini");
+  EXPECT_EQ(ana->ReadParamFile(), false);
+}
+
 TEST(InitialisationTest, CLIread) {
   auto argc = 2;
   char argv1[] = "main";
@@ -40,6 +46,18 @@ TEST(InitialisationTest, outputWriteErr) {
   EXPECT_EQ(ana->WriteOutput(), false);
 }
 
+TEST(InitialisationTest, inputException) {
+  auto ana = new AnalysisBase();
+  ana->setParamFile("blabla.ini");
+  EXPECT_DEATH(ana->Initialize(), "Parameter file is not read");
+  ana->setParamFile("");
+  EXPECT_DEATH(ana->Initialize(), "No input file specified");
+  ana->setInputFile("input.root");
+  EXPECT_DEATH(ana->Initialize(), "No output file specified");
+  ana->setOutputFile("output.root");
+  EXPECT_DEATH(ana->Initialize(), "Unknown tree name");
+}
+
 TEST(InitialisationTest, baseProcessEvent) {
   auto ana = new AnalysisBase();
   auto event =GetDummyEvent();
@@ -49,7 +67,7 @@ TEST(InitialisationTest, baseProcessEvent) {
   EXPECT_EQ(reconstruction->SelectEvent(event), true);
 }
 
-TEST(Graphics, drawEvent) {
-  auto ana = new AnalysisBase();
-  EXPECT_NO_THROW(ana->DrawSelection(GetDummyEvent()));
-}
+//TEST(Graphics, drawEvent) {
+//  auto ana = new AnalysisBase();
+//  EXPECT_NO_THROW(ana->DrawSelection(GetDummyEvent(), false));
+//}
