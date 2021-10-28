@@ -76,6 +76,7 @@ protected:
 
 class TrackFitCern: public TrackFitterBase {
 public:
+
   TrackFitCern(TrackShape shape,
                bool invert,
                int verbose,
@@ -85,10 +86,15 @@ public:
                float fit_bound,
                bool charge_uncertainty,
                TF1* PRF_time_func,
-               TH1F* _PRF_time_error,
+               TH1F* PRF_time_error,
                Float_t angle
                );
   ~TrackFitCern() override {;}
+
+  TrackFitCern() : TrackFitCern(TrackFitterBase::arc, false, 0, 0,
+                                nullptr, nullptr, 0.,
+                                false, nullptr,
+                                nullptr, 0.) {};
 
   /// Cluster fitter
   Double_t FitCluster(const std::vector<THit*>& col,
@@ -114,15 +120,15 @@ public:
 
 protected:
   /// Pad Response Function analytical description
-  TF1* _PRF_function;
+  TF1* _prf_function;
 
   /// PRF uncertainty graph
-  TGraphErrors* _PRF_graph;
+  TGraphErrors* _prf_graph;
 
   /// Pad Response Function in time
-  TF1* _PRF_time_func;
+  TF1* _prf_time_func;
   /// histogram with errors for time PRF
-  TH1F* _PRF_time_error;
+  TH1F* _prf_time_error;
 
   /// bounds of the PRF that are reliable. Outside values are not used
   float _fit_bound;
@@ -134,10 +140,10 @@ protected:
   Float_t _angle;
 
   /// Array of PRFs for complicated patterns
-  TF1** _PRF_arr;
+  TF1** _prf_arr;
 
   /// PRF arr size
-  int _PRF_size;
+  int _prf_size;
 
   /// Whether to use individual PRFs for columns
   bool _individual_column_PRF;

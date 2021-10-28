@@ -36,11 +36,7 @@ class SpatialResolAna: public AnalysisBase {
   static bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
   /// Initialise PRF with expected params
-  TF1* InitializePRF(TString name, bool shift=false);
-
-  /// Get mean and FWHM for the histo
-  static Double_t GetFWHM(const TH1F* h, Double_t& mean);
-  static Double_t GetFWHM(const TH1F* h);
+  TF1* InitializePRF(const TString& name, bool shift=false);
 
   /// Draw the histograms of interest
   bool Draw();

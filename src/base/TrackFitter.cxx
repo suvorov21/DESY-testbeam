@@ -44,14 +44,15 @@ TrackFitCern::TrackFitCern(TrackShape shape,
                TH1F* time_errors,
                Float_t angle
                ): TrackFitterBase(shape, invert, verbose, it),
-               _PRF_function(PRF),
-               _PRF_graph(PRF_gr),
-               _PRF_time_func(PRF_time_func),
-               _PRF_time_error(time_errors),
+               _prf_function(PRF),
+               _prf_graph(PRF_gr),
+               _prf_time_func(PRF_time_func),
+               _prf_time_error(time_errors),
                _fit_bound(fit_bound),
                _charge_uncertainty(charge_uncertainty),
                _angle(angle),
-               _PRF_size(0) {
+               _prf_size(0),
+               _prf_arr(nullptr) {
 //******************************************************************************
   _ax = new TAxis(50, -0.035, 0.015);
 }
@@ -61,13 +62,13 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
                                   const int& cluster,
                                   const double& pos) {
 //******************************************************************************
-  auto t_leading = -1;
+//  auto t_leading = -1;
   auto maxQ = -1;
   // WARNING pads should be already sorted
   for (auto pad:col) {
     if (pad->GetQ() > maxQ) {
       maxQ = pad->GetQ();
-      t_leading = pad->GetTime();
+//      t_leading = pad->GetTime();
     }
   }
 
@@ -91,15 +92,15 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
       if (abs(center_pad_y - pos) > _fit_bound)
         continue;
 
-      TF1* PRF_tmp = _PRF_function;
+      TF1* PRF_tmp = _prf_function;
 
-      if (_PRF_size && _complicated_pattern_PRF) {
-        auto prf_it = abs(colId % _PRF_size);
-        PRF_tmp = _PRF_arr[prf_it];
+      if (_prf_size && _complicated_pattern_PRF) {
+        auto prf_it = abs(colId % _prf_size);
+        PRF_tmp = _prf_arr[prf_it];
       }
 
-      if (_PRF_size && _individual_column_PRF)
-        PRF_tmp = _PRF_arr[colId];
+      if (_prf_size && _individual_column_PRF)
+        PRF_tmp = _prf_arr[colId];
 
       if (!PRF_tmp) {
         throw std::logic_error("PRF is NULL");
@@ -189,7 +190,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
 TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
                             const int& miss_id) {
 //******************************************************************************
-  TGraphErrors* track_gr = new TGraphErrors();
+TGraphErrors track_gr;
 
   for (uint clusterId = 0; clusterId < clusters.size(); ++clusterId) {
     double x   = clusters[clusterId]->GetX();
@@ -202,36 +203,36 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     if (_verbose > 3)
       std::cout << "Track point\t" << x << "\t" << y << std::endl;
 
-    track_gr->SetPoint(track_gr->GetN(), x, y);
-    track_gr->SetPointError(track_gr->GetN()-1, 0., y_e);
+    track_gr.SetPoint(track_gr.GetN(), x, y);
+    track_gr.SetPointError(track_gr.GetN()-1, 0., y_e);
   } // loop over x
 
   if (_verbose > 2)
-    std::cout << "Fit graph with " << track_gr->GetN() << " points" << std::endl;
+    std::cout << "Fit graph with " << track_gr.GetN() << " points" << std::endl;
 
-  TF1* fit = NULL;
+  TF1* fit = nullptr;
   TString func;
   TString opt = "Q";
   if (_verbose > 2)
     opt = "";
   if (_shape == parabola) {
-    track_gr->Fit("pol2", opt);
-    fit = (TF1*)track_gr->GetFunction("pol2")->Clone();
+    track_gr.Fit("pol2", opt);
+    fit = (TF1*)track_gr.GetFunction("pol2")->Clone();
   } else if (_shape == linear) {
-    track_gr->Fit("pol1", opt);
-    fit = (TF1*)track_gr->GetFunction("pol1")->Clone();
+    track_gr.Fit("pol1", opt);
+    fit = (TF1*)track_gr.GetFunction("pol1")->Clone();
   } else if (_shape == arc) {
     // Float_t q_up, q_down;
     // q_up = q_down = 1.e9;
     // _circle_function_dn->SetParameters(80., 0, 0.);
-    // track_gr->Fit("circle_dn", opt);
-    // fit = track_gr->GetFunction("circle_dn");
+    // track_gr.Fit("circle_dn", opt);
+    // fit = track_gr.GetFunction("circle_dn");
     // if (fit)
     //   q_down = fit->GetChisquare() / fit->GetNDF();
 
     // _circle_function_up->SetParameters(80., 0, 0.);
-    // track_gr->Fit("circle_up", opt);
-    // fit = track_gr->GetFunction("circle_up");
+    // track_gr.Fit("circle_up", opt);
+    // fit = track_gr.GetFunction("circle_up");
     // if (fit)
     //   q_up = fit->GetChisquare() / fit->GetNDF();
 
@@ -240,27 +241,28 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     // else
     //   func = "circle_up";
 
-    // track_gr->Fit(func, "Q");
-    // if (!track_gr->GetFunction(func))
+    // track_gr.Fit(func, "Q");
+    // if (!track_gr.GetFunction(func))
     //   return NULL;
-    // fit = (TF1*)track_gr->GetFunction(func)->Clone();
+    // fit = (TF1*)track_gr.GetFunction(func)->Clone();
 
-    Float_t q_up, q_down;
-    q_up = q_down = 1.e9;
+    Double_t q_up, q_down;
     _circle_function->SetParameters(1./80., 0, 0.);
-    track_gr->Fit("circle", opt);
-    TF1* fit_up = (TF1*)track_gr->GetFunction("circle")->Clone();
-    if (fit_up)
-      q_up = fit_up->GetChisquare() / fit_up->GetNDF();
+    track_gr.Fit("circle", opt);
+    TF1* fit_up = (TF1*)track_gr.GetFunction("circle")->Clone();
+    if (!fit_up)
+      return nullptr;
+    q_up = fit_up->GetChisquare() / fit_up->GetNDF();
 
     _circle_function->SetParameters(-1./80., 0, 0.);
-    track_gr->Fit("circle", opt);
-    TF1* fit_dn = (TF1*)track_gr->GetFunction("circle")->Clone();
-    if (fit_dn)
-      q_down = fit_dn->GetChisquare() / fit_dn->GetNDF();
+    track_gr.Fit("circle", opt);
+    TF1* fit_dn = (TF1*)track_gr.GetFunction("circle")->Clone();
+    if (!fit_dn)
+      return nullptr;
+    q_down = fit_dn->GetChisquare() / fit_dn->GetNDF();
 
-    if (!track_gr->GetFunction("circle"))
-      return NULL;
+    if (!track_gr.GetFunction("circle"))
+      return nullptr;
 
     if (q_up > q_down)
       fit = (TF1*)fit_dn->Clone();
@@ -271,10 +273,8 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
     delete fit_dn;
   }
 
-  delete track_gr;
-
   if (!fit)
-    return NULL;
+    return nullptr;
 
   return fit;
 }
@@ -282,10 +282,10 @@ TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
 //******************************************************************************
 void TrackFitCern::SetPRFarr(TF1* f[], const int n) {
 //******************************************************************************
-  _PRF_arr = new TF1*[n];
+  _prf_arr = new TF1*[n];
   for (auto i = 0; i < n; ++i) {
-    _PRF_arr[i] = f[i];
+    _prf_arr[i] = f[i];
   }
 
-  _PRF_size = n;
+  _prf_size = n;
 }

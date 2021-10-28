@@ -4,12 +4,19 @@
 #include "gtest/gtest.h"
 #include "AnalysisBase.hxx"
 
-TEST(Initialisation, ParamFileRead) {
+auto GetDummyEvent() {
+  auto event = new TEvent();
+  auto hit = new THit(10, 10, 200, 20);
+  event->AddUsedHit(hit);
+  return event;
+}
+
+TEST(InitialisationTest, ParamFileRead) {
   auto ana = new AnalysisBase();
   EXPECT_EQ(ana->ReadParamFile(), true);
 }
 
-TEST(Initialisation, CLIread) {
+TEST(InitialisationTest, CLIread) {
   auto argc = 2;
   char argv1[] = "main";
   char argv2[] = "test";
@@ -28,21 +35,21 @@ TEST(Initialisation, CLIread) {
   EXPECT_EQ(ana->ReadCLI(argc, argv_test2), true);
 }
 
-TEST(Initialisation, outputWriteErr) {
+TEST(InitialisationTest, outputWriteErr) {
   auto ana = new AnalysisBase();
   EXPECT_EQ(ana->WriteOutput(), false);
 }
 
 TEST(InitialisationTest, baseProcessEvent) {
   auto ana = new AnalysisBase();
-  auto event = new TEvent();
+  auto event =GetDummyEvent();
   EXPECT_THROW(ana->ProcessEvent(event), std::logic_error);
+  auto reconstruction = new ReconstructionBase();
+  reconstruction->Initialize(0);
+  EXPECT_EQ(reconstruction->SelectEvent(event), true);
 }
 
 TEST(Graphics, drawEvent) {
   auto ana = new AnalysisBase();
-  auto event = new TEvent();
-  auto hit = new THit(10, 10, 200, 20);
-  event->AddUsedHit(hit);
-  EXPECT_NO_THROW(ana->DrawSelection(event));
+  EXPECT_NO_THROW(ana->DrawSelection(GetDummyEvent()));
 }

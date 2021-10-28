@@ -2,6 +2,7 @@
 #include "TVector3.h"
 #include "Math/Functor.h"
 #include "Fit/Fitter.h"
+#include "GenericToolbox.Root.h"
 /** @endcond */
 
 #include "SpatialResolAna.hxx"
@@ -205,7 +206,9 @@ bool SpatialResolAna::Initialize(int argc, char** argv) {
     _prf_time_func = _prf_time_error->GetFunction("pol2");
 
     Double_t mean, sigma;
-    sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
+    mean = uncertainty_graph->GetMean();
+    sigma = GenericToolbox::getFWHM(uncertainty_graph);
+//    sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
     uncertainty_graph->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
     _uncertainty = (Float_t)uncertainty_graph->GetFunction("gaus")->GetParameter(2);
 
@@ -1192,7 +1195,8 @@ bool SpatialResolAna::WriteOutput() {
     Double_t mean, sigma, sigma_ex;
     Double_t mean_e = 0., sigma_e = 0., sigma_ex_e = 0.;
 
-    sigma = 0.5 * GetFWHM(res, mean);
+    mean = res->GetMean();
+    sigma = 0.5 * GenericToolbox::getFWHM(res);
 
     if (res->Integral() < 1.e-9) {
       if (i < 10)
@@ -1233,7 +1237,8 @@ bool SpatialResolAna::WriteOutput() {
       sigma_ex_e  = func_ex->GetParError(2);
     } else {
       // use FWHM
-      sigma_ex = 0.5 * GetFWHM(res_e, mean);
+      mean = res_e->GetMean();
+      sigma_ex = 0.5 * GenericToolbox::getFWHM(res_e);
     }
 
     _residual_sigma_biased->SetPoint(_residual_sigma_biased->GetN(),
@@ -1264,8 +1269,8 @@ bool SpatialResolAna::WriteOutput() {
 
   if (_do_separate_pad_fit && _iteration) {
     for (auto res : _uncertainty_prf_bins) {
-      Double_t mean;
-      Double_t sigma = 0.5*GetFWHM(res, mean);
+      Double_t mean = res->GetMean();
+      Double_t sigma = 0.5*GenericToolbox::getFWHM(res);
 
       res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);;
 
@@ -1372,7 +1377,7 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
     double y = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1, 0, GetFWHM(temp_h)/2.);
+    gr->SetPointError(gr->GetN()-1, 0, GenericToolbox::getFWHM(temp_h)/2.);
   } // end of PRF histo profiling
 
   return true;
@@ -1405,37 +1410,15 @@ bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PR
     double x = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1,  GetFWHM(temp_h)/2., 0.);
-    PRF_time_e->Fill(y, GetFWHM(temp_h)/2);
+    gr->SetPointError(gr->GetN()-1,  GenericToolbox::getFWHM(temp_h)/2., 0.);
+    PRF_time_e->Fill(y, GenericToolbox::getFWHM(temp_h)/2);
   } // end of PRF histo profiling
 
   return true;
 }
 
 //******************************************************************************
-Double_t SpatialResolAna::GetFWHM(const TH1F* h) {
-//******************************************************************************
-  auto mean = 0.;
-  return GetFWHM(h, mean);
-}
-
-//******************************************************************************
-Double_t SpatialResolAna::GetFWHM(const TH1F* h, Double_t& mean) {
-//******************************************************************************
-  if (h->Integral() < 1e-9)
-    return -1.;
-
-  mean = h->GetMean();
-  auto max   = h->GetMaximum();
-  auto start = h->GetBinLowEdge(h->FindFirstBinAbove(max/2));
-  auto end   = h->GetBinLowEdge(h->FindLastBinAbove(max/2)) +
-               h->GetBinWidth(h->FindLastBinAbove(max/2));
-
-  return end - start;
-}
-
-//******************************************************************************
-TF1* SpatialResolAna::InitializePRF(const TString name, bool shift) {
+TF1* SpatialResolAna::InitializePRF(const TString& name, bool shift) {
 //******************************************************************************
   TF1* func;
   if (_gaus_lorentz_PRF) {

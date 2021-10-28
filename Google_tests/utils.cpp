@@ -47,13 +47,7 @@ TEST(fitterTest, exepFitterBase) {
 }
 
 TEST(fitterTest, exepEmptyPRF) {
-  auto shape = TrackFitterBase::arc;
-  auto fitter = new TrackFitCern(shape, false, 0, 0,
-                                 nullptr, nullptr, 0.,
-                                 false, nullptr,
-                                 nullptr, 0.
-                                 );
-
+  auto fitter = new TrackFitCern();
   std::vector<THit*> col;
   col.emplace_back(new THit());
   col[0]->SetQ(10);
