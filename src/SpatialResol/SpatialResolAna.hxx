@@ -16,7 +16,7 @@ class SpatialResolAna: public AnalysisBase {
   ~SpatialResolAna() override = default;
 
   /// Initialise histoes, input files, selections
-  bool Initialize(int argc, char** argv) override;
+  bool Initialize() override;
 
   /// Read CLI
   bool ReadCLI(int argc, char **argv) override;

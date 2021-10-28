@@ -55,7 +55,7 @@ bool SpatialResolAna::ReadCLI(int argc, char **argv) {
 }
 
 //******************************************************************************
-bool SpatialResolAna::Initialize(int argc, char** argv) {
+bool SpatialResolAna::Initialize() {
 //******************************************************************************
   std::cout << "*****************************************" << std::endl;
   std::cout << "***   Spatial resolution analysis    ****" << std::endl;
