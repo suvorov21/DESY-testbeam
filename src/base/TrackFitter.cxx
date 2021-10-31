@@ -187,7 +187,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
 }
 
 //******************************************************************************
-TF1* TrackFitCern::FitTrack(const std::vector<TCluster*>& clusters,
+TF1* TrackFitCern::FitTrack(const std::vector<std::unique_ptr<TCluster>> & clusters,
                             const int& miss_id) {
 //******************************************************************************
 TGraphErrors track_gr;

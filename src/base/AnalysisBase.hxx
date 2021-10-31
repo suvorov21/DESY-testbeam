@@ -110,7 +110,7 @@ class AnalysisBase {
    * Or put a strong upper limit on cluster charge.
    * Any condition can be specified.
    */
-  static std::vector<TCluster*> GetRobustClusters(std::vector<TCluster*> tr);
+  static std::vector<std::unique_ptr<TCluster>> GetRobustClusters(std::vector<std::unique_ptr<TCluster>> & tr);
 
   // TODO consider a better implementation. No need to create all instances
   Clustering* CL_col;
@@ -130,7 +130,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = const and so on.
   */
-  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr) const;
+  std::vector<std::unique_ptr<TCluster>> ClusterTrack(const std::vector<THit*> &tr) const;
 
   /************************** Utilities functions *****************************/
 

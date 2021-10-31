@@ -4,7 +4,7 @@
 #include "Selection.hxx"
 
 //******************************************************************************
-bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
+bool sel::CrossingTrackSelection( const std::vector<std::unique_ptr<TCluster>> &track,
                                   const int  &max_mult,
                                   const bool &cut_gap,
                                   const float &max_phi,
@@ -32,22 +32,23 @@ bool sel::CrossingTrackSelection( const std::vector<TCluster*> &track,
 }
 
 //******************************************************************************
-int sel::GetMaxMultiplicity(const std::vector<TCluster*> &track) {
+int sel::GetMaxMultiplicity(const std::vector<std::unique_ptr<TCluster>> &track) {
 //******************************************************************************
   auto it_max = std::max_element(track.begin(), track.end(),
-                       [](const TCluster* cl1, const TCluster* cl2) {
-                          return cl1->GetSize() < cl2->GetSize();
+                       [](const std::unique_ptr<TCluster> & cl1,
+                                const std::unique_ptr<TCluster> & cl2) {
+                                  return cl1->GetSize() < cl2->GetSize();
                         });
   if (it_max != track.end())
-    return (*it_max)->GetSize();
+    return (int)(*it_max)->GetSize();
   return 999;
 }
 
 //******************************************************************************
-bool sel::GetNoGap(const std::vector<TCluster*> &track,
+bool sel::GetNoGap(const std::vector<std::unique_ptr<TCluster>> &track,
                    const bool &invert) {
 //******************************************************************************
-  for(auto cluster:track) if(cluster->GetSize()){
+  for(auto & cluster:track) if(cluster->GetSize()){
     std::vector<int> row;
     std::vector<int> col;
     for (auto pad:*cluster) if (pad) {
@@ -59,7 +60,7 @@ bool sel::GetNoGap(const std::vector<TCluster*> &track,
     sort(col.begin(), col.end());
 
     // no gaps in rows
-    if (row.size() == 0)
+    if (row.empty())
       return false;
     auto prev = row[0];
     for (auto r:row) {
@@ -80,7 +81,7 @@ bool sel::GetNoGap(const std::vector<TCluster*> &track,
 }
 
 //******************************************************************************
-float sel::GetLinearPhi(const std::vector<TCluster*> &track,
+double sel::GetLinearPhi(const std::vector<std::unique_ptr<TCluster>> &track,
                         bool invert) {
 //******************************************************************************
   std::vector <double> par = sel::GetFitParams(track, invert);
@@ -88,7 +89,7 @@ float sel::GetLinearPhi(const std::vector<TCluster*> &track,
 }
 
 //******************************************************************************
-float sel::GetLinearTheta(const std::vector<TCluster*> &track,
+double sel::GetLinearTheta(const std::vector<std::unique_ptr<TCluster>> &track,
                           bool invert) {
 //******************************************************************************
   std::vector <double> par = sel::GetFitParamsXZ(track, invert);
@@ -96,10 +97,11 @@ float sel::GetLinearTheta(const std::vector<TCluster*> &track,
 }
 
 //******************************************************************************
-std::vector <double> sel::GetFitParams(const std::vector<TCluster*> &track,
+std::vector <double> sel::GetFitParams(const std::vector<std::unique_ptr<TCluster>> &track,
                                        bool invert) {
 //******************************************************************************
   std::vector <double> params;
+  params.reserve(3);
   for (auto i = 0; i < 3; ++i) params.push_back(-999.);
 
   TH2F* MM = new TH2F("MM", "MM",
@@ -107,7 +109,7 @@ std::vector <double> sel::GetFitParams(const std::vector<TCluster*> &track,
                       geom::nPadx, 0, geom::nPadx
                       );
 
-  for(auto cluster:track)
+  for(auto & cluster:track)
     for (auto pad:*cluster)
       if(pad->GetQ()) {
         if (!invert)
@@ -134,17 +136,18 @@ std::vector <double> sel::GetFitParams(const std::vector<TCluster*> &track,
 
 
 //******************************************************************************
-std::vector <double> sel::GetFitParamsXZ(const std::vector<TCluster*> &track,
+std::vector <double> sel::GetFitParamsXZ(const std::vector<std::unique_ptr<TCluster>> &track,
                                          bool invert) {
 //******************************************************************************
   std::vector <double> params;
+  params.reserve(3);
   for (auto i = 0; i < 3; ++i) params.push_back(-999);
 
   TH2F* MM = new TH2F("MM", "MM",
                       geom::nPadx, 0, geom::nPadx,
                       geom::Nsamples, 0, geom::Nsamples
                       );
-  for(auto cluster:track) {
+  for(auto & cluster:track) {
     auto q_lead = 0;
     auto x_lead = 0;
     auto y_lead = 0;
@@ -169,9 +172,8 @@ std::vector <double> sel::GetFitParamsXZ(const std::vector<TCluster*> &track,
   MM->Fit("pol1", "Q");
   TF1* fit = MM->GetFunction("pol1");
 
-  if (fit){
-    double quality = 1.0e10;
-    quality = fit->GetChisquare() / fit->GetNDF();
+  if (fit) {
+    auto quality = fit->GetChisquare() / fit->GetNDF();
     double b = fit->GetParameter(0);
     double k = fit->GetParameter(1);
     params[0] = quality;

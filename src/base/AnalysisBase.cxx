@@ -401,7 +401,7 @@ bool AnalysisBase::WriteOutput() {
 
 // TODO
 // make the inheritance possible
-// e.g. draw events here but also draw some analysi specific stuff in the analysis
+// e.g. draw events here but also draw some analysis specific stuff in the analysis
 //******************************************************************************
 void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
 //******************************************************************************
@@ -504,13 +504,13 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) 
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr) {
+std::vector<std::unique_ptr<TCluster>> AnalysisBase::GetRobustClusters(std::vector<std::unique_ptr<TCluster>> & tr) {
 //******************************************************************************
-  std::vector<TCluster*> result;
+  std::vector<std::unique_ptr<TCluster>> result;
   // sort clusters in increasing order
-  sort(tr.begin(), tr.end(), [](TCluster* cl1,
-                                TCluster* cl){
-                                  return  cl1->GetCharge() < cl->GetCharge();});
+  sort(tr.begin(), tr.end(), [](std::unique_ptr<TCluster> & cl1,
+                                      std::unique_ptr<TCluster> & cl) {
+                                        return  cl1->GetCharge() < cl->GetCharge();});
 
   // truncation cut
   /* NO TRUNCATION */
@@ -518,7 +518,7 @@ std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr
   auto i_max = (int)round(frac * (double)tr.size());
   result.reserve(i_max);
   for (auto i = 0; i < i_max; ++i) {
-    result.push_back(tr[i]);
+    result.push_back(std::move(tr[i]));
   }
   /* */
 
@@ -564,20 +564,20 @@ std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr
 
   // sort by X for return
   sort(result.begin(), result.end(),
-       [&](TCluster* cl1, TCluster* cl2){
+       [&](std::unique_ptr<TCluster> & cl1, std::unique_ptr<TCluster> & cl2){
           return cl1->GetX() < cl2->GetX();
         });
   return result;
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) const {
+std::vector<std::unique_ptr<TCluster>> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) const {
 //******************************************************************************
   if (!_clustering) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
     exit(1);
   }
-  std::vector<TCluster*> cluster_v;
+  std::vector<std::unique_ptr<TCluster>> cluster_v;
   for (auto pad:tr) {
     auto col_id = pad->GetCol(_invert);
     auto row_id = pad->GetRow(_invert);
@@ -590,14 +590,14 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) 
     auto cons = _clustering->GetConstant(row_id, col_id);
 
     // search if the cluster is already considered
-    std::vector<TCluster*>::iterator it;
+    std::vector<std::unique_ptr<TCluster>>::iterator it;
     for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
-      if (!((*(*it))[0])) {
+      if (!(**it)[0]) {
         continue;
       }
 
-      auto cluster_col = (*(*it))[0]->GetCol(_invert);
-      auto cluster_row = (*(*it))[0]->GetRow(_invert);
+      auto cluster_col = (**it)[0]->GetCol(_invert);
+      auto cluster_row = (**it)[0]->GetRow(_invert);
       if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
         (*it)->AddHit(pad);
         (*it)->AddCharge(pad->GetQ());
@@ -613,10 +613,10 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) 
     } // loop over track clusters
     // add new cluster
     if (it == cluster_v.end()) {
-      auto* first_cluster = new TCluster(pad);
+      auto first_cluster = std::make_unique<TCluster>(pad);
       first_cluster->SetX((float_t) geom::GetXposPad(pad, _invert, _clustering->angle));
       first_cluster->SetCharge(pad->GetQ());
-      cluster_v.push_back(first_cluster);
+      cluster_v.push_back(std::move(first_cluster));
     }
   } // over pads
 

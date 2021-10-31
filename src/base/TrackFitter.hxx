@@ -103,7 +103,7 @@ public:
                      );
 
   /// Track fitter
-  TF1* FitTrack(const std::vector<TCluster*>& clusters,
+  TF1* FitTrack(const std::vector<std::unique_ptr<TCluster>>& clusters,
                 const int& miss_id = -1
                 );
 

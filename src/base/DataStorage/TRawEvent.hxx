@@ -9,8 +9,8 @@
 class TRawEvent : public TObject{
  public:
   //ctor
-  explicit TRawEvent(): ID(0) {;}
-  explicit TRawEvent(Int_t var): ID(var) {;}
+  explicit TRawEvent(): ID(0) {}
+  explicit TRawEvent(Int_t var): ID(var) {}
   explicit TRawEvent(const TRawEvent* event);
   // dtor
   ~TRawEvent() override;

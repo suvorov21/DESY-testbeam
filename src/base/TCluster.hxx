@@ -20,31 +20,27 @@ class TCluster {
   void AddCharge(Int_t q) {_charge += q;}
 
   /// Get vector of hits
-  std::vector<THit*> GetHits() const {return _hits;}
+  auto GetHits() const {return _hits;}
   /// Get size of the cluster == number of hits
-  Ssiz_t GetSize() const {return _hits.size();}
+  auto GetSize() const {return _hits.size();}
   /// array operator
-  THit* operator[](size_t n) { return _hits[n]; }
+  THit* operator[](size_t index);
 
   /// loop iterator starting point
-  typename std::vector<THit*>::iterator begin() {
-    return _hits.begin();
-  }
+  typename std::vector<THit*>::iterator begin();
 
   /// loop iterator end
-  typename std::vector<THit*>::iterator end() {
-    return _hits.end();
-  }
+  typename std::vector<THit*>::iterator end();
 
   Float_t GetX() const {return _x;}
   Float_t GetY() const {return _y;}
-  Float_t GetYE() {return _y_error;}
+  Float_t GetYE() const {return _y_error;}
 
   Int_t GetCharge() const {return _charge;}
 
   TCluster();
   explicit TCluster(THit* pad);
-  virtual ~TCluster() {;}
+  virtual ~TCluster() = default;
 
  private:
   std::vector<THit*> _hits;               // all hits.
