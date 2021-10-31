@@ -221,7 +221,7 @@ bool DBSCANReconstruction::FillOutput(TEvent* event,
                                       std::vector<DB_Cluster> clusters
                                       ){
   if(!nodes.size()) return false;
-  std::vector<THit*> unusedHits;
+  std::vector<std::shared_ptr<THit>> unusedHits;
   std::vector<int> usedHits;
   usedHits.resize(nodes.size(),0);
   // store selected hits
@@ -239,9 +239,8 @@ bool DBSCANReconstruction::FillOutput(TEvent* event,
 
   // stored unselected hits
   for (uint i = 0; i<nodes.size(); i++){
-    Node n = nodes[i];
     // std::vector<int> wf_v = FillWFs(event, n);
-    if(!usedHits[i]) event->AddUnusedHit(n.hit);
+    if(!usedHits[i]) event->AddUnusedHit(nodes[i].hit);
   }
 
   return true;

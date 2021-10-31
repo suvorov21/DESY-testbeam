@@ -16,21 +16,21 @@ class TEvent: public TRawEvent {
   // dtor
   ~TEvent() override {;}
   // getters
-  std::vector <THit*>   GetUsedHits()   const  {return fUsedHits;}
-  std::vector <THit*>   GetUnusedHits() const  {return fUnusedHits;}
+  std::vector <std::shared_ptr<THit>>   GetUsedHits()   const  {return fUsedHits;}
+  std::vector <std::shared_ptr<THit>>   GetUnusedHits() const  {return fUnusedHits;}
   // setters
-  void SetUsedHits(const std::vector <THit*>& inhits )    {fUsedHits = inhits;}
-  void SetUnusedHits(const std::vector <THit*>& inhits)   {fUnusedHits = inhits;}
+  void SetUsedHits(const std::vector <std::shared_ptr<THit>>& inhits )    {fUsedHits = inhits;}
+  void SetUnusedHits(const std::vector<std::shared_ptr<THit>>& inhits)   {fUnusedHits = inhits;}
   void SetID(Int_t var) override {ID = var;}
 
-  void AddUsedHit(THit* hit)   {fUsedHits.push_back(hit);}
-  void AddUnusedHit(THit* hit) {fUnusedHits.push_back(hit);}
+  void AddUsedHit(std::shared_ptr<THit> hit)   {fUsedHits.push_back(hit);}
+  void AddUnusedHit(std::shared_ptr<THit> hit) {fUnusedHits.push_back(hit);}
 
  private:
   /// tracks coming out of reconstruction
-  std::vector <THit*>   fUsedHits;
+  std::vector <std::shared_ptr<THit>>   fUsedHits;
   /// unused hits.
-  std::vector <THit*>   fUnusedHits;
+  std::vector <std::shared_ptr<THit>>   fUnusedHits;
 };
 
 #endif

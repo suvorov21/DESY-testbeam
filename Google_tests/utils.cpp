@@ -48,8 +48,8 @@ TEST(fitterTest, exepFitterBase) {
 
 TEST(fitterTest, exepEmptyPRF) {
   auto fitter = new TrackFitCern();
-  std::vector<THit*> col;
-  col.emplace_back(new THit());
+  std::vector<std::shared_ptr<THit>> col;
+  col.emplace_back(std::make_shared<THit>());
   col[0]->SetQ(10);
   EXPECT_THROW(fitter->FitCluster(col, 0, 0), std::logic_error);
 }

@@ -17,7 +17,7 @@ const int MAX_NODES = 200;
 const int MAX_NODES_TOT = 300;
 
 struct Node{
-    THit* hit;
+    std::shared_ptr<THit> hit;
     int  c = -999;  // cluster ID
     int id = -999;  // node ID
 };

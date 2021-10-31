@@ -97,7 +97,7 @@ public:
                                 nullptr, 0.) {};
 
   /// Cluster fitter
-  Double_t FitCluster(const std::vector<THit*>& col,
+  Double_t FitCluster(const std::vector<std::shared_ptr<THit>>& col,
                      const int& cluster,
                      const double& pos
                      );

@@ -58,7 +58,7 @@ TrackFitCern::TrackFitCern(TrackShape shape,
 }
 
 //******************************************************************************
-Double_t TrackFitCern::FitCluster(const std::vector<THit*>& col,
+Double_t TrackFitCern::FitCluster(const std::vector<std::shared_ptr<THit>>& col,
                                   const int& cluster,
                                   const double& pos) {
 //******************************************************************************

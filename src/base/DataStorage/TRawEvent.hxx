@@ -16,18 +16,18 @@ class TRawEvent : public TObject{
   ~TRawEvent() override;
   // getters
   UInt_t GetID() const  {return ID;}
-  std::vector <THit*>   GetHits()       const  {return fHits;}
+  std::vector <std::shared_ptr<THit>>   GetHits()       const  {return fHits;}
   // setters
-  void SetHits(const std::vector <THit*>& inhits )        {fHits = inhits;}
+  void SetHits(const std::vector<std::shared_ptr<THit>>& inhits )        {fHits = inhits;}
   virtual void SetID(Int_t var) {ID = var;}
 
-  void AddHit(THit* hit) {fHits.push_back(hit);}
+  void AddHit(const std::shared_ptr<THit>& hit) {fHits.push_back(hit);}
 
   ClassDef (TRawEvent,1);
 
  protected:
   /// vector of hits in event
-  std::vector <THit*> fHits;
+  std::vector <std::shared_ptr<THit>> fHits;
 
   /// Event Id
   UInt_t ID;

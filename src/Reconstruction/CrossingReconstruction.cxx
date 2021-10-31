@@ -355,7 +355,7 @@ bool CrossingReconstruction::SelectEvent(const Int_t padAmpl[geom::nPadx][geom::
   for (auto x = 0; x < geom::nPadx; ++x) {
     for (auto y = 0; y < geom::nPady; ++y) {
       if (track_container[trackId][x][y]) {
-        THit* hit = new THit();
+        auto hit = std::make_shared<THit>();
         hit->SetQ(track_container[trackId][x][y]);
         hit->SetCol(x);
         hit->SetRow(y);

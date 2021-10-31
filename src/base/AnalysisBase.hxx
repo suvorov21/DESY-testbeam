@@ -130,7 +130,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = const and so on.
   */
-  std::vector<std::unique_ptr<TCluster>> ClusterTrack(const std::vector<THit*> &tr) const;
+  std::vector<std::unique_ptr<TCluster>> ClusterTrack(const std::vector<std::shared_ptr<THit>> &tr) const;
 
   /************************** Utilities functions *****************************/
 

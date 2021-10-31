@@ -8,7 +8,7 @@
 //! It contains vector of hits associated with this cluster.
 class TCluster {
  public:
-  void AddHit(THit* hit) {_hits.push_back(hit);};
+  void AddHit(std::shared_ptr<THit> hit) {_hits.push_back(hit);};
   void SetX(Float_t x) {_x = x;}
   void SetY(Float_t y) {_y = y;}
   void SetYE(Float_t ye) {_y_error = ye;}
@@ -24,13 +24,13 @@ class TCluster {
   /// Get size of the cluster == number of hits
   auto GetSize() const {return _hits.size();}
   /// array operator
-  THit* operator[](size_t index);
+  std::shared_ptr<THit> operator[](size_t index);
 
   /// loop iterator starting point
-  typename std::vector<THit*>::iterator begin();
+  typename std::vector<std::shared_ptr<THit>>::iterator begin();
 
   /// loop iterator end
-  typename std::vector<THit*>::iterator end();
+  typename std::vector<std::shared_ptr<THit>>::iterator end();
 
   Float_t GetX() const {return _x;}
   Float_t GetY() const {return _y;}
@@ -39,11 +39,11 @@ class TCluster {
   Int_t GetCharge() const {return _charge;}
 
   TCluster();
-  explicit TCluster(THit* pad);
+  explicit TCluster(std::shared_ptr<THit> pad);
   virtual ~TCluster() = default;
 
  private:
-  std::vector<THit*> _hits;               // all hits.
+  std::vector<std::shared_ptr<THit>> _hits;               // all hits.
   Float_t _x;
   Float_t _y;
   Float_t _y_error;

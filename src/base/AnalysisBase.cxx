@@ -282,7 +282,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
-          auto hit = new THit(x, y);
+          auto hit = std::make_shared<THit>(x, y);
           // std::vector<int> adc;
           auto Qmax = -1;
           auto Tmax = -1;
@@ -322,7 +322,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
             hit->SetTime(Tmax);
             _event->AddHit(hit);
           } else {
-            delete hit;
+            hit.reset();
           }
         } // over Y
       } // over X
@@ -571,7 +571,7 @@ std::vector<std::unique_ptr<TCluster>> AnalysisBase::GetRobustClusters(std::vect
 }
 
 //******************************************************************************
-std::vector<std::unique_ptr<TCluster>> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) const {
+std::vector<std::unique_ptr<TCluster>> AnalysisBase::ClusterTrack(const std::vector<std::shared_ptr<THit>> &tr) const {
 //******************************************************************************
   if (!_clustering) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
