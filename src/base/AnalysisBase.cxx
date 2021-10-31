@@ -464,13 +464,14 @@ void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
 }
 
 //******************************************************************************
-std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) {
+std::vector<std::shared_ptr<THit>> AnalysisBase::GetRobustPadsInCluster(std::vector<std::shared_ptr<THit>> col) {
 //******************************************************************************
-  std::vector<THit*> result;
+  std::vector<std::shared_ptr<THit>> result;
   // sort in charge decreasing order
-  sort(col.begin(), col.end(), [](THit* hit1, THit* hit2) {return hit1->GetQ() > hit2->GetQ();});
+  sort(col.begin(), col.end(), [](const std::shared_ptr<THit> & hit1,
+                                  const std::shared_ptr<THit> & hit2) {return hit1->GetQ() > hit2->GetQ();});
 
-  for (auto pad : col) {
+  for (const auto& pad : col) {
     auto q      = pad->GetQ();
     if (!q)
       continue;

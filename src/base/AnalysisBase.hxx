@@ -104,7 +104,7 @@ class AnalysisBase {
    * Another use case is to ommit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
-  static std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
+  static std::vector<std::shared_ptr<THit>> GetRobustPadsInCluster(std::vector<std::shared_ptr<THit>> col);
   /// Return only robust clusters
   /** E.g. apply a truncation - omit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.

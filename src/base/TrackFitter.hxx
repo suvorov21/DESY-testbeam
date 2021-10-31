@@ -37,7 +37,7 @@ public:
                   bool invert,
                   int verbose,
                   int it);
-  virtual ~TrackFitterBase() {;}
+  virtual ~TrackFitterBase() = default;
 
   /// set the shape of the track
   void SetTrackShape(TrackShape shape) {_shape = shape;};
@@ -47,7 +47,12 @@ public:
   /// General function for fitting the whole track
   virtual TF1* FitTrack();
 
-  TrackFitterBase(const TrackFitterBase& fit) {
+  TrackFitterBase(const TrackFitterBase& fit): _circle_function(nullptr),
+                                                _iteration(0),
+                                                _verbose(0),
+                                                _invert(false),
+                                                _shape(arc)
+  {
     (void)fit;
     std::cerr << "Copy constructor is depricated" << std::endl; exit(1);
   }
@@ -89,7 +94,7 @@ public:
                TH1F* PRF_time_error,
                Float_t angle
                );
-  ~TrackFitCern() override {;}
+  ~TrackFitCern() override = default;
 
   TrackFitCern() : TrackFitCern(TrackFitterBase::arc, false, 0, 0,
                                 nullptr, nullptr, 0.,

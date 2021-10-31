@@ -10,4 +10,4 @@ TRawEvent::~TRawEvent() {
 
 TRawEvent::TRawEvent(const TRawEvent* event) :
   fHits(event->fHits),
-  ID(event->GetID()) {;}
+  ID(event->GetID()) {}

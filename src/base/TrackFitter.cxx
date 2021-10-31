@@ -65,7 +65,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<std::shared_ptr<THit>>& col,
 //  auto t_leading = -1;
   auto maxQ = -1;
   // WARNING pads should be already sorted
-  for (auto pad:col) {
+  for (auto & pad:col) {
     if (pad->GetQ() > maxQ) {
       maxQ = pad->GetQ();
 //      t_leading = pad->GetTime();
@@ -77,7 +77,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<std::shared_ptr<THit>>& col,
     // looping at the graph points
     double chi2 = 0;
 
-    for (auto pad:col) {
+    for (auto & pad:col) {
       auto q      = pad->GetQ();
       auto colId  = pad->GetCol(_invert);
       if (!q)

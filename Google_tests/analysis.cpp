@@ -6,6 +6,7 @@
 
 auto GetDummyEvent() {
   auto event = new TEvent();
+  event->SetID(2);
   auto hit = std::make_shared<THit>(10, 10, 200, 20);
   event->AddUsedHit(hit);
   return event;

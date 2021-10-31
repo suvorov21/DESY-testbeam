@@ -807,12 +807,12 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _clust_pos[clusterId] = (float_t)track_pos[clusterId];
       // WARNING temp
       auto it_main = std::max_element((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-                                      [](const THit* n1, const THit* n2) { return n1->GetQ() < n2->GetQ(); });
+                                      [](const std::shared_ptr<THit>& n1, const std::shared_ptr<THit>& n2) { return n1->GetQ() < n2->GetQ(); });
       auto main_row = (*it_main)->GetRow(_invert);
       auto it_up = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-                                    [&](const THit* h1) { return h1->GetRow(_invert) == main_row + 1; });
+                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row + 1; });
       auto it_bt = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-                                    [&](const THit* h1) { return h1->GetRow(_invert) == main_row - 1; });
+                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row - 1; });
 
       // for (auto ii = 0; ii < robust_clusters[clusterId]->GetSize(); ++ii)
       //   std::cout << (*robust_clusters[clusterId])[ii]->GetRow(_invert) << "   ";

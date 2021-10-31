@@ -44,7 +44,7 @@ class THit : public TObject{
     fw = -999;
   }
   // dtor
-  ~THit() override {;}
+  ~THit() override = default;
   // setters
   void SetRow(int row)    {fRow = row;}
   void SetCol(int col)    {fColumn = col;}

@@ -32,11 +32,11 @@ struct DB_Cluster{
 class DBSCANReconstruction: public ReconstructionBase {
  public:
   DBSCANReconstruction();
-  virtual ~DBSCANReconstruction() {;}
+  ~DBSCANReconstruction() override = default;
 
-  virtual bool Initialize(int verbose);
+  bool Initialize(int verbose) override;
   /// Main function of the reconstruction
-  virtual bool SelectEvent(TEvent* event);
+  bool SelectEvent(TEvent* event) override;
   /// Fill THits with maximum amplitude and time. Create Nodes
   std::vector<Node> FillNodes(TEvent* event);
   /// Merge nodes Nodes clusters
