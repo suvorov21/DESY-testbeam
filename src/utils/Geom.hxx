@@ -7,7 +7,7 @@
 #include "TMath.h"
 /** @endcond */
 
-#include "THit.hxx"
+#include "TRawEvent.hxx"
 
 //           31 ___________
 //             |           |
@@ -52,8 +52,8 @@ namespace geom
     static const int Nsamples = 511;
     static const int Nsamples_saclay = 510;
 
-    Double_t GetYposPad(const std::shared_ptr<THit>& h, bool invert = false, Float_t angle = 0);
-    Double_t GetXposPad(const std::shared_ptr<THit>& h, bool invert = false, Float_t angle = 0);
+    Double_t GetYposPad(const THitPtr& h, bool invert = false, Float_t angle = 0);
+    Double_t GetXposPad(const THitPtr& h, bool invert = false, Float_t angle = 0);
 
     Double_t GetYpos(int it_y, bool invert = false);
 

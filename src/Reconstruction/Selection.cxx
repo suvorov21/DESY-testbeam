@@ -4,7 +4,7 @@
 #include "Selection.hxx"
 
 //******************************************************************************
-bool sel::CrossingTrackSelection( const std::vector<std::unique_ptr<TCluster>> &track,
+bool sel::CrossingTrackSelection( const TClusterPtrVec &track,
                                   const int  &max_mult,
                                   const bool &cut_gap,
                                   const float &max_phi,
@@ -32,11 +32,11 @@ bool sel::CrossingTrackSelection( const std::vector<std::unique_ptr<TCluster>> &
 }
 
 //******************************************************************************
-int sel::GetMaxMultiplicity(const std::vector<std::unique_ptr<TCluster>> &track) {
+int sel::GetMaxMultiplicity(const TClusterPtrVec &track) {
 //******************************************************************************
   auto it_max = std::max_element(track.begin(), track.end(),
-                       [](const std::unique_ptr<TCluster> & cl1,
-                                const std::unique_ptr<TCluster> & cl2) {
+                       [](const TClusterPtr & cl1,
+                                const TClusterPtr & cl2) {
                                   return cl1->GetSize() < cl2->GetSize();
                         });
   if (it_max != track.end())
@@ -45,13 +45,13 @@ int sel::GetMaxMultiplicity(const std::vector<std::unique_ptr<TCluster>> &track)
 }
 
 //******************************************************************************
-bool sel::GetNoGap(const std::vector<std::unique_ptr<TCluster>> &track,
+bool sel::GetNoGap(const TClusterPtrVec &track,
                    const bool &invert) {
 //******************************************************************************
   for(auto & cluster:track) if(cluster->GetSize()){
     std::vector<int> row;
     std::vector<int> col;
-    for (auto pad:*cluster) if (pad) {
+    for (const auto& pad:*cluster) if (pad) {
       row.push_back(pad->GetRow(invert));
       col.push_back(pad->GetCol(invert));
     } // loop over pads
@@ -81,7 +81,7 @@ bool sel::GetNoGap(const std::vector<std::unique_ptr<TCluster>> &track,
 }
 
 //******************************************************************************
-double sel::GetLinearPhi(const std::vector<std::unique_ptr<TCluster>> &track,
+double sel::GetLinearPhi(const TClusterPtrVec &track,
                         bool invert) {
 //******************************************************************************
   std::vector <double> par = sel::GetFitParams(track, invert);
@@ -89,7 +89,7 @@ double sel::GetLinearPhi(const std::vector<std::unique_ptr<TCluster>> &track,
 }
 
 //******************************************************************************
-double sel::GetLinearTheta(const std::vector<std::unique_ptr<TCluster>> &track,
+double sel::GetLinearTheta(const TClusterPtrVec &track,
                           bool invert) {
 //******************************************************************************
   std::vector <double> par = sel::GetFitParamsXZ(track, invert);
@@ -97,7 +97,7 @@ double sel::GetLinearTheta(const std::vector<std::unique_ptr<TCluster>> &track,
 }
 
 //******************************************************************************
-std::vector <double> sel::GetFitParams(const std::vector<std::unique_ptr<TCluster>> &track,
+std::vector <double> sel::GetFitParams(const TClusterPtrVec &track,
                                        bool invert) {
 //******************************************************************************
   std::vector <double> params;
@@ -136,7 +136,7 @@ std::vector <double> sel::GetFitParams(const std::vector<std::unique_ptr<TCluste
 
 
 //******************************************************************************
-std::vector <double> sel::GetFitParamsXZ(const std::vector<std::unique_ptr<TCluster>> &track,
+std::vector <double> sel::GetFitParamsXZ(const TClusterPtrVec &track,
                                          bool invert) {
 //******************************************************************************
   std::vector <double> params;

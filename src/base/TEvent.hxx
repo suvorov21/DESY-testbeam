@@ -16,21 +16,21 @@ class TEvent: public TRawEvent {
   // dtor
   ~TEvent() override {;}
   // getters
-  std::vector <std::shared_ptr<THit>>   GetUsedHits()   const  {return fUsedHits;}
-  std::vector <std::shared_ptr<THit>>   GetUnusedHits() const  {return fUnusedHits;}
+  THitPtrVec   GetUsedHits()   const  {return fUsedHits;}
+  THitPtrVec   GetUnusedHits() const  {return fUnusedHits;}
   // setters
-  void SetUsedHits(const std::vector <std::shared_ptr<THit>>& inhits )    {fUsedHits = inhits;}
-  void SetUnusedHits(const std::vector<std::shared_ptr<THit>>& inhits)   {fUnusedHits = inhits;}
+  void SetUsedHits(const THitPtrVec& inhits )    {fUsedHits = inhits;}
+  void SetUnusedHits(const THitPtrVec& inhits)   {fUnusedHits = inhits;}
   void SetID(Int_t var) override {ID = var;}
 
-  void AddUsedHit(std::shared_ptr<THit> hit)   {fUsedHits.push_back(hit);}
-  void AddUnusedHit(std::shared_ptr<THit> hit) {fUnusedHits.push_back(hit);}
+  void AddUsedHit(const THitPtr& hit)   {fUsedHits.push_back(hit);}
+  void AddUnusedHit(const THitPtr& hit) {fUnusedHits.push_back(hit);}
 
  private:
   /// tracks coming out of reconstruction
-  std::vector <std::shared_ptr<THit>>   fUsedHits;
+  THitPtrVec   fUsedHits;
   /// unused hits.
-  std::vector <std::shared_ptr<THit>>   fUnusedHits;
+  THitPtrVec   fUnusedHits;
 };
 
 #endif

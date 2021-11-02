@@ -40,24 +40,24 @@ class DBSCANReconstruction: public ReconstructionBase {
   /// Fill THits with maximum amplitude and time. Create Nodes
   std::vector<Node> FillNodes(TEvent* event);
   /// Merge nodes Nodes clusters
-  std::vector<Node> FindClusters(std::vector<Node> raw_nodes);
+  std::vector<Node> FindClusters(std::vector<Node>& raw_nodes);
 
 
   // virtual std::vector<int> FillWFs(const TEvent* event, Node n);
-  virtual double MeasureDistance(Node a, Node b);
+  virtual double MeasureDistance(const Node& a, const Node& b);
 
   /// Search for large enough clusters
-  virtual std::vector<DB_Cluster> FindClustersLargerThan(std::vector<Node> nodes,
+  virtual std::vector<DB_Cluster> FindClustersLargerThan(const std::vector<Node>& nodes,
                                                          int minNodes
                                                          );
   /// Assotiate nodes with clusters
-  virtual std::vector <Node> UpdateNodes(std::vector <DB_Cluster> clusters,
-                                         std::vector <Node> nodes);
-  virtual void DrawNodes(std::vector<Node> nodes);
+  virtual std::vector <Node> UpdateNodes(const std::vector <DB_Cluster> & clusters,
+                                         std::vector <Node> & nodes);
+  virtual void DrawNodes(const std::vector<Node>& nodes);
   /// Store the output in TEven format
   virtual bool FillOutput(TEvent* event,
-                          std::vector<Node> nodes,
-                          std::vector<DB_Cluster> clusters);
+                          const std::vector<Node>& nodes,
+                          const std::vector<DB_Cluster>& clusters);
 
  private:
 

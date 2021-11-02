@@ -16,7 +16,7 @@ namespace sel
   * "Gap" is defined as a missed column or a row in the cluster, while hits
   * around this "missed pad" are detected.
   */
-  bool                 CrossingTrackSelection(const std::vector<std::unique_ptr<TCluster>> &track,
+  bool                 CrossingTrackSelection(const TClusterPtrVec &track,
                                               const int  &max_mult  = 6,
                                               const bool &cut_gap   = true,
                                               const float &max_phi  = -1.,
@@ -25,25 +25,25 @@ namespace sel
                                               const int  &verbose   = 0);
 
   /// Return a maximum cluster multiplicity of the track
-  int               GetMaxMultiplicity (const std::vector<std::unique_ptr<TCluster>> &track);
+  int               GetMaxMultiplicity (const TClusterPtrVec &track);
   /// Look if there a gap in the clusters (missed row/column)
-  bool                  GetNoGap       (const std::vector<std::unique_ptr<TCluster>> &track,
+  bool                  GetNoGap       (const TClusterPtrVec &track,
                                         const bool &invert = false);
 
   /// Fit the track with a linear approximation
-  std::vector <double> GetFitParams  (const std::vector<std::unique_ptr<TCluster>> &track,
+  std::vector <double> GetFitParams  (const TClusterPtrVec &track,
                                       bool invert = false);
 
   /// Fit the track in the plane perpendicular to MM
-  std::vector <double> GetFitParamsXZ(const std::vector<std::unique_ptr<TCluster>> &track,
+  std::vector <double> GetFitParamsXZ(const TClusterPtrVec &track,
                                       bool invert = false);
 
   /// Get the track angle within the MM plane
-  double GetLinearPhi(const std::vector<std::unique_ptr<TCluster>> &track,
+  double GetLinearPhi(const TClusterPtrVec &track,
                      bool invert = false);
 
   /// Get the track angle w.r.t. MM
-  double GetLinearTheta(const std::vector<std::unique_ptr<TCluster>> &track,
+  double GetLinearTheta(const TClusterPtrVec &track,
                        bool invert = false);
 
   // 25 MHz --> 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin

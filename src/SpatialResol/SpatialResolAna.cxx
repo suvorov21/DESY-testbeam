@@ -639,7 +639,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 // ************** See steps documentation in the README.md file ****************
 // *******************  STEP 1 *************************************************
 
-  std::vector<std::unique_ptr<TCluster>> clusters;
+  TClusterPtrVec clusters;
   clusters = ClusterTrack(track_hits);
 
   if (_verbose >= v_analysis_steps)
@@ -668,7 +668,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       return false;
     // clean first and last cluster
     sort(clusters.begin(), clusters.end(),
-         [&](std::unique_ptr<TCluster> & cl1, std::unique_ptr<TCluster> & cl2){
+         [&](TClusterPtr & cl1, TClusterPtr & cl2){
             return cl1->GetX() < cl2->GetX();
           });
     clusters.erase(clusters.begin(), clusters.begin() + 1);
@@ -695,11 +695,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
   std::vector <double> QsegmentS; QsegmentS.clear();
   std::vector <int> pad_wf_v; //WF
 
-  //if (robust_clusters.size() < 30) continue;
-        //continue;
-
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
-//    auto cluster = robust_clusters[clusterId];
     if (!(*robust_clusters[clusterId])[0])
       continue;
 
@@ -721,6 +717,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
       // treat cross-talk
       // not for the first pad
+      // TODO move to a separate function
       if (pad != robust_pads[0] && _cross_talk_treat != def) {
         auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
         auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
@@ -772,9 +769,9 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
 
       //dEdx part
-    	pad_wf_v.clear();
+      pad_wf_v.clear();
 
-      colQ+= pad->GetQ();
+      colQ += pad->GetQ();
 
       _pad_charge[clusterId][padId] = pad->GetQ();
       _pad_time[clusterId][padId] = pad->GetTime();
@@ -782,8 +779,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       _pad_y[clusterId][padId] = pad->GetRow(_invert);
       _wf_width[clusterId][padId] = pad->GetWidth();
       _wf_fwhm[clusterId][padId] = pad->GetFWHM();
-
-      //if (_pad_charge[clusterId][padId] <= 0) continue;
 
        if (_to_store_wf) {
            for (int tz = 0; tz < geom::Nsamples; ++tz) {
@@ -814,16 +809,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       auto it_bt = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
                                     [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row - 1; });
 
-      // for (auto ii = 0; ii < robust_clusters[clusterId]->GetSize(); ++ii)
-      //   std::cout << (*robust_clusters[clusterId])[ii]->GetRow(_invert) << "   ";
-      // std::cout << std::endl;
-
       if (it_up != (*robust_clusters[clusterId]).end() && it_bt != (*robust_clusters[clusterId]).end()) {
-        // std::cout << main_row << "\t" << (*it_up)->GetRow() << "\t" << (*it_bt)->GetRow() << std::endl;
         Float_t r_up = (Float_t)(*it_up)->GetQ() / (Float_t)(*it_main)->GetQ();
         Float_t r_bt = (Float_t )(*it_bt)->GetQ() / (Float_t)(*it_main)->GetQ();
         if (r_up > _prf_function->GetMinimum() && r_bt > _prf_function->GetMinimum()) {
-          // r_up = PRF(x-x_pad) / PRF(x - x_pad+1)
           auto minimisator = [&](const Double_t *par) {
             if (abs(par[1]) < 1e-6)
               return abs(r_up - _prf_function->Eval(geom::GetYposPad((*it_up)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
@@ -840,9 +829,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
           const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
           if (ok && r_up > 0.04)
             _fit_up[clusterId] = (Float_t)result_cluster.GetParams()[0];
-
-          // if (_fit_up[clusterId] > -0.009 && _fit_up[clusterId] < -0.0087)
-          //   std::cout << r_up << "\t" << _fit_up[clusterId] << "\t" << _prf_function->Eval(geom::GetYposPad((*it_up)) - _fit_up[clusterId]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - _fit_up[clusterId]) << std::endl;
 
           pStart[0] = geom::GetYposPad((*it_main));
           pStart[1] = false;
@@ -861,7 +847,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     robust_clusters[clusterId]->SetCharge(_charge[clusterId]);
 
     if (_verbose >= v_fit_details) {
-      for (auto pad:*robust_clusters[clusterId]) {
+      for (const auto& pad:*robust_clusters[clusterId]) {
         std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
       }
       std::cout << std::endl;
@@ -879,24 +865,10 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (_clustering->n_pads > 0)
         robust_clusters[clusterId]->SetYE(0.0008);
       else {
-        /** DEV VERSION */
-        // auto half_size = 0.5 * geom::dy;
-        // auto dx_from_side = fmod(abs(robust_clusters[clusterId]->GetY()), geom::dy);
-        // if (dx_from_side > half_size)
-        //   dx_from_side -= half_size;
-        // else
-        //   dx_from_side = half_size - dx_from_side;
-        // auto dy = 200 - 100 * dx_from_side / half_size;
-        // dy *= 1e-6;
-        // robust_clusters[clusterId]->SetYE(dy);
-        /** END OF DEV */
-
-        /** OLD VERSION below */
         if (_iteration)
           robust_clusters[clusterId]->SetYE(_uncertainty);
         else
           robust_clusters[clusterId]->SetYE(0.001);
-
       }
     }
 
@@ -908,12 +880,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
       if (colQ) QsegmentS.push_back(colQ);
 
   } // loop over clusters
-
-//  std::vector<TCluster*> clusters_clean;
-//
-//  clusters_clean.reserve(robust_clusters.size());
-//  for (auto & cluster:robust_clusters)
-//    clusters_clean.push_back(cluster);
 
   if (_verbose >= v_analysis_steps) {
     std::cout << "Loop over columns done" << std::endl;
@@ -927,7 +893,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
     float CT= totQ / (alpha * QsegmentS.size());
 
-    //_npoints = QsegmentS.size();
     _dEdx = CT;
     _hdEdx->Fill(CT);
 
@@ -982,7 +947,6 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
 
     double a = fit->GetParameter(2);
     double b = fit->GetParameter(1);
-    // double c = fit->GetParameter(0);
 
     double x0 = - b * (x2-x1) + a*x2*x2 + b*x2 - a*x1*x1 - b*x1 ;
     x0 /= 2*a*(x2-x1);
@@ -1069,7 +1033,7 @@ bool SpatialResolAna::ProcessEvent(const TEvent* event) {
     auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
     int padId = 0;
 
-    for (auto pad:robust_pads) {
+    for (const auto& pad:robust_pads) {
       if (!pad)
         continue;
 
@@ -1557,7 +1521,7 @@ TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
   }
 
   // sel hits
-  for (auto h:event->GetHits()){
+  for (const auto& h:event->GetHits()){
     if(!h->GetQ()) continue;
     event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
     MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());

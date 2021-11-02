@@ -418,7 +418,7 @@ void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
   //}
 
   // sel hits
-  for (auto h:event->GetUsedHits()){
+  for (const auto& h:event->GetUsedHits()){
     if(!h->GetQ()) continue;
     event3D->Fill((Float_t)h->GetTime(),(Float_t)h->GetRow(),(Float_t)h->GetCol(), (Float_t)h->GetQ());
     MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
@@ -464,12 +464,14 @@ void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
 }
 
 //******************************************************************************
-std::vector<std::shared_ptr<THit>> AnalysisBase::GetRobustPadsInCluster(std::vector<std::shared_ptr<THit>> col) {
+THitPtrVec AnalysisBase::GetRobustPadsInCluster(THitPtrVec col) {
 //******************************************************************************
   std::vector<std::shared_ptr<THit>> result;
   // sort in charge decreasing order
   sort(col.begin(), col.end(), [](const std::shared_ptr<THit> & hit1,
-                                  const std::shared_ptr<THit> & hit2) {return hit1->GetQ() > hit2->GetQ();});
+                                  const std::shared_ptr<THit> & hit2) {
+    return hit1->GetQ() > hit2->GetQ();
+  });
 
   for (const auto& pad : col) {
     auto q      = pad->GetQ();
@@ -505,12 +507,12 @@ std::vector<std::shared_ptr<THit>> AnalysisBase::GetRobustPadsInCluster(std::vec
 }
 
 //******************************************************************************
-std::vector<std::unique_ptr<TCluster>> AnalysisBase::GetRobustClusters(std::vector<std::unique_ptr<TCluster>> & tr) {
+TClusterPtrVec AnalysisBase::GetRobustClusters(TClusterPtrVec & tr) {
 //******************************************************************************
-  std::vector<std::unique_ptr<TCluster>> result;
+  TClusterPtrVec result;
   // sort clusters in increasing order
-  sort(tr.begin(), tr.end(), [](std::unique_ptr<TCluster> & cl1,
-                                      std::unique_ptr<TCluster> & cl) {
+  sort(tr.begin(), tr.end(), [](TClusterPtr & cl1,
+                                TClusterPtr & cl) {
                                         return  cl1->GetCharge() < cl->GetCharge();});
 
   // truncation cut
@@ -565,21 +567,21 @@ std::vector<std::unique_ptr<TCluster>> AnalysisBase::GetRobustClusters(std::vect
 
   // sort by X for return
   sort(result.begin(), result.end(),
-       [&](std::unique_ptr<TCluster> & cl1, std::unique_ptr<TCluster> & cl2){
+       [&](TClusterPtr & cl1, TClusterPtr & cl2){
           return cl1->GetX() < cl2->GetX();
         });
   return result;
 }
 
 //******************************************************************************
-std::vector<std::unique_ptr<TCluster>> AnalysisBase::ClusterTrack(const std::vector<std::shared_ptr<THit>> &tr) const {
+TClusterPtrVec AnalysisBase::ClusterTrack(const THitPtrVec &tr) const {
 //******************************************************************************
   if (!_clustering) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
     exit(1);
   }
-  std::vector<std::unique_ptr<TCluster>> cluster_v;
-  for (auto pad:tr) {
+  TClusterPtrVec cluster_v;
+  for (const auto& pad:tr) {
     auto col_id = pad->GetCol(_invert);
     auto row_id = pad->GetRow(_invert);
 
@@ -591,7 +593,7 @@ std::vector<std::unique_ptr<TCluster>> AnalysisBase::ClusterTrack(const std::vec
     auto cons = _clustering->GetConstant(row_id, col_id);
 
     // search if the cluster is already considered
-    std::vector<std::unique_ptr<TCluster>>::iterator it;
+    TClusterPtrVec::iterator it;
     for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
       if (!(**it)[0]) {
         continue;
@@ -605,7 +607,7 @@ std::vector<std::unique_ptr<TCluster>> AnalysisBase::ClusterTrack(const std::vec
         /** update X position */
         auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
         auto mult  = (*it)->GetSize();
-        auto x_new = ((*it)->GetX() * ((Float_t)mult - 1) + x_pad) / mult;
+        auto x_new = ((*it)->GetX() * ((Float_t)mult - 1) + x_pad) / (double)mult;
         (*it)->SetX((float_t)x_new);
         /** */
 

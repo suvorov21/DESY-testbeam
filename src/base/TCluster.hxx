@@ -1,14 +1,18 @@
 #ifndef SRC_CLASS_TCLUSTER_HXX_
 #define SRC_CLASS_TCLUSTER_HXX_
 
-#include "THit.hxx"
+#include "TRawEvent.hxx"
+
+class TCluster;
+using TClusterPtr = std::shared_ptr<TCluster>;
+using TClusterPtrVec = std::vector<TClusterPtr>;
 
 //! Class for storing clusters in the reconstructed tracks.
 
 //! It contains vector of hits associated with this cluster.
 class TCluster {
  public:
-  void AddHit(std::shared_ptr<THit> hit) {_hits.push_back(hit);};
+  void AddHit(const THitPtr& hit) {_hits.push_back(hit);};
   void SetX(Float_t x) {_x = x;}
   void SetY(Float_t y) {_y = y;}
   void SetYE(Float_t ye) {_y_error = ye;}
@@ -24,13 +28,13 @@ class TCluster {
   /// Get size of the cluster == number of hits
   auto GetSize() const {return _hits.size();}
   /// array operator
-  std::shared_ptr<THit> operator[](size_t index);
+  THitPtr operator[](size_t index);
 
   /// loop iterator starting point
-  typename std::vector<std::shared_ptr<THit>>::iterator begin();
+  typename THitPtrVec::iterator begin();
 
   /// loop iterator end
-  typename std::vector<std::shared_ptr<THit>>::iterator end();
+  typename THitPtrVec::iterator end();
 
   Float_t GetX() const {return _x;}
   Float_t GetY() const {return _y;}
@@ -43,7 +47,8 @@ class TCluster {
   virtual ~TCluster() = default;
 
  private:
-  std::vector<std::shared_ptr<THit>> _hits;               // all hits.
+  /// vector pf all the hits in the cluster
+  THitPtrVec _hits;
   Float_t _x;
   Float_t _y;
   Float_t _y_error;

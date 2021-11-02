@@ -104,13 +104,13 @@ class AnalysisBase {
    * Another use case is to ommit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
-  static std::vector<std::shared_ptr<THit>> GetRobustPadsInCluster(std::vector<std::shared_ptr<THit>> col);
+  static THitPtrVec GetRobustPadsInCluster(THitPtrVec col);
   /// Return only robust clusters
   /** E.g. apply a truncation - omit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.
    * Any condition can be specified.
    */
-  static std::vector<std::unique_ptr<TCluster>> GetRobustClusters(std::vector<std::unique_ptr<TCluster>> & tr);
+  static TClusterPtrVec GetRobustClusters(TClusterPtrVec & tr);
 
   // TODO consider a better implementation. No need to create all instances
   Clustering* CL_col;
@@ -130,7 +130,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = const and so on.
   */
-  std::vector<std::unique_ptr<TCluster>> ClusterTrack(const std::vector<std::shared_ptr<THit>> &tr) const;
+  TClusterPtrVec ClusterTrack(const THitPtrVec &tr) const;
 
   /************************** Utilities functions *****************************/
 

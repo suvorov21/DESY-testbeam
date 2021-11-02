@@ -58,7 +58,7 @@ TrackFitCern::TrackFitCern(TrackShape shape,
 }
 
 //******************************************************************************
-Double_t TrackFitCern::FitCluster(const std::vector<std::shared_ptr<THit>>& col,
+Double_t TrackFitCern::FitCluster(const THitPtrVec& col,
                                   const int& cluster,
                                   const double& pos) {
 //******************************************************************************
@@ -187,7 +187,7 @@ Double_t TrackFitCern::FitCluster(const std::vector<std::shared_ptr<THit>>& col,
 }
 
 //******************************************************************************
-TF1* TrackFitCern::FitTrack(const std::vector<std::unique_ptr<TCluster>> & clusters,
+TF1* TrackFitCern::FitTrack(const TClusterPtrVec& clusters,
                             const int& miss_id) {
 //******************************************************************************
 TGraphErrors track_gr;

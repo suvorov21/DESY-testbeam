@@ -102,13 +102,13 @@ public:
                                 nullptr, 0.) {};
 
   /// Cluster fitter
-  Double_t FitCluster(const std::vector<std::shared_ptr<THit>>& col,
+  Double_t FitCluster(const THitPtrVec& col,
                      const int& cluster,
                      const double& pos
                      );
 
   /// Track fitter
-  TF1* FitTrack(const std::vector<std::unique_ptr<TCluster>>& clusters,
+  TF1* FitTrack(const TClusterPtrVec& clusters,
                 const int& miss_id = -1
                 );
 
