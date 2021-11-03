@@ -167,7 +167,7 @@ coverage:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - . /opt/rh/devtoolset-7/enable
   script:
-    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --html-details --html=coverage.html > coverage.xml
+    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --exclude='src/Reconstruction/CrossingReconstruction.*' --html-details --html=coverage.html > coverage.xml
     - wget --no-check-certificate https://coverage.codacy.com/get.sh
     - . get.sh report -r coverage.xml
   artifacts:

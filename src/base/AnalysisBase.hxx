@@ -72,7 +72,7 @@ class AnalysisBase {
   * and selection are used.
   * @param EventList Vector of the TTRee entries that will be read from the file.
   */
-  virtual bool Loop(std::vector<Int_t> EventList);
+  virtual bool Loop(const std::vector<Int_t>& EventList);
   /// Process the reconstruction output
   /**
   * Function should be defined in the derived analysis. It is responsible

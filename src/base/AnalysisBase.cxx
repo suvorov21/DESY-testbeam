@@ -226,7 +226,7 @@ bool AnalysisBase::Initialize() {
 }
 
 //******************************************************************************
-bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
+bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
 //******************************************************************************
   auto N_events = static_cast<Int_t>(EventList.size());
   if (_test_mode)
@@ -354,6 +354,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     delete reco_event;
   } // end of event loop
   std::cout << "time" << std::endl;
+  // TODO move all time management to GT
   std::cout << GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1) << std::endl;
 
 
