@@ -277,7 +277,7 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
 
     if (!_work_with_event_file) {
       // create TRawEvent from 3D array
-      _event = new TRawEvent(EventList[eventID]);
+      _event = std::make_shared<TRawEvent>(EventList[eventID]);
 
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
@@ -335,10 +335,8 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
     _sw_partial[0]->Start(false);
 
     // copy event to a child class to be filled with reconstruction
-    auto reco_event = new TEvent(_event);
+    std::shared_ptr<TEvent> reco_event = std::make_shared<TEvent>(*_event);
     if (!_reconstruction->SelectEvent(reco_event)) {
-      // in case of unsuccessful reconstruction clean the memory
-      delete reco_event;
       continue;
     }
 
@@ -349,9 +347,6 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
 
     if (_store_event)
       ++_selected;
-
-    // cleanup and go to next event
-    delete reco_event;
   } // end of event loop
   std::cout << "time" << std::endl;
   // TODO move all time management to GT
@@ -366,7 +361,7 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
 }
 
 //******************************************************************************
-bool AnalysisBase::ProcessEvent(const TEvent* event) {
+bool AnalysisBase::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 //******************************************************************************
   (void)event;
   throw std::logic_error("Event processing should be defined in your analysis");

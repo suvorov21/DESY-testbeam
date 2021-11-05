@@ -36,9 +36,9 @@ class DBSCANReconstruction: public ReconstructionBase {
 
   bool Initialize(int verbose) override;
   /// Main function of the reconstruction
-  bool SelectEvent(TEvent* event) override;
+  bool SelectEvent(const std::shared_ptr<TEvent>& event) override;
   /// Fill THits with maximum amplitude and time. Create Nodes
-  std::vector<Node> FillNodes(TEvent* event);
+  std::vector<Node> FillNodes(const std::shared_ptr<TEvent>& event);
   /// Merge nodes Nodes clusters
   std::vector<Node> FindClusters(std::vector<Node>& raw_nodes);
 
@@ -55,7 +55,7 @@ class DBSCANReconstruction: public ReconstructionBase {
                                          std::vector <Node> & nodes);
   virtual void DrawNodes(const std::vector<Node>& nodes);
   /// Store the output in TEven format
-  virtual bool FillOutput(TEvent* event,
+  virtual bool FillOutput(const std::shared_ptr<TEvent>& event,
                           const std::vector<Node>& nodes,
                           const std::vector<DB_Cluster>& clusters);
 

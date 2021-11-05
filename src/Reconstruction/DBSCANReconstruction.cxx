@@ -69,7 +69,7 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node>& nodes){
   return nodes;
 }
 
-std::vector<Node> DBSCANReconstruction::FillNodes( TEvent* event){
+std::vector<Node> DBSCANReconstruction::FillNodes(const std::shared_ptr<TEvent>& event){
   std::vector<Node> nodes;
 
   if (_verbose > 2)
@@ -175,7 +175,7 @@ void DBSCANReconstruction::DrawNodes(const std::vector<Node>& nodes){
   delete event3D;
 }
 
-bool DBSCANReconstruction::FillOutput(TEvent* event,
+bool DBSCANReconstruction::FillOutput(const std::shared_ptr<TEvent>& event,
                                       const std::vector<Node>& nodes,
                                       const std::vector<DB_Cluster>& clusters
                                       ){
@@ -205,7 +205,7 @@ bool DBSCANReconstruction::FillOutput(TEvent* event,
   return true;
 }
 
-bool DBSCANReconstruction::SelectEvent(TEvent* event) {
+bool DBSCANReconstruction::SelectEvent(const std::shared_ptr<TEvent>& event) {
   auto raw_nodes = FillNodes(event);
   if (raw_nodes.empty())
     return false;

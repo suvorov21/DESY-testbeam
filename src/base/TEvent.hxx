@@ -12,7 +12,8 @@ class TEvent: public TRawEvent {
   //ctor
   explicit TEvent() : TRawEvent() {;}
   explicit TEvent(Int_t var): TRawEvent(var){;}
-  explicit TEvent(const TRawEvent* event) : TRawEvent(event) {;};
+  explicit TEvent(const TRawEvent* event) : TRawEvent(event) {}
+  explicit TEvent(const TRawEvent& event) : TRawEvent(event) {}
   // dtor
   ~TEvent() override {;}
   // getters

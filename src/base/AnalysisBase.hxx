@@ -80,7 +80,7 @@ class AnalysisBase {
   * performing the analysis itself, fill Histograms and TTree branches.
   * @param event The event that is returned by pattern recognition
   */
-  virtual bool ProcessEvent(const TEvent* event);
+  virtual bool ProcessEvent(const std::shared_ptr<TEvent>& event);
 
   /// Write the output file (histos, trees)
   virtual bool WriteOutput();
@@ -187,7 +187,7 @@ class AnalysisBase {
   int     _selected;
 
   /// The current processing event
-  TRawEvent* _event;
+  std::shared_ptr<TRawEvent> _event;
   bool    _work_with_event_file;
 
   /// input file

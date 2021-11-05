@@ -563,7 +563,7 @@ bool SpatialResolAna::Initialize() {
 }
 
 //******************************************************************************
-bool SpatialResolAna::ProcessEvent(const TEvent* event) {
+bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 //******************************************************************************
 
   auto track_hits = event->GetUsedHits();
@@ -1500,7 +1500,7 @@ bool SpatialResolAna::Draw() {
 }
 
 //******************************************************************************
-TCanvas* SpatialResolAna::DrawSelectionCan(const TRawEvent* event) {
+TCanvas* SpatialResolAna::DrawSelectionCan(const std::shared_ptr<TRawEvent>& event) {
 //******************************************************************************
   TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
   TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
