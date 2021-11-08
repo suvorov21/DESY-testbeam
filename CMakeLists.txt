@@ -19,8 +19,15 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-add_compile_options(-fprofile-arcs -ftest-coverage -Wno-inconsistent-missing-override)
-add_link_options(-fprofile-arcs -ftest-coverage -Wno-inconsistent-missing-override)
+if (NOT CMAKE_COVERAGE)
+  message(STATUS "Switch off coverage flags")
+  set(CMAKE_COVERAGE NO)
+endif()
+if (CMAKE_COVERAGE)
+  message(STATUS "Switch on coverage flags")
+  add_compile_options(-fprofile-arcs -ftest-coverage -Wno-inconsistent-missing-override)
+  add_link_options(-fprofile-arcs -ftest-coverage -Wno-inconsistent-missing-override)
+endif()
 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 

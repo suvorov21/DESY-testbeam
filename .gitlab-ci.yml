@@ -24,7 +24,7 @@ compile_gcc:
   script:
     - mkdir build; cd build
     - gcc -v > ../gcc.log
-    - cmake3 ../
+    - cmake3 -DCMAKE_COVERAGE=ON ../
     - make 2>&1 | tee -a ../gcc.log
   artifacts:
     paths:
