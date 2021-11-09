@@ -146,9 +146,10 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() const {return _eventList;}
 
   /// Draw the selected event
-  std::unique_ptr<TCanvas> DrawSelection(const std::shared_ptr<TRawEvent>& raw_event,
-                             const std::shared_ptr<TEvent>& reco_event,
-                             bool wait);
+  std::unique_ptr<TCanvas> DrawSelection(
+      const std::shared_ptr<TRawEvent>& raw_event,
+      const std::shared_ptr<TEvent>& reco_event
+      );
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}

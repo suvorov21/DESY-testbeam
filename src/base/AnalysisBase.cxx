@@ -346,7 +346,7 @@ bool AnalysisBase::Loop() {
     // do basic plotting
     auto c = std::make_unique<TCanvas>();
     if (!_batch) {
-      c = DrawSelection(_event, reco_event, false);
+      c = DrawSelection(_event, reco_event);
       c->SetTitle(Form("Event %i", _event->GetID()));
       c->Draw();
       c->WaitPrimitive();
@@ -406,13 +406,11 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
-// TODO
-// make the inheritance possible
-// e.g. draw events here but also draw some analysis specific stuff in the analysis
 //******************************************************************************
-std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(const std::shared_ptr<TRawEvent>& raw_event,
-                                 const std::shared_ptr<TEvent>& reco_event,
-                                 bool wait) {
+std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
+    const std::shared_ptr<TRawEvent>& raw_event,
+    const std::shared_ptr<TEvent>& reco_event
+    ) {
 //******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);

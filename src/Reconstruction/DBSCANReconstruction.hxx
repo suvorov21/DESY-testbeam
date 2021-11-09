@@ -17,7 +17,7 @@ const int MAX_NODES = 300;
 const int MAX_NODES_TOT = 300;
 
 struct Node{
-    std::shared_ptr<THit> hit;
+    THitPtr hit;
     int  c = -999;  // cluster ID
     int id = -999;  // node ID
 };
@@ -50,10 +50,10 @@ class DBSCANReconstruction: public ReconstructionBase {
   virtual std::vector<DB_Cluster> FindClustersLargerThan(const std::vector<Node>& nodes,
                                                          int minNodes
                                                          );
-  /// Assotiate nodes with clusters
+  /// Associate nodes with clusters
   virtual std::vector <Node> UpdateNodes(const std::vector <DB_Cluster> & clusters,
                                          std::vector <Node> & nodes);
-  virtual void DrawNodes(const std::vector<Node>& nodes);
+
   /// Store the output in TEven format
   virtual bool FillOutput(const std::shared_ptr<TEvent>& event,
                           const std::vector<Node>& nodes,

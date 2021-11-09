@@ -137,44 +137,6 @@ std::vector<Node> DBSCANReconstruction::UpdateNodes(const std::vector<DB_Cluster
     return updated_nodes;
 }
 
-void DBSCANReconstruction::DrawNodes(const std::vector<Node>& nodes){
-  gStyle->SetCanvasColor(0);
-  gStyle->SetMarkerStyle(21);
-  gStyle->SetMarkerSize(1.05);
-  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  auto *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
-
-  for (const auto& n:nodes){
-    event3D->Fill(n.hit->GetTime(),n.hit->GetRow(),n.hit->GetCol(),n.hit->GetQ());
-    MM->Fill(n.hit->GetCol(),n.hit->GetRow(),n.hit->GetQ());
-    if(n.hit->GetQ()==0) MMsel->Fill(n.hit->GetCol(),n.hit->GetRow(),n.hit->GetQ());
-  }
-
-  auto *canv = new TCanvas("canv", "canv", 800, 600, 800, 600);
-  canv->Divide(3,1);
-  canv->cd(1);
-  MM->Draw("COLZ");
-  canv->cd(2);
-  MMsel->Draw("COLZ");
-
-  canv->cd(3);
-  event3D->Draw("x:y:z:c","","box2");
-  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
-  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
-  htemp->GetYaxis()->SetLimits(0,geom::nPady);
-  htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");
-  canv->Update();
-  canv->WaitPrimitive();
-  delete htemp;
-  delete canv;
-
-  delete MM;
-  delete MMsel;
-  delete event3D;
-}
-
 bool DBSCANReconstruction::FillOutput(const std::shared_ptr<TEvent>& event,
                                       const std::vector<Node>& nodes,
                                       const std::vector<DB_Cluster>& clusters
