@@ -67,7 +67,7 @@ bool sel::GetNoGap(const TClusterPtrVec &track,
     std::vector<int> row;
     std::vector<int> col;
     for (const auto& pad:*cluster) if (pad) {
-      if (pad->GetQ() < 60)
+      if (pad->GetQ() < CHARGE_THR_FOR_GAP)
         continue;
       // broken pad fix --> always include the broken one
       // if the adjacent pad is there --> broken pad will not cause a gap

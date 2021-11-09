@@ -8,6 +8,7 @@
 #include "TCluster.hxx"
 #include "Geom.hxx"
 
+const int CHARGE_THR_FOR_GAP = 0;
 namespace sel
 {
   /// A default selection of a "nice" crossing track
