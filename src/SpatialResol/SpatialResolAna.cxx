@@ -1,7 +1,7 @@
 /** @cond */
 #include "TVector3.h"
-#include "Math/Functor.h"
-#include "Fit/Fitter.h"
+//#include "Math/Functor.h"
+//#include "Fit/Fitter.h"
 #include "GenericToolbox.Root.h"
 /** @endcond */
 
@@ -276,6 +276,9 @@ bool SpatialResolAna::Initialize() {
   _tree->Branch("sina",         &_sin_alpha);
   _tree->Branch("offset",       &_offset);
 
+  _tree->Branch("max_mult",     &_m_max);
+  _tree->Branch("mean_mult",    &_m_mean);
+
   _tree->Branch("multiplicity",
                 &_multiplicity,
                 TString::Format("multiplicity[%i]/I", Nclusters)
@@ -346,15 +349,15 @@ bool SpatialResolAna::Initialize() {
                 );
 
   // WARNING TEMP
-  _tree->Branch("fit_up",
-                &_fit_up,
-                TString::Format("fit_up[%i]/F", Nclusters)
-                );
-
-  _tree->Branch("fit_bt",
-                &_fit_bt,
-                TString::Format("fit_bt[%i]/F", Nclusters)
-                );
+//  _tree->Branch("fit_up",
+//                &_fit_up,
+//                TString::Format("fit_up[%i]/F", Nclusters)
+//                );
+//
+//  _tree->Branch("fit_bt",
+//                &_fit_bt,
+//                TString::Format("fit_bt[%i]/F", Nclusters)
+//                );
 
   _output_vector.push_back(_tree);
 
@@ -648,9 +651,11 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   // selection
   if (!sel::CrossingTrackSelection(clusters,
                                    _max_mult,
+                                   _max_mean_mult,
                                    _cut_gap,
                                    _max_phi,
                                    _max_theta,
+                                   _broken_pads,
                                    _invert,
                                    _verbose
                                    ))
@@ -695,6 +700,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   std::vector <double> QsegmentS; QsegmentS.clear();
   std::vector <int> pad_wf_v; //WF
 
+  _m_mean = 0;
+  auto n = 0;
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
     if (!(*robust_clusters[clusterId])[0])
       continue;
@@ -702,6 +709,10 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     // loop over rows
     auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
     _multiplicity[clusterId] = (int)robust_pads.size();
+    _m_mean += (float)robust_pads.size();
+    n += 1;
+    if (robust_pads.size() > _m_max)
+      _m_max = (int)robust_pads.size();
 
     _clust_pos[clusterId] = 0.;
     _charge[clusterId] = 0;
@@ -801,44 +812,44 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
                                                  );
       _clust_pos[clusterId] = (float_t)track_pos[clusterId];
       // WARNING temp
-      auto it_main = std::max_element((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-                                      [](const std::shared_ptr<THit>& n1, const std::shared_ptr<THit>& n2) { return n1->GetQ() < n2->GetQ(); });
-      auto main_row = (*it_main)->GetRow(_invert);
-      auto it_up = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row + 1; });
-      auto it_bt = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row - 1; });
-
-      if (it_up != (*robust_clusters[clusterId]).end() && it_bt != (*robust_clusters[clusterId]).end()) {
-        Float_t r_up = (Float_t)(*it_up)->GetQ() / (Float_t)(*it_main)->GetQ();
-        Float_t r_bt = (Float_t )(*it_bt)->GetQ() / (Float_t)(*it_main)->GetQ();
-        if (r_up > _prf_function->GetMinimum() && r_bt > _prf_function->GetMinimum()) {
-          auto minimisator = [&](const Double_t *par) {
-            if (abs(par[1]) < 1e-6)
-              return abs(r_up - _prf_function->Eval(geom::GetYposPad((*it_up)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
-            else
-              return abs(r_bt - _prf_function->Eval(geom::GetYposPad((*it_bt)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
-          };
-          ROOT::Math::Functor fcn_cluster(minimisator,2);
-          ROOT::Fit::Fitter  fitter_cluster;
-
-          double pStart[2] = {geom::GetYposPad((*it_main)), true};
-          fitter_cluster.SetFCN(fcn_cluster, pStart);
-          bool ok = fitter_cluster.FitFCN();
-          (void)ok;
-          const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
-          if (ok && r_up > 0.04)
-            _fit_up[clusterId] = (Float_t)result_cluster.GetParams()[0];
-
-          pStart[0] = geom::GetYposPad((*it_main));
-          pStart[1] = false;
-          fitter_cluster.SetFCN(fcn_cluster, pStart);
-          ok = fitter_cluster.FitFCN();
-          const ROOT::Fit::FitResult & result_cluster2 = fitter_cluster.Result();
-          if (ok && r_bt > 0.04)
-            _fit_bt[clusterId] = (Float_t)result_cluster2.GetParams()[0];
-        }
-      }
+//      auto it_main = std::max_element((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
+//                                      [](const std::shared_ptr<THit>& n1, const std::shared_ptr<THit>& n2) { return n1->GetQ() < n2->GetQ(); });
+//      auto main_row = (*it_main)->GetRow(_invert);
+//      auto it_up = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
+//                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row + 1; });
+//      auto it_bt = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
+//                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row - 1; });
+//
+//      if (it_up != (*robust_clusters[clusterId]).end() && it_bt != (*robust_clusters[clusterId]).end()) {
+//        Float_t r_up = (Float_t)(*it_up)->GetQ() / (Float_t)(*it_main)->GetQ();
+//        Float_t r_bt = (Float_t )(*it_bt)->GetQ() / (Float_t)(*it_main)->GetQ();
+//        if (r_up > _prf_function->GetMinimum() && r_bt > _prf_function->GetMinimum()) {
+//          auto minimisator = [&](const Double_t *par) {
+//            if (abs(par[1]) < 1e-6)
+//              return abs(r_up - _prf_function->Eval(geom::GetYposPad((*it_up)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
+//            else
+//              return abs(r_bt - _prf_function->Eval(geom::GetYposPad((*it_bt)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
+//          };
+//          ROOT::Math::Functor fcn_cluster(minimisator,2);
+//          ROOT::Fit::Fitter  fitter_cluster;
+//
+//          double pStart[2] = {geom::GetYposPad((*it_main)), true};
+//          fitter_cluster.SetFCN(fcn_cluster, pStart);
+//          bool ok = fitter_cluster.FitFCN();
+//          (void)ok;
+//          const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
+//          if (ok && r_up > 0.04)
+//            _fit_up[clusterId] = (Float_t)result_cluster.GetParams()[0];
+//
+//          pStart[0] = geom::GetYposPad((*it_main));
+//          pStart[1] = false;
+//          fitter_cluster.SetFCN(fcn_cluster, pStart);
+//          ok = fitter_cluster.FitFCN();
+//          const ROOT::Fit::FitResult & result_cluster2 = fitter_cluster.Result();
+//          if (ok && r_bt > 0.04)
+//            _fit_bt[clusterId] = (Float_t)result_cluster2.GetParams()[0];
+//        }
+//      }
     } else {
       track_pos[clusterId] = _clust_pos[clusterId];
     }
@@ -880,6 +891,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       if (colQ) QsegmentS.push_back(colQ);
 
   } // loop over clusters
+  _m_mean /= (float)n;
 
   if (_verbose >= v_analysis_steps) {
     std::cout << "Loop over columns done" << std::endl;
@@ -1100,7 +1112,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       i = nullptr;
     }
 
-  if(_test_mode) this->DrawSelectionCan(event);
   if (!_batch)
     Draw();
   delete fit;
@@ -1435,8 +1446,8 @@ TF1* SpatialResolAna::InitializePRF(const TString& name, bool shift) {
 
 bool SpatialResolAna::Draw() {
   std::cout << "Draw event " << _ev << std::endl;
-  TCanvas c("c_SR", "c_SR", 800, 600);
-  TCanvas c2("c_resid", "c_resid", 800, 0, 800, 600);
+  TCanvas c("c_SR", "c_SR", 0, 600, 800, 600);
+  TCanvas c2("c_resid", "c_resid", 800, 600, 800, 600);
   auto* gr = new TGraphErrors();
   auto* gr_f = new TGraphErrors();
   auto* gr_c = new TGraphErrors();
@@ -1497,52 +1508,4 @@ bool SpatialResolAna::Draw() {
 
   c2.WaitPrimitive();
   return true;
-}
-
-//******************************************************************************
-TCanvas* SpatialResolAna::DrawSelectionCan(const std::shared_ptr<TRawEvent>& event) {
-//******************************************************************************
-  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","", geom::nPadx,geom::x_pos[0] - geom::dx, geom::x_pos[geom::nPadx-1]+geom::dx,
-                                          geom::nPady,geom::y_pos[0] - geom::dy, geom::y_pos[geom::nPady-1]+geom::dy);
-  auto *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
-
-  for (auto x = 0; x < geom::nPadx; ++x) {
-    for (auto y = 0; y < geom::nPady; ++y) {
-      auto max = 0;
-      for (auto t = 0; t < geom::Nsamples; ++t) {
-        if (_padAmpl[x][y][t] > max) {
-          max = _padAmpl[x][y][t];
-        }
-      } // over t
-      if (max)
-        MM->Fill(x, y, max);
-    }
-  }
-
-  // sel hits
-  for (const auto& h:event->GetHits()){
-    if(!h->GetQ()) continue;
-    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
-    MMsel->Fill(geom::y_pos[h->GetCol()],geom::x_pos[h->GetRow()],h->GetQ());
-  }
-
-  auto *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
-  canv->Divide(3,1);
-  canv->cd(1);
-  if (MM->Integral() > 1e-9)
-    MM->Draw("colz");
-  //_prf_histo->Draw("COLZ");
-  canv->cd(2);
-  MMsel->Draw("COLZ");
-
-  canv->cd(3);
-  event3D->Draw("x:y:z:c","","box2");
-  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
-  htemp->GetXaxis()->SetLimits(0,geom::nPadx);
-  htemp->GetYaxis()->SetLimits(0,geom::nPady);
-  htemp->GetZaxis()->SetLimits(0,500);
-  htemp->SetTitle("");
-  canv->Update();
-  return canv;
 }

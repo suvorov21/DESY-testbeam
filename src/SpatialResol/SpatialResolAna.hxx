@@ -24,8 +24,6 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const std::shared_ptr<TEvent>& event) override;
 
-  /// Draw the histograms of interest
-  TCanvas* DrawSelectionCan(const std::shared_ptr<TRawEvent>& event);
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput() override;
@@ -83,6 +81,13 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _sin_alpha;
   /// offset
   Float_t _offset;
+
+  /// maximum of the multiplicity
+  Int_t _m_max;
+
+  /// mean multiplicity
+  Float_t _m_mean;
+
 
   /// Cluster vars
   /// Position of the cluster

@@ -24,6 +24,7 @@ AnalysisBase::AnalysisBase() :
   _chain(nullptr),
   _reconstruction(nullptr),
   _max_mult(6),
+  _max_mean_mult(5),
   _cut_gap(true),
   _min_clusters(30),
   _verbose(1),
@@ -226,16 +227,18 @@ bool AnalysisBase::Initialize() {
 }
 
 //******************************************************************************
-bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
+bool AnalysisBase::Loop() {
 //******************************************************************************
-  auto N_events = static_cast<Int_t>(EventList.size());
+  auto N_events = (int)_eventList.size();
   if (_test_mode)
-    N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
+    N_events = std::min((int)_eventList.size(), 100);
 
   if (_start_ID < 0)
     _start_ID = 0;
-  if (_end_ID > 0)
-    N_events = _end_ID;
+  if (_end_ID > 0) {
+    _end_ID = std::min(_end_ID, N_events);
+  } else
+    _end_ID = N_events;
 
   _sw_event = new TStopwatch();
 
@@ -250,7 +253,7 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
     std::cout << "Input file............................... " << _file_in_name << std::endl;
     std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
-    std::cout << "[                              ]   Nevents = " << N_events << "\r[";
+    std::cout << "[                              ]   Nevents = " << _end_ID - _start_ID << "\r[";
     _sw_event->Start(false);
   }
 
@@ -260,7 +263,7 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
 
   // Event loop
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1);
-  for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
+  for (auto eventID = _start_ID; eventID < _end_ID; ++eventID) {
     if (_verbose >= v_event_number) {
       std::cout << "*************************************" << std::endl;
       std::cout << "Event " << eventID << std::endl;
@@ -269,15 +272,15 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
 
     // Dump progress in command line
     if (_verbose == v_progress && (eventID%(N_events/denominator)) == 0)
-      this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
+      this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
 
-    _chain->GetEntry(EventList[eventID]);
+    _chain->GetEntry(_eventList[eventID]);
 
     _sw_partial[5]->Start(false);
 
     if (!_work_with_event_file) {
       // create TRawEvent from 3D array
-      _event = std::make_shared<TRawEvent>(EventList[eventID]);
+      _event = std::make_shared<TRawEvent>(_eventList[eventID]);
 
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
@@ -339,8 +342,16 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
     if (!_reconstruction->SelectEvent(reco_event)) {
       continue;
     }
-
     _sw_partial[0]->Stop();
+    // do basic plotting
+    auto c = std::make_unique<TCanvas>();
+    if (!_batch) {
+      c = DrawSelection(_event, reco_event, false);
+      c->SetTitle(Form("Event %i", _event->GetID()));
+      c->Draw();
+      c->WaitPrimitive();
+    }
+
     _sw_partial[1]->Start(false);
     ProcessEvent(reco_event);
     _sw_partial[1]->Stop();
@@ -348,9 +359,9 @@ bool AnalysisBase::Loop(const std::vector<Int_t>& EventList) {
     if (_store_event)
       ++_selected;
   } // end of event loop
-  std::cout << "time" << std::endl;
-  // TODO move all time management to GT
-  std::cout << GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1) << std::endl;
+//  std::cout << "time" << std::endl;
+//   TODO move all time management to GT
+//  std::cout << GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1) << std::endl;
 
 
   // if progress bar is active --> go to the next line
@@ -399,26 +410,27 @@ bool AnalysisBase::WriteOutput() {
 // make the inheritance possible
 // e.g. draw events here but also draw some analysis specific stuff in the analysis
 //******************************************************************************
-void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
+std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(const std::shared_ptr<TRawEvent>& raw_event,
+                                 const std::shared_ptr<TEvent>& reco_event,
+                                 bool wait) {
 //******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
-  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  auto *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+  TH2F    MM("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    MMsel("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TNtuple event3D("event3D", "event3D", "x:y:z:c");
 
-  // all hits
-  //for(auto h:event->GetHits()){
-  //  MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-  //}
+//   all hits
+  for (const auto& h : raw_event->GetHits()) {
+    MM.Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  }
 
   // sel hits
-  for (const auto& h:event->GetUsedHits()){
+  for (const auto& h : reco_event->GetUsedHits()){
     if(!h->GetQ()) continue;
-    event3D->Fill((Float_t)h->GetTime(),(Float_t)h->GetRow(),(Float_t)h->GetCol(), (Float_t)h->GetQ());
-    MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-    //MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    event3D.Fill((Float_t)h->GetTime(),(Float_t)h->GetRow(),(Float_t)h->GetCol(), (Float_t)h->GetQ());
+    MMsel.Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
   for (auto x = 0; x < geom::nPadx; ++x) {
@@ -430,33 +442,26 @@ void AnalysisBase::DrawSelection(const TEvent *event, bool wait){
         }
       } // over t
       if (max)
-        MM->Fill(x, y, max);
+        MM.Fill(x, y, max);
     }
   }
 
-  auto *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  auto canv = std::make_unique<TCanvas>("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
-  MM->Draw("COLZ");
+  MM.Draw("COLZ");
   canv->cd(2);
-  MMsel->Draw("COLZ");
+  MMsel.Draw("COLZ");
 
   canv->cd(3);
-  event3D->Draw("x:y:z:c","","box2");
-  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  event3D.Draw("x:y:z:c","","box2");
+  auto htemp = (TH3F*)gPad->GetPrimitive("htemp");
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
   htemp->GetYaxis()->SetLimits(0,geom::nPady);
   htemp->GetZaxis()->SetLimits(0,500);
   htemp->SetTitle("");
   canv->Update();
-  if (wait)
-    canv->WaitPrimitive();
-  delete htemp;
-  delete canv;
-
-  delete MM;
-  delete MMsel;
-  delete event3D;
+  return canv;
 }
 
 //******************************************************************************
@@ -468,6 +473,15 @@ THitPtrVec AnalysisBase::GetRobustPadsInCluster(THitPtrVec col) {
                                   const std::shared_ptr<THit> & hit2) {
     return hit1->GetQ() > hit2->GetQ();
   });
+
+  // leading pad
+  auto col_id = col[0]->GetCol();
+  auto row_id = col[0]->GetRow();
+  // excluded from analysis the whole cluster if leading pad is near the broken pad
+  for (const auto& broken : _broken_pads) {
+    if (abs(col_id - broken.first) < 2 && abs(row_id - broken.second) < 2)
+      return result;
+  }
 
   for (const auto& pad : col) {
     auto q      = pad->GetQ();
@@ -714,10 +728,11 @@ bool AnalysisBase::ReadParamFile() {
         }
       } else if (name == "max_mult") {
         _max_mult = TString(value).Atoi();
+      } else if (name == "max_mean_mult") {
+        _max_mean_mult = TString(value).Atof();
       } else if (name == "cut_gap") {
-        if (value == "0") {
+        if (value == "0")
           _cut_gap = false;
-        }
       } else if (name == "cluster_min") {
         _min_clusters = TString(value).Atoi();
       } else if (name == "max_phi") {
@@ -743,6 +758,23 @@ bool AnalysisBase::ReadParamFile() {
           _cross_talk_treat = def;
           std::cout << "Cross-talk will not be treated" << std::endl;
         }
+      } else if (name == "dead") {
+        auto dead_pads = GenericToolbox::splitString(value, ";");
+        if (!dead_pads.empty())
+          std::cout << "Dead pads: ";
+        for (const auto & pad : dead_pads) {
+          auto coordinates = GenericToolbox::splitString(pad, ",");
+          if (coordinates.size() != 2) {
+            continue;
+//            std::cerr << pad << std::endl;
+//            throw std::logic_error("Wrong dead pad syntax");
+          }
+          _broken_pads.emplace_back(TString(coordinates[0]).Atoi(),
+                                    TString(coordinates[1]).Atoi()
+                                    );
+          std::cout << _broken_pads.back().first << ", " << _broken_pads.back().second << "; ";
+        }
+        std::cout << std::endl;
       }
     }
   } else {

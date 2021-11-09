@@ -70,9 +70,8 @@ class AnalysisBase {
   /** Normally for the first iteration loop over all events is performed.
   * For the following iterations only events that passed reconstruction
   * and selection are used.
-  * @param EventList Vector of the TTRee entries that will be read from the file.
   */
-  virtual bool Loop(const std::vector<Int_t>& EventList);
+  virtual bool Loop();
   /// Process the reconstruction output
   /**
   * Function should be defined in the derived analysis. It is responsible
@@ -104,7 +103,7 @@ class AnalysisBase {
    * Another use case is to ommit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
-  static THitPtrVec GetRobustPadsInCluster(THitPtrVec col);
+  THitPtrVec GetRobustPadsInCluster(THitPtrVec col);
   /// Return only robust clusters
   /** E.g. apply a truncation - omit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.
@@ -147,7 +146,9 @@ class AnalysisBase {
   std::vector<Int_t> GetEventList() const {return _eventList;}
 
   /// Draw the selected event
-  virtual void DrawSelection(const TEvent *event, bool wait);
+  std::unique_ptr<TCanvas> DrawSelection(const std::shared_ptr<TRawEvent>& raw_event,
+                             const std::shared_ptr<TEvent>& reco_event,
+                             bool wait);
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
     std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}
@@ -215,11 +216,17 @@ class AnalysisBase {
   /// The maximum multiplicity of the track
   Int_t _max_mult;
 
+  /// The maximum mean multiplicity for track
+  Float_t _max_mean_mult;
+
   /// Whether to cut tracks with gap in the cluster
   /** E.g. one missed pad in the middle of the column or in the
   * middle of the diagonal
   */
   bool _cut_gap;
+
+  /// Vector of broken pads to be excluded from the analysis
+  std::vector<std::pair<int, int>> _broken_pads;
 
   /// Minimum number of clusters in the track
   Int_t _min_clusters;
