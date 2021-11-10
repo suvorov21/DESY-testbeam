@@ -1,14 +1,18 @@
 #ifndef SRC_CLASS_TCLUSTER_HXX_
 #define SRC_CLASS_TCLUSTER_HXX_
 
-#include "THit.hxx"
+#include "TRawEvent.hxx"
+
+class TCluster;
+using TClusterPtr = std::shared_ptr<TCluster>;
+using TClusterPtrVec = std::vector<TClusterPtr>;
 
 //! Class for storing clusters in the reconstructed tracks.
 
 //! It contains vector of hits associated with this cluster.
 class TCluster {
  public:
-  void AddHit(THit* hit) {_hits.push_back(hit);};
+  void AddHit(const THitPtr& hit) {_hits.push_back(hit);};
   void SetX(Float_t x) {_x = x;}
   void SetY(Float_t y) {_y = y;}
   void SetYE(Float_t ye) {_y_error = ye;}
@@ -20,34 +24,31 @@ class TCluster {
   void AddCharge(Int_t q) {_charge += q;}
 
   /// Get vector of hits
-  std::vector<THit*> GetHits() const {return _hits;}
+  auto GetHits() const {return _hits;}
   /// Get size of the cluster == number of hits
-  Ssiz_t GetSize() const {return _hits.size();}
+  auto GetSize() const {return _hits.size();}
   /// array operator
-  THit* operator[](size_t n) { return _hits[n]; }
+  THitPtr operator[](size_t index);
 
   /// loop iterator starting point
-  typename std::vector<THit*>::iterator begin() {
-    return _hits.begin();
-  }
+  typename THitPtrVec::iterator begin();
 
   /// loop iterator end
-  typename std::vector<THit*>::iterator end() {
-    return _hits.end();
-  }
+  typename THitPtrVec::iterator end();
 
-  Float_t GetX() {return _x;}
-  Float_t GetY() {return _y;}
-  Float_t GetYE() {return _y_error;}
+  Float_t GetX() const {return _x;}
+  Float_t GetY() const {return _y;}
+  Float_t GetYE() const {return _y_error;}
 
-  Int_t GetCharge() {return _charge;}
+  Int_t GetCharge() const {return _charge;}
 
-  TCluster(){_x = -999; _y = -999; _y_error = -999;}
-  TCluster(THit* pad) {_hits.push_back(pad);}
-  virtual ~TCluster();
+  TCluster();
+  explicit TCluster(std::shared_ptr<THit> pad);
+  virtual ~TCluster() = default;
 
  private:
-  std::vector<THit*> _hits;               // all hits.
+  /// vector pf all the hits in the cluster
+  THitPtrVec _hits;
   Float_t _x;
   Float_t _y;
   Float_t _y_error;

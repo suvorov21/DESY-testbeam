@@ -1,30 +1,30 @@
 #include <algorithm>
-#include <unistd.h>
-#define GetCurrentDir getcwd
+//#include <unistd.h>
+#include <cstdlib>
 
 #include "TROOT.h"
+
+#include <GenericToolbox.h>
 
 #include "AnalysisBase.hxx"
 
 //******************************************************************************
-AnalysisBase::AnalysisBase(int argc, char** argv) :
-  _clustering(NULL),
+AnalysisBase::AnalysisBase() :
+  _clustering(nullptr),
   _file_in_name(""),
   _file_out_name(""),
   _param_file_name(""),
   _start_ID(-1),
   _end_ID(-1),
   _selected(0),
-  _event(NULL),
+  _event(nullptr),
   _work_with_event_file(false),
-  _file_in(NULL),
-  _file_out(NULL),
-  _chain(NULL),
-  _Prev_iter_name(TString("")),
-  _iteration(0),
-  _correction(false),
-  _reconstruction(NULL),
+  _file_in(nullptr),
+  _file_out(nullptr),
+  _chain(nullptr),
+  _reconstruction(nullptr),
   _max_mult(6),
+  _max_mean_mult(5),
   _cut_gap(true),
   _min_clusters(30),
   _verbose(1),
@@ -34,89 +34,62 @@ AnalysisBase::AnalysisBase(int argc, char** argv) :
   _invert(false),
   _gaus_lorentz_PRF(false),
   _individual_column_PRF(false),
-  _PRF_free_centre(false),
+  _prf_free_centre(false),
   _do_linear_fit(false),
   _do_para_fit(false),
   _to_store_wf(true),
-  _app(NULL)
+  _app(nullptr)
 {
 //******************************************************************************
+  // CLI reader
+  _clParser.setIsUnixGnuMode(true);
+  _clParser.setIsFascist((true));
 
-  // TODO redefine CLI.
-  // now written in an ugly way
-  // prevent copy-past between the daughter-parent classes
-  // read CLI
-  const struct option longopts[] = {
-    {"input",           no_argument,    0,    'i'},         // 0
-    {"output",          no_argument,    0,    'o'},         // 1
-    {"batch",           no_argument,    0,    'b'},         // 2
-    {"verbose",         no_argument,    0,    'v'},         // 3
-    {"rewrite",         no_argument,    0,    'r'},         // 4
-    {"correction",      no_argument,    0,    'c'},         // 5
-    {"start",           required_argument,      0,     0},  // 6
-    {"end",             required_argument,      0,     0},  // 7
+  _clParser.addOption("input_file", {"-i", "--input"}, "Input file name", 1);
+  _clParser.addOption("output_file", {"-o", "--output"}, "Output file name", 1);
 
-    {"param",           required_argument, 0,   0},         // 8
+  _clParser.addOption("param_file", {"-p", "--param"}, "Parameter file name", 1);
+  _clParser.addOption("verbosity", {"-v", "--verbose"}, "Verbosity level", 1);
+  _clParser.addOption("start_id", {"--start"}, "Start event ID", 1);
+  _clParser.addOption("end_id", {"--end"}, "End event ID", 1);
 
-    {"prev",            required_argument, 0,   0},         // 9
+  _clParser.addTriggerOption("batch", {"-b"}, "Batch mode");
+  _clParser.addTriggerOption("debug", {"-d", "--debug"}, "Debug mode");
+  _clParser.addTriggerOption("overwrite", {"-r", "--overwrite"}, "Overwrite output file");
 
-    {"help",            no_argument,    0,    'h'},         // 10
+  _clParser.addTriggerOption("help", {"-h", "--help"}, "Print usage");
+}
 
-    {0,                 0,              0,      0}
-  };
+bool AnalysisBase::ReadCLI(int argc, char **argv) {
+  _clParser.parseCmdLine(argc, argv);
 
-  int index;
-
-  // read CLI
-  for (;;) {
-    int c = getopt_long(argc, argv, "i:o:bv:drhst:cp:", longopts, &index);
-    if (c < 0) break;
-    switch (c) {
-      case 0  :
-        if (index == 5) _correction       =  true;
-        if (index == 6) _start_ID         =  atoi(optarg);
-        if (index == 7) _end_ID           =  atoi(optarg);
-        if (index == 8) _param_file_name  = optarg;
-        if (index == 9) _Prev_iter_name   = optarg;
-        if (index == 10) help(argv[0]);
-        break;
-      case 'i' : _file_in_name     = optarg;       break;
-      case 'o' : _file_out_name    = optarg;       break;
-      case 't' : _iteration        = atoi(optarg); break;
-      case 'b' : _batch            = true;         break;
-      case 'v' : _verbose          = atoi(optarg); break;
-      case 'd' : _test_mode        = true;         break;
-      case 'p' : _param_file_name = optarg;        break;
-      case 'r' :
-        _overwrite        = true;
-        std::cout << "Output will be overwritten" << std::endl;
-        break;
-      case 'h' : help(argv[0]);                    break;
-      //case '?' : help(argv[0]);
-    }
-  }
-
-  if (_file_in_name == "") {
-    std::cerr << "ERROR. AnalysisBase::AnalysisBase. No input file specified" << std::endl;
+  if (_clParser.isOptionTriggered("help")) {
+    _clParser.getConfigSummary();
     exit(1);
   }
 
-  if (_iteration == -1) {
-    std::cerr << "ERROR. SpatialResolAna::SpatialResolAna().";
-    std::cout << " Iteration should be defined as a input param" << std::endl;
-    exit(1);
-  }
+  setInputFile(_clParser.getOptionVal<TString>("input_file", "", 0));
+  setOutputFile(_clParser.getOptionVal<TString>("output_file", "", 0));
+
+  setParamFile(_clParser.getOptionVal<TString>("param_file", "", 0));
+  setVerbosity(_clParser.getOptionVal<int>("verbosity", _verbose, 0));
+
+  setStartID(_clParser.getOptionVal<int>("start_id", _start_ID, 0));
+  setEndID(_clParser.getOptionVal<int>("end_id", _end_ID, 0));
+
+  setBatchMode(_clParser.isOptionTriggered("batch"));
+  setDebugMode(_clParser.isOptionTriggered("debug"));
+  setOverwrite(_clParser.isOptionTriggered("overwrite"));
 
   if (!_batch)
     _app = new TApplication("app", &argc, argv);
+
+  return true;
 }
 
 //******************************************************************************
 bool AnalysisBase::Initialize() {
 //******************************************************************************
-
-  // WARNING
-  // A very dirty adoptation of angles
   CL_col = new Clustering(0., 0);
   CL_diag = new Clustering(units::a45, 1);
   CL_2by1 = new Clustering(units::a2, 2);
@@ -125,7 +98,7 @@ bool AnalysisBase::Initialize() {
 
   // Read parameter file
   if (!ReadParamFile()) {
-    std::cerr << "ERROR! AnalysisBase::Initialize(). Parameter file is not read" << std::endl;
+    std::cerr << "ERROR! " << __func__ << "(). Parameter file is not read" << std::endl;
     exit(1);
   }
 
@@ -140,6 +113,16 @@ bool AnalysisBase::Initialize() {
   TString tree_name = "";
   TFile* file;
   TString filename = _file_in_name;
+
+  if (_file_in_name == "") {
+    std::cerr << "ERROR. " << __func__ << "() No input file specified" << std::endl;
+    exit(1);
+  }
+  if (_file_out_name == "") {
+    std::cerr << "ERROR. " << __func__ << "() No output file specified" << std::endl;
+    exit(1);
+  }
+
 
   // extract the name of the input ROOT file
   // in case of list input take the first ROOT file
@@ -210,9 +193,9 @@ bool AnalysisBase::Initialize() {
   gROOT->SetStyle(_t2kstyle->GetName());
   gROOT->ForceStyle();
 
-  Int_t N_events = _chain->GetEntries();
+  Long64_t N_events = _chain->GetEntries();
   for (auto i = 0; i < N_events; ++i)
-    _EventList.push_back(i);
+    _eventList.push_back(i);
 
   // Open the output file
   if(_overwrite)
@@ -244,16 +227,18 @@ bool AnalysisBase::Initialize() {
 }
 
 //******************************************************************************
-bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
+bool AnalysisBase::Loop() {
 //******************************************************************************
-  auto N_events = static_cast<Int_t>(EventList.size());
+  auto N_events = (int)_eventList.size();
   if (_test_mode)
-    N_events = std::min(static_cast<Int_t>(EventList.size()), 100);
+    N_events = std::min((int)_eventList.size(), 100);
 
   if (_start_ID < 0)
     _start_ID = 0;
-  if (_end_ID > 0)
-    N_events = _end_ID;
+  if (_end_ID > 0) {
+    _end_ID = std::min(_end_ID, N_events);
+  } else
+    _end_ID = N_events;
 
   _sw_event = new TStopwatch();
 
@@ -268,14 +253,17 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     std::cout << "Input file............................... " << _file_in_name << std::endl;
     std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
-    std::cout << "[                              ]   Nevents = " << N_events << "\r[";
-    _sw_event->Start(0);
+    std::cout << "[                              ]   Nevents = " << _end_ID - _start_ID << "\r[";
+    _sw_event->Start(false);
   }
 
-  int denimonator = 100;
+  int denominator = 100;
   if (N_events < 100)
-    denimonator = N_events;
-  for (auto eventID = _start_ID; eventID < N_events; ++eventID) {
+    denominator = N_events;
+
+  // Event loop
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1);
+  for (auto eventID = _start_ID; eventID < _end_ID; ++eventID) {
     if (_verbose >= v_event_number) {
       std::cout << "*************************************" << std::endl;
       std::cout << "Event " << eventID << std::endl;
@@ -283,23 +271,21 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
     }
 
     // Dump progress in command line
-    if (_verbose == v_progress && (eventID%(N_events/denimonator)) == 0)
-      this->CL_progress_dump(eventID - _start_ID, N_events - _start_ID);
+    if (_verbose == v_progress && (eventID%(N_events/denominator)) == 0)
+      this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
 
-    _chain->GetEntry(EventList[eventID]);
+    _chain->GetEntry(_eventList[eventID]);
 
     _sw_partial[5]->Start(false);
 
     if (!_work_with_event_file) {
       // create TRawEvent from 3D array
-      if (_event)
-        delete _event;
-      _event = new TRawEvent(EventList[eventID]);
+      _event = std::make_shared<TRawEvent>(_eventList[eventID]);
 
       // Subtract the pedestal
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
-          auto hit = new THit(x, y);
+          auto hit = std::make_shared<THit>(x, y);
           // std::vector<int> adc;
           auto Qmax = -1;
           auto Tmax = -1;
@@ -307,10 +293,9 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
             // ommit last
             if (_saclay_cosmics && t == geom::Nsamples)
               continue;
-            int q = 0;
-            q = _saclay_cosmics ?
-                _padAmpl_saclay[x][y][t] - 250 :
-                _padAmpl[x][y][t] - 250;
+            int q = _saclay_cosmics ?
+                    _padAmpl_saclay[x][y][t] - 250 :
+                    _padAmpl[x][y][t] - 250;
 
             hit->SetADC(t, q);
             if (q > Qmax) {
@@ -340,8 +325,7 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
             hit->SetTime(Tmax);
             _event->AddHit(hit);
           } else {
-            delete hit;
-            hit = NULL;
+            hit.reset();
           }
         } // over Y
       } // over X
@@ -353,27 +337,34 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 
     _sw_partial[0]->Start(false);
 
-    auto reco_event = new TEvent(_event);
-
-    if (!_reconstruction->SelectEvent(reco_event))
+    // copy event to a child class to be filled with reconstruction
+    std::shared_ptr<TEvent> reco_event = std::make_shared<TEvent>(*_event);
+    if (!_reconstruction->SelectEvent(reco_event)) {
       continue;
-
+    }
     _sw_partial[0]->Stop();
+    // do basic plotting
+    auto c = std::make_unique<TCanvas>();
+    if (!_batch) {
+      c = DrawSelection(_event, reco_event);
+      c->SetTitle(Form("Event %i", _event->GetID()));
+      c->Draw();
+      c->WaitPrimitive();
+    }
+
     _sw_partial[1]->Start(false);
     ProcessEvent(reco_event);
     _sw_partial[1]->Stop();
 
     if (_store_event)
       ++_selected;
-
-    // if (!_work_with_event_file) {
-    delete _event;
-    _event = NULL;
-    // delete reco_event;
-    // reco_event = NULL;
-    // }
   } // end of event loop
+//  std::cout << "time" << std::endl;
+//   TODO move all time management to GT
+//  std::cout << GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1) << std::endl;
 
+
+  // if progress bar is active --> go to the next line
   if (_verbose == v_progress)
     std::cout << std::endl;
 
@@ -381,19 +372,17 @@ bool AnalysisBase::Loop(std::vector<Int_t> EventList) {
 }
 
 //******************************************************************************
-bool AnalysisBase::ProcessEvent(const TEvent* event) {
+bool AnalysisBase::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 //******************************************************************************
   (void)event;
-  std::cerr << "EROOR. AnalysisBase::ProcessEvent(). Event processing should be defined in your analysis" << std::endl;
-  exit(1);
-  return true;
+  throw std::logic_error("Event processing should be defined in your analysis");
 }
 
 //******************************************************************************
 bool AnalysisBase::WriteOutput() {
 //******************************************************************************
   //if(_test_mode) return true;
-  if (!_file_out->IsOpen()){
+  if (!_file_out || !_file_out->IsOpen()){
     std::cout << "AnalysisBase::WriteOutput   _file_out is not Open!" << std::endl;
     return false;
   }
@@ -403,10 +392,10 @@ bool AnalysisBase::WriteOutput() {
 
   _file_out->cd();
 
-  auto size = static_cast<int>(_output_vector.size());
+  auto size = _output_vector.size();
   for (auto i = 0; i < size; ++i) {
     if (!_output_vector[i])
-      std::cerr << "ERROR! AnalysisBase::WriteOutput()  output object pointer is NULL" << std::endl;
+      std::cerr << "ERROR! " << __func__ << "()  output object pointer is nullptr" << std::endl;
     _output_vector[i]->Write();
   }
 
@@ -417,30 +406,29 @@ bool AnalysisBase::WriteOutput() {
   return true;
 }
 
-// TODO
-// make the inheritance possible
-// e.g. draw events here but also draw some analysi specific stuff in the analysis
 //******************************************************************************
-void AnalysisBase::DrawSelection(const TEvent *event){
+std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
+    const std::shared_ptr<TRawEvent>& raw_event,
+    const std::shared_ptr<TEvent>& reco_event
+    ) {
 //******************************************************************************
   gStyle->SetCanvasColor(0);
   gStyle->SetMarkerStyle(21);
   gStyle->SetMarkerSize(1.05);
-  TH2F    *MM      = new TH2F("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TH2F    *MMsel   = new TH2F("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
-  TNtuple *event3D = new TNtuple("event3D", "event3D", "x:y:z:c");
+  TH2F    MM("MM","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TH2F    MMsel("MMsel","",geom::nPadx,0,geom::nPadx,geom::nPady,0,geom::nPady);
+  TNtuple event3D("event3D", "event3D", "x:y:z:c");
 
-  // all hits
-  //for(auto h:event->GetHits()){
-  //  MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-  //}
+//   all hits
+  for (const auto& h : raw_event->GetHits()) {
+    MM.Fill(h->GetCol(),h->GetRow(),h->GetQ());
+  }
 
   // sel hits
-  for (auto h:event->GetUsedHits()){
+  for (const auto& h : reco_event->GetUsedHits()){
     if(!h->GetQ()) continue;
-    event3D->Fill(h->GetTime(),h->GetRow(),h->GetCol(),h->GetQ());
-    MMsel->Fill(h->GetCol(),h->GetRow(),h->GetQ());
-    //MM->Fill(h->GetCol(),h->GetRow(),h->GetQ());
+    event3D.Fill((Float_t)h->GetTime(),(Float_t)h->GetRow(),(Float_t)h->GetCol(), (Float_t)h->GetQ());
+    MMsel.Fill(h->GetCol(),h->GetRow(),h->GetQ());
   }
 
   for (auto x = 0; x < geom::nPadx; ++x) {
@@ -452,43 +440,48 @@ void AnalysisBase::DrawSelection(const TEvent *event){
         }
       } // over t
       if (max)
-        MM->Fill(x, y, max);
+        MM.Fill(x, y, max);
     }
   }
 
-  TCanvas *canv = new TCanvas("canv", "canv", 0., 0., 1400., 600.);
+  auto canv = std::make_unique<TCanvas>("canv", "canv", 0., 0., 1400., 600.);
   canv->Divide(3,1);
   canv->cd(1);
-  MM->Draw("COLZ");
+  MM.Draw("COLZ");
   canv->cd(2);
-  MMsel->Draw("COLZ");
+  MMsel.Draw("COLZ");
 
   canv->cd(3);
-  event3D->Draw("x:y:z:c","","box2");
-  TH3F *htemp = (TH3F*)gPad->GetPrimitive("htemp");
+  event3D.Draw("x:y:z:c","","box2");
+  auto htemp = (TH3F*)gPad->GetPrimitive("htemp");
   htemp->GetXaxis()->SetLimits(0,geom::nPadx);
   htemp->GetYaxis()->SetLimits(0,geom::nPady);
   htemp->GetZaxis()->SetLimits(0,500);
   htemp->SetTitle("");
   canv->Update();
-  canv->WaitPrimitive();
-  delete htemp;
-  delete canv;
-
-  delete MM;
-  delete MMsel;
-  delete event3D;
+  return canv;
 }
 
 //******************************************************************************
-std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) {
+THitPtrVec AnalysisBase::GetRobustPadsInCluster(THitPtrVec col) {
 //******************************************************************************
-  std::vector<THit*> result;
+  std::vector<std::shared_ptr<THit>> result;
   // sort in charge decreasing order
-  sort(col.begin(), col.end(), [](THit* hit1, THit* hit2){return hit1->GetQ() > hit2->GetQ();});
+  sort(col.begin(), col.end(), [](const std::shared_ptr<THit> & hit1,
+                                  const std::shared_ptr<THit> & hit2) {
+    return hit1->GetQ() > hit2->GetQ();
+  });
 
-  for (uint i = 0; i < col.size(); ++i) {
-    auto pad    = col[i];
+  // leading pad
+  auto col_id = col[0]->GetCol();
+  auto row_id = col[0]->GetRow();
+  // excluded from analysis the whole cluster if leading pad is near the broken pad
+  for (const auto& broken : _broken_pads) {
+    if (abs(col_id - broken.first) < 2 && abs(row_id - broken.second) < 2)
+      return result;
+  }
+
+  for (const auto& pad : col) {
     auto q      = pad->GetQ();
     if (!q)
       continue;
@@ -508,7 +501,7 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) 
     // if (pad->GetTime() - col[0]->GetTime() < -1)
     //   continue;
 
-    // // avoid "suspisious" WF with small time difference in the 3rd pad
+    // // avoid "suspicious" WF with small time difference in the 3rd pad
     // if (i > 1 && pad->GetTime() - col[0]->GetTime() < 5)
     //   continue;
 
@@ -522,20 +515,21 @@ std::vector<THit*> AnalysisBase::GetRobustPadsInCluster(std::vector<THit*> col) 
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr) {
+TClusterPtrVec AnalysisBase::GetRobustClusters(TClusterPtrVec & tr) {
 //******************************************************************************
-  std::vector<TCluster*> result;
+  TClusterPtrVec result;
   // sort clusters in increasing order
-  sort(tr.begin(), tr.end(), [](TCluster* cl1,
-                                TCluster* cl){
-                                  return  cl1->GetCharge() < cl->GetCharge();});
+  sort(tr.begin(), tr.end(), [](TClusterPtr & cl1,
+                                TClusterPtr & cl) {
+                                        return  cl1->GetCharge() < cl->GetCharge();});
 
-  // trancation cut
+  // truncation cut
   /* NO TRUNCATION */
   auto frac = 1.00;
-  Int_t i_max = round(frac * tr.size());
+  auto i_max = (int)round(frac * (double)tr.size());
+  result.reserve(i_max);
   for (auto i = 0; i < i_max; ++i) {
-    result.push_back(tr[i]);
+    result.push_back(std::move(tr[i]));
   }
   /* */
 
@@ -581,21 +575,21 @@ std::vector<TCluster*> AnalysisBase::GetRobustClusters(std::vector<TCluster*> tr
 
   // sort by X for return
   sort(result.begin(), result.end(),
-       [&](TCluster* cl1, TCluster* cl2){
+       [&](TClusterPtr & cl1, TClusterPtr & cl2){
           return cl1->GetX() < cl2->GetX();
         });
   return result;
 }
 
 //******************************************************************************
-std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) {
+TClusterPtrVec AnalysisBase::ClusterTrack(const THitPtrVec &tr) const {
 //******************************************************************************
   if (!_clustering) {
     std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
     exit(1);
   }
-  std::vector<TCluster*> cluster_v;
-  for (auto pad:tr) {
+  TClusterPtrVec cluster_v;
+  for (const auto& pad:tr) {
     auto col_id = pad->GetCol(_invert);
     auto row_id = pad->GetRow(_invert);
 
@@ -607,22 +601,22 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) 
     auto cons = _clustering->GetConstant(row_id, col_id);
 
     // search if the cluster is already considered
-    std::vector<TCluster*>::iterator it;
+    TClusterPtrVec::iterator it;
     for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
-      if (!((*(*it))[0])) {
+      if (!(**it)[0]) {
         continue;
       }
 
-      auto cluster_col = (*(*it))[0]->GetCol(_invert);
-      auto cluster_row = (*(*it))[0]->GetRow(_invert);
+      auto cluster_col = (**it)[0]->GetCol(_invert);
+      auto cluster_row = (**it)[0]->GetRow(_invert);
       if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
         (*it)->AddHit(pad);
         (*it)->AddCharge(pad->GetQ());
         /** update X position */
         auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
         auto mult  = (*it)->GetSize();
-        auto x_new = ((*it)->GetX() * (mult - 1) + x_pad) / mult;
-        (*it)->SetX(x_new);
+        auto x_new = ((*it)->GetX() * ((Float_t)mult - 1) + x_pad) / (double)mult;
+        (*it)->SetX((float_t)x_new);
         /** */
 
         break;
@@ -630,10 +624,10 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) 
     } // loop over track clusters
     // add new cluster
     if (it == cluster_v.end()) {
-      TCluster* first_cluster = new TCluster(pad);
-      first_cluster->SetX(geom::GetXposPad(pad, _invert, _clustering->angle));
+      auto first_cluster = std::make_unique<TCluster>(pad);
+      first_cluster->SetX((float_t) geom::GetXposPad(pad, _invert, _clustering->angle));
       first_cluster->SetCharge(pad->GetQ());
-      cluster_v.push_back(first_cluster);
+      cluster_v.push_back(std::move(first_cluster));
     }
   } // over pads
 
@@ -649,15 +643,10 @@ std::vector<TCluster*> AnalysisBase::ClusterTrack(const std::vector<THit*> &tr) 
 //******************************************************************************
 bool AnalysisBase::ReadParamFile() {
 //******************************************************************************
-
   if (_param_file_name == ""){
-    char *homePath(getenv("SOFTDIR"));
-    if (getenv("SOFTDIR") == NULL) {
-      std::cerr << "SOFTDIR varaible is not specified!" << std::endl;
-      std::cerr << "Consider sourcing setup.sh" << std::endl;
-      return false;
-    }
-    _param_file_name = std::string(homePath) + "/params/default.ini";
+    auto source = std::string(__FILE__);
+    auto found = source.find_last_of('/');
+    _param_file_name = source.substr(0, found) + "/../../params/default.ini";
   }
   std::cout << "*****************************************" << std::endl;
   std::cout << "Read parameters from " << _param_file_name << std::endl;
@@ -674,7 +663,7 @@ bool AnalysisBase::ReadParamFile() {
 
       if(line[0] == '#' || line.empty())
         continue;
-      auto delimiterPos = line.find("=");
+      auto delimiterPos = line.find('=');
       auto name = line.substr(0, delimiterPos);
       auto value = line.substr(delimiterPos + 1);
       // std::cout << name << " " << value << '\n';
@@ -719,7 +708,7 @@ bool AnalysisBase::ReadParamFile() {
         }
       } else if (name == "prf_centre_freedom") {
         if (value == "1") {
-          _PRF_free_centre = true;
+          _prf_free_centre = true;
           std::cout << "PRF centre position is a free parameter of the fit" << std::endl;
         }
       } else if (name == "track_shape") {
@@ -737,16 +726,17 @@ bool AnalysisBase::ReadParamFile() {
         }
       } else if (name == "max_mult") {
         _max_mult = TString(value).Atoi();
+      } else if (name == "max_mean_mult") {
+        _max_mean_mult = TString(value).Atof();
       } else if (name == "cut_gap") {
-        if (value == "0") {
+        if (value == "0")
           _cut_gap = false;
-        }
       } else if (name == "cluster_min") {
         _min_clusters = TString(value).Atoi();
       } else if (name == "max_phi") {
-        _max_phi = TString(value).Atof();
+        _max_phi = (Float_t)TString(value).Atof();
       } else if (name == "max_theta") {
-        _max_theta = TString(value).Atof();
+        _max_theta = (Float_t)TString(value).Atof();
       //switch to WF storage
       } else if (name == "to_store_wf") {
         if (value == "0") {
@@ -766,6 +756,23 @@ bool AnalysisBase::ReadParamFile() {
           _cross_talk_treat = def;
           std::cout << "Cross-talk will not be treated" << std::endl;
         }
+      } else if (name == "dead") {
+        auto dead_pads = GenericToolbox::splitString(value, ";");
+        if (!dead_pads.empty())
+          std::cout << "Dead pads: ";
+        for (const auto & pad : dead_pads) {
+          auto coordinates = GenericToolbox::splitString(pad, ",");
+          if (coordinates.size() != 2) {
+            continue;
+//            std::cerr << pad << std::endl;
+//            throw std::logic_error("Wrong dead pad syntax");
+          }
+          _broken_pads.emplace_back(TString(coordinates[0]).Atoi(),
+                                    TString(coordinates[1]).Atoi()
+                                    );
+          std::cout << _broken_pads.back().first << ", " << _broken_pads.back().second << "; ";
+        }
+        std::cout << std::endl;
       }
     }
   } else {
@@ -776,28 +783,7 @@ bool AnalysisBase::ReadParamFile() {
 }
 
 //******************************************************************************
-void AnalysisBase::help(const std::string& name) {
-//******************************************************************************
-  std::cout << name << " usage\n" << std::endl;
-  std::cout << "   -i <input_file>      : input file name with a path" << std::endl;
-  std::cout << "   -o <output_path>     : output files path" << std::endl;
-  std::cout << std::endl;
-  std::cout << "   --start     <i>      :start from event i" << std::endl;
-  std::cout << "   --end       <i>      :end with event i" << std::endl;
-  std::cout << "   -t <interation>      : iteration number" << std::endl;
-  std::cout << std::endl;
-  std::cout << "   --param, p  <file>   : parameter file to use" << std::endl;
-  std::cout << "   --prev      <file>   : file from previous iteration" << std::endl;
-  std::cout << "   -b                   : run in batch mode" << std::endl;
-  std::cout << "   -v <verbose_level>   : verbosity level" << std::endl;
-  std::cout << "   -d                   : test mode. run over first 30 events" << std::endl;
-  std::cout << "   -h                   : print ROOT help" << std::endl;
-  std::cout << "   -m                   : print " << name << " help" << std::endl;
-  exit(1);
-}
-
-//******************************************************************************
-bool AnalysisBase::ChainInputFiles(TString tree_name) {
+bool AnalysisBase::ChainInputFiles(const TString& tree_name) {
 //******************************************************************************
   _chain = new TChain(tree_name);
   if (_file_in_name.Contains(".root")) {
@@ -820,36 +806,12 @@ bool AnalysisBase::ChainInputFiles(TString tree_name) {
 }
 
 //******************************************************************************
-void AnalysisBase::process_mem_usage(double& vm_usage, double& resident_set) {
-//******************************************************************************
-    vm_usage     = 0.0;
-    resident_set = 0.0;
-
-    // the two fields we want
-    unsigned long vsize;
-    long rss;
-    {
-        std::string ignore;
-        std::ifstream ifs("/proc/self/stat", std::ios_base::in);
-        ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
-                >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
-                >> ignore >> ignore >> vsize >> rss;
-    }
-
-    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
-    vm_usage = vsize / 1024.0;
-    resident_set = rss * page_size_kb;
-}
-
-//******************************************************************************
 void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
 //******************************************************************************
-  double real, virt;
-  process_mem_usage(virt, real);
+  auto mem = GenericToolbox::getProcessMemoryUsage();
   double CPUtime  = _sw_event->CpuTime();
   double REALtime = _sw_event->RealTime();
-  int m = 0;
-  int s = 0;
+  int m, s;
   if (eventID) {
     int EET         = (int)((N_events - eventID) * REALtime / eventID);
     CPUtime *= 1.e3;  CPUtime /= eventID;
@@ -861,7 +823,7 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  std::cout << "\t Memory  " <<  real << "\t" << virt;
+  std::cout << "\t Memory  " <<  mem / 1048576 << " " << "MB";
   std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed CPU " << CPUtime << " ms/event";

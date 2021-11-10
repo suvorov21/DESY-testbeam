@@ -17,11 +17,11 @@
 /// Template for the Reconstruction class
 class ReconstructionBase {
  public:
-  ReconstructionBase() {;}
-  virtual ~ReconstructionBase() {;}
+  ReconstructionBase(): _verbose(0) {}
+  virtual ~ReconstructionBase() = default;
 
   virtual bool Initialize(int verbose);
-  virtual bool SelectEvent(TEvent* event);
+  virtual bool SelectEvent(const std::shared_ptr<TEvent>& event);
 
 protected:
   int _verbose;

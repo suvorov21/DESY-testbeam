@@ -15,3 +15,5 @@ build*
 *.d
 *.pcm
 *.pyc
+src/cmake-build-debug/
+.idea/

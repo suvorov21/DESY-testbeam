@@ -18,6 +18,7 @@
 #include "TGraphErrors.h"
 
 #include "SetT2KStyle.hxx"
+#include "CmdLineParser.h"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"
@@ -37,13 +38,13 @@ public:
   /// Number of pads in a row
   int n_pads;
   /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
-  Float_t coeff;
+  Double_t coeff;
   /// Function of row and column that is constant for a given cluster
-  int GetConstant(int row, int col) {
+  int GetConstant(int row, int col) const {
     if (n_pads == 0)
       return col;
     else {
-      return (floor(coeff * col - row));
+      return floor(coeff * col - row);
     }
   }
 };
@@ -56,42 +57,59 @@ public:
 */
 class AnalysisBase {
  public:
-  AnalysisBase(int argc, char** argv);
+  AnalysisBase();
   virtual ~AnalysisBase() {;}
+
+  /// Read CL arguments
+  virtual bool ReadCLI(int argc, char** argv);
 
   /// Initialise histoes, input files, selections
   virtual bool Initialize();
+
   /// Loop over TChain entries. Can use pre-defined event list
   /** Normally for the first iteration loop over all events is performed.
   * For the following iterations only events that passed reconstruction
   * and selection are used.
   */
-  virtual bool Loop(std::vector<Int_t> EventList);
+  virtual bool Loop();
   /// Process the reconstruction output
   /**
   * Function should be defined in the derived analysis. It is responsible
   * for applying the selection for the successfully reconstructed tracks,
-  * performing the analysis itself, fill jistograms and TTree branches.
+  * performing the analysis itself, fill Histograms and TTree branches.
+  * @param event The event that is returned by pattern recognition
   */
-  virtual bool ProcessEvent(const TEvent* event);
+  virtual bool ProcessEvent(const std::shared_ptr<TEvent>& event);
+
   /// Write the output file (histos, trees)
   virtual bool WriteOutput();
 
   /// Read parameter file
   bool ReadParamFile();
 
+  // setters
+  void setInputFile(const TString& var) {_file_in_name = var;}
+  void setOutputFile(const TString& var) {_file_out_name = var;}
+  void setParamFile(const TString& var) {_param_file_name = var;}
+  void setVerbosity(const int& var) {_verbose = var;}
+  void setStartID(const int& var) {_start_ID = var;}
+  void setEndID(const int& var) {_end_ID = var;}
+  void setBatchMode(const bool var) {_batch = var;}
+  void setDebugMode(const bool var) {_test_mode = var;}
+  void setOverwrite(const bool var) { _overwrite = var;}
+
   /// Process a cluster and return only pads that are suggested to be robust
   /** E.g. function can return only 2 pads in a column.
    * Another use case is to ommit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
-  std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
+  THitPtrVec GetRobustPadsInCluster(THitPtrVec col);
   /// Return only robust clusters
-  /** E.g. apply a trunccation - ommit clusters with relatively large charge
+  /** E.g. apply a truncation - omit clusters with relatively large charge
    * Or put a strong upper limit on cluster charge.
    * Any condition can be specified.
    */
-  std::vector<TCluster*> GetRobustClusters(std::vector<TCluster*> tr);
+  static TClusterPtrVec GetRobustClusters(TClusterPtrVec & tr);
 
   // TODO consider a better implementation. No need to create all instances
   Clustering* CL_col;
@@ -100,7 +118,7 @@ class AnalysisBase {
   Clustering* CL_3by1;
   Clustering* CL_3by2;
 
-  /// An actual clustering precedure
+  /// An actual clustering procedure
   Clustering* _clustering;
 
   /// Split track into clusters
@@ -109,40 +127,36 @@ class AnalysisBase {
   * The function takes (row, column) and return a value
   * that is constant for a given cluster.
   * For example for clustering with columns the rule column == const is constant.
-  * For diagonals column - row = connst and so on.
+  * For diagonals column - row = const and so on.
   */
-  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr);
-
+  TClusterPtrVec ClusterTrack(const THitPtrVec &tr) const;
 
   /************************** Utilities functions *****************************/
-
-  /// Print usage
-  void help(const std::string& name);
 
   /// Dump progress in the command line
   virtual void CL_progress_dump(int eventID, int Nevents);
 
-  /// Dump RAM usage in CL
-  void process_mem_usage(double& vm_usage, double& resident_set);
-
   /// Set a vector of events that will be processed.
   /** Used in the analysis with few iterations. After the first iteration
-  * the list of files that passde the selection is established and
+  * the list of files that passed the selection is established and
   * there is no need to go through all events again, but only through
-  * those who passed the resonstruction and selection.
+  * those who passed the reconstruction and selection.
   */
-  void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
-  std::vector<Int_t> GetEventList() const {return _EventList;}
+  void SetEventList(const std::vector<Int_t>& var) {_eventList.clear(); _eventList = var;}
+  std::vector<Int_t> GetEventList() const {return _eventList;}
 
   /// Draw the selected event
-  virtual void DrawSelection(const TEvent *event);
+  std::unique_ptr<TCanvas> DrawSelection(
+      const std::shared_ptr<TRawEvent>& raw_event,
+      const std::shared_ptr<TEvent>& reco_event
+      );
 
   AnalysisBase(const AnalysisBase& ana){(void)ana;
-    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
+    std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}
   bool operator==(const AnalysisBase* ana){(void)ana;
-    std::cerr << "Comparison is depricated" << std::endl; exit(1);}
+    std::cerr << "Comparison is deprecated" << std::endl; exit(1);}
 
-  bool ChainInputFiles(TString tree_name);
+  bool ChainInputFiles(const TString& tree_name);
 
   /// verbosity levels
   enum verbosity_base {
@@ -160,8 +174,11 @@ class AnalysisBase {
   /// name of the parameter file
   TString _param_file_name;
 
+  /// CLI parser
+  CmdLineParser _clParser;
+
   /// vector of event IDs that will be analysed
-  std::vector<Int_t> _EventList;
+  std::vector<Int_t> _eventList;
   /// Whether to store particular event
   bool    _store_event;
   /// Event to start the loop
@@ -172,25 +189,17 @@ class AnalysisBase {
   int     _selected;
 
   /// The current processing event
-  TRawEvent* _event;
+  std::shared_ptr<TRawEvent> _event;
   bool    _work_with_event_file;
 
   /// input file
-  /* May be a single ROOT file or a list of files*/
+  /* Maybe a single ROOT file or a list of files*/
   TFile* _file_in;
   /// output file
   TFile* _file_out;
 
   /// chain with inpout files
   TChain* _chain;
-
-  /// Name of the file from previous iteration
-  TString _Prev_iter_name;
-  /// iteration number. Starting from 0
-  Int_t   _iteration;
-
-  /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool _correction;
 
   /// choose the input array size, whether to use 510 or 511 time bins
   bool _saclay_cosmics;
@@ -208,11 +217,17 @@ class AnalysisBase {
   /// The maximum multiplicity of the track
   Int_t _max_mult;
 
+  /// The maximum mean multiplicity for track
+  Float_t _max_mean_mult;
+
   /// Whether to cut tracks with gap in the cluster
   /** E.g. one missed pad in the middle of the column or in the
   * middle of the diagonal
   */
   bool _cut_gap;
+
+  /// Vector of broken pads to be excluded from the analysis
+  std::vector<std::pair<int, int>> _broken_pads;
 
   /// Minimum number of clusters in the track
   Int_t _min_clusters;
@@ -248,17 +263,17 @@ class AnalysisBase {
   /// Whether to use Gaussian lorentzian PRf fit over polynomial
   bool _gaus_lorentz_PRF;
 
-  /// Wheather to use individual PRF
+  /// Whether to use individual PRF
   bool _individual_column_PRF;
 
-  /// Wheather to make PRF center position a free parameter
-  bool _PRF_free_centre;
+  /// Whether to make PRF center position a free parameter
+  bool _prf_free_centre;
 
   /// Whether to use arc function for track fitting
   bool _do_linear_fit;
   bool _do_para_fit;
 
-  /// Wether to store the WFs
+  /// Whether to store the WFs
   bool _to_store_wf;
 
   /// Time control system

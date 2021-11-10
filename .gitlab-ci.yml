@@ -1,32 +1,42 @@
-image: rootproject/root:6.22.00-centos7
+#image: rootproject/root:6.22.00-centos7
+image: bars21/dev_hep_root:6.24.00gcc7
 
 stages:
   # build with
   - build
-  # test run with basic analysis
+  # unittests
   - test
+  # test run with expected output from basic analysis
+  - validation
+  # analyze test + validation coverage
+  - coverage
   # doxygen
   - docs
   - deploy
 
+# build stage
 compile_gcc:
   stage: build
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
+    - git submodule update --init --recursive
   script:
     - mkdir build; cd build
     - gcc -v > ../gcc.log
-    - cmake3 ../src
+    - cmake3 -DCMAKE_COVERAGE=ON ../
     - make 2>&1 | tee -a ../gcc.log
   artifacts:
     paths:
-      - ./build/SpatialResol.exe
-      - ./build/dEdx.exe
+      - build
       - gcc.log
 
 build_tests:
   stage: build
   before_script:
     - cd test/
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
   script:
     - make all
   artifacts:
@@ -34,64 +44,134 @@ build_tests:
       - test/SR_test.exe
       - test/dEdx_test.exe
 
-# run tests using the binary built before
-SpatialResol_raw_test:
+# tests
+clang:
+    stage: test
+    before_script:
+      - git submodule update --init --recursive
+      - yum install -y llvm-toolset-7-clang-tools-extra
+      - . /opt/rh/llvm-toolset-7/enable
+      - yum install -y llvm-toolset-7-clang.x86_64
+      - curl https://raw.githubusercontent.com/llvm-mirror/clang-tools-extra/master/clang-tidy/tool/run-clang-tidy.py --output /run-clang-tidy.py
+      - chmod +x /run-clang-tidy.py
+    script:
+      - cd build; cmake3 ../
+      - /run-clang-tidy.py 2>&1 | tee -a ../clang-tidy.log
+    artifacts:
+      paths:
+        - clang-tidy.log
+
+Google_test:
   stage: test
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
+  script:
+    - ./build/Google_tests/Google_Tests_run
+  artifacts:
+    paths:
+      - build
+
+# validation
+SR_horizon:
+  stage: validation
+  before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
     - ./test/SR_test.exe Spatial_test_iter0.root 400;
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
     - ./test/dEdx_test.exe Spatial_test_iter1.root
+  artifacts:
+    paths:
+      - build
 
-Spatial_resol_slope_diagonal:
-  stage: test
+SR_diagonal:
+  stage: validation
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
     - mv download input.root
-    - sed -i '29s@.*@cluster = diag@' params/default.ini
-    - sed -i '51s@.*@cluster_min  = 52@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/diag.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/diag.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
+  artifacts:
+    paths:
+      - build
 
-Spatial_resol_slope_column:
-  stage: test
+SR_slope_column:
+  stage: validation
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
-    - sed -i '40s@.*@max_mult = 7@' params/default.ini
-    - sed -i '34s@.*@invert  = 1@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 650;
+  artifacts:
+    paths:
+      - build
 
-Spatial_resol_slope_3by1:
-  stage: test
+SR_3by1:
+  stage: validation
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
-    - sed -i '29s@.*@cluster = 3by1@' params/default.ini
-    - sed -i '40s@.*@max_mult = 6@' params/default.ini
-    - sed -i '51s@.*@cluster_min  = 31@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/3by1.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/3by1.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
+  artifacts:
+    paths:
+      - build
 
+SR_inverted:
+  stage: validation
+  before_script:
+    - yum -y install wget
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
+    - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
+    - mv download input.root
+  script:
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
+    - ./test/SR_test.exe Spatial_test_iter1.root 300;
+  artifacts:
+    paths:
+      - build
+
+# coverage & docs
+coverage:
+  stage: coverage
+  before_script:
+    - python3 -m pip install gcovr
+    - git submodule update --init --recursive
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - . /opt/rh/devtoolset-7/enable
+  script:
+    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --exclude='src/Reconstruction/CrossingReconstruction.*' --html-details --html=coverage.html > coverage.xml
+    - wget --no-check-certificate https://coverage.codacy.com/get.sh
+    - . get.sh report -r coverage.xml
+  artifacts:
+    paths:
+      - coverage*
+    reports:
+      cobertura: coverage.xml
 
 # documentation, etc.
 docs:

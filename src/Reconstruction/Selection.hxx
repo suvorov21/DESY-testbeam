@@ -8,6 +8,7 @@
 #include "TCluster.hxx"
 #include "Geom.hxx"
 
+const int CHARGE_THR_FOR_GAP = 0;
 namespace sel
 {
   /// A default selection of a "nice" crossing track
@@ -16,34 +17,43 @@ namespace sel
   * "Gap" is defined as a missed column or a row in the cluster, while hits
   * around this "missed pad" are detected.
   */
-  bool                 CrossingTrackSelection(const std::vector<TCluster*> &track,
-                                              const int  &max_mult  = 6,
+  bool                 CrossingTrackSelection(const TClusterPtrVec &track,
+                                              const int  &max_mult  = 10,
+                                              const float&max_mean_mult  = 6.,
                                               const bool &cut_gap   = true,
                                               const float &max_phi  = -1.,
                                               const float &max_theta= -1.,
+                                              const std::vector<std::pair<int, int>>& _broken_pads = std::vector<std::pair<int, int>>{},
                                               const bool &invert    = false,
                                               const int  &verbose   = 0);
 
   /// Return a maximum cluster multiplicity of the track
-  int               GetMaxMultiplicity (const std::vector<TCluster*> &track);
+  void               GetMultiplicity (const TClusterPtrVec &track,
+                       Float_t& m_mean,
+                       Int_t& m_max
+  );
   /// Look if there a gap in the clusters (missed row/column)
-  bool                  GetNoGap       (const std::vector<TCluster*> &track,
-                                        const bool &invert = false);
+  bool                  GetNoGap       (const TClusterPtrVec &track,
+                                        const std::vector<std::pair<int, int>>& _broken_pads = std::vector<std::pair<int, int>>{},
+                                        const bool &invert = false
+                                        );
+
+  bool GetNoGapVector(const std::vector<int>& v);
 
   /// Fit the track with a linear approximation
-  std::vector <double> GetFitParams  (const std::vector<TCluster*> &track,
+  std::vector <double> GetFitParams  (const TClusterPtrVec &track,
                                       bool invert = false);
 
   /// Fit the track in the plane perpendicular to MM
-  std::vector <double> GetFitParamsXZ(const std::vector<TCluster*> &track,
+  std::vector <double> GetFitParamsXZ(const TClusterPtrVec &track,
                                       bool invert = false);
 
   /// Get the track angle within the MM plane
-  float GetLinearPhi(const std::vector<TCluster*> &track,
+  double GetLinearPhi(const TClusterPtrVec &track,
                      bool invert = false);
 
   /// Get the track angle w.r.t. MM
-  float GetLinearTheta(const std::vector<TCluster*> &track,
+  double GetLinearTheta(const TClusterPtrVec &track,
                        bool invert = false);
 
   // 25 MHz --> 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin
