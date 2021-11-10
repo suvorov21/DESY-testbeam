@@ -1,5 +1,6 @@
-[![Codacy](https://app.codacy.com/project/badge/Grade/f0558fa6988e43d28f0d0915b2d77883)](https://www.codacy.com/gl/t2k-beamtest/desy_testbeam/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=t2k-beamtest/desy_testbeam&amp;utm_campaign=Badge_Grade)
 [![Pipeline](https://gitlab.com/t2k-beamtest/desy_testbeam/badges/develop/pipeline.svg)](https://gitlab.com/t2k-beamtest/desy_testbeam/-/commits/develop)
+[![Codacy](https://app.codacy.com/project/badge/Grade/f0558fa6988e43d28f0d0915b2d77883)](https://www.codacy.com/gl/t2k-beamtest/desy_testbeam/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=t2k-beamtest/desy_testbeam&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/f0558fa6988e43d28f0d0915b2d77883)](https://www.codacy.com/gl/t2k-beamtest/desy_testbeam/dashboard?utm_source=gitlab.com&utm_medium=referral&utm_content=t2k-beamtest/desy_testbeam&utm_campaign=Badge_Coverage)
 
 # DESY TPC beam test analysis package
 
@@ -19,7 +20,7 @@ one wants to store and the logic how to fill it.
 
 ## Compilation
 For the compilation you need to pull dependencies and create the build folder.
-The requirements are C++11 compatible compiler (gcc 5+ or clang 3.3+ recommended)
+The requirements are C++14 compatible compiler (gcc 5+ or clang 3.4+)
 ```bash
 git submodule update --init
 mkdir build
