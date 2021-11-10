@@ -33,7 +33,12 @@ class SpatialResolAna: public AnalysisBase {
   /// Profile PRF along X axis
   static bool ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* errors);
 
-  /// Initialise PRF with expected params
+  /**
+   * Initialise PRF with expected params
+   * @param name name of the histo
+   * @param shift Whether the PRF center position is a free parameter
+   * @return initialised PRF histo object
+   */
   TF1* InitializePRF(const TString& name, bool shift=false);
 
   /// Draw the histograms of interest

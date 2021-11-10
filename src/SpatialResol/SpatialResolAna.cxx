@@ -348,17 +348,6 @@ bool SpatialResolAna::Initialize() {
                 TString::Format("_pad_wf_q[%i][10][520]/I", Nclusters)
                 );
 
-  // WARNING TEMP
-//  _tree->Branch("fit_up",
-//                &_fit_up,
-//                TString::Format("fit_up[%i]/F", Nclusters)
-//                );
-//
-//  _tree->Branch("fit_bt",
-//                &_fit_bt,
-//                TString::Format("fit_bt[%i]/F", Nclusters)
-//                );
-
   _output_vector.push_back(_tree);
 
   _hdEdx  = new TH1F("dEdx","",300,0,5000);
@@ -811,45 +800,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
                                                  _clust_pos[clusterId]
                                                  );
       _clust_pos[clusterId] = (float_t)track_pos[clusterId];
-      // WARNING temp
-//      auto it_main = std::max_element((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-//                                      [](const std::shared_ptr<THit>& n1, const std::shared_ptr<THit>& n2) { return n1->GetQ() < n2->GetQ(); });
-//      auto main_row = (*it_main)->GetRow(_invert);
-//      auto it_up = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-//                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row + 1; });
-//      auto it_bt = std::find_if((*robust_clusters[clusterId]).begin(), (*robust_clusters[clusterId]).end(),
-//                                    [&](const std::shared_ptr<THit>& h1) { return h1->GetRow(_invert) == main_row - 1; });
-//
-//      if (it_up != (*robust_clusters[clusterId]).end() && it_bt != (*robust_clusters[clusterId]).end()) {
-//        Float_t r_up = (Float_t)(*it_up)->GetQ() / (Float_t)(*it_main)->GetQ();
-//        Float_t r_bt = (Float_t )(*it_bt)->GetQ() / (Float_t)(*it_main)->GetQ();
-//        if (r_up > _prf_function->GetMinimum() && r_bt > _prf_function->GetMinimum()) {
-//          auto minimisator = [&](const Double_t *par) {
-//            if (abs(par[1]) < 1e-6)
-//              return abs(r_up - _prf_function->Eval(geom::GetYposPad((*it_up)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
-//            else
-//              return abs(r_bt - _prf_function->Eval(geom::GetYposPad((*it_bt)) - par[0]) / _prf_function->Eval(geom::GetYposPad((*it_main)) - par[0]));
-//          };
-//          ROOT::Math::Functor fcn_cluster(minimisator,2);
-//          ROOT::Fit::Fitter  fitter_cluster;
-//
-//          double pStart[2] = {geom::GetYposPad((*it_main)), true};
-//          fitter_cluster.SetFCN(fcn_cluster, pStart);
-//          bool ok = fitter_cluster.FitFCN();
-//          (void)ok;
-//          const ROOT::Fit::FitResult & result_cluster = fitter_cluster.Result();
-//          if (ok && r_up > 0.04)
-//            _fit_up[clusterId] = (Float_t)result_cluster.GetParams()[0];
-//
-//          pStart[0] = geom::GetYposPad((*it_main));
-//          pStart[1] = false;
-//          fitter_cluster.SetFCN(fcn_cluster, pStart);
-//          ok = fitter_cluster.FitFCN();
-//          const ROOT::Fit::FitResult & result_cluster2 = fitter_cluster.Result();
-//          if (ok && r_bt > 0.04)
-//            _fit_bt[clusterId] = (Float_t)result_cluster2.GetParams()[0];
-//        }
-//      }
     } else {
       track_pos[clusterId] = _clust_pos[clusterId];
     }
