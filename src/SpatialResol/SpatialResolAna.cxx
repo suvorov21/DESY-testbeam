@@ -205,7 +205,8 @@ bool SpatialResolAna::Initialize() {
     _prf_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
     _prf_time_func = _prf_time_error->GetFunction("pol2");
 
-    Double_t mean, sigma;
+    Double_t mean{0};
+    Double_t sigma{0};
     mean = uncertainty_graph->GetMean();
     sigma = GenericToolbox::getFWHM(uncertainty_graph);
 //    sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
