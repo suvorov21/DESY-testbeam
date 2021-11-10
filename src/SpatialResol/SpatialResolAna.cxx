@@ -148,7 +148,7 @@ bool SpatialResolAna::Initialize() {
     // Read PRF for complicated patterns
     if (_clustering->n_pads > 1) {
       _prf_function_arr = new TF1*[3];
-      for (auto rest = 0; rest < _clustering->n_pads; ++rest) {
+      for (auto rest = 0; rest < std::min(_clustering->n_pads, 3); ++rest) {
         _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);

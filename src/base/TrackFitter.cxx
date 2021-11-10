@@ -197,7 +197,7 @@ TGraphErrors track_gr;
     double y   = clusters[clusterId]->GetY();
     double y_e = clusters[clusterId]->GetYE();
 
-    if (int(clusterId) == miss_id || x != x || y != y)
+    if (int(clusterId) == miss_id || isnan(x) || isnan(y))
       continue;
 
     if (_verbose > 3)
