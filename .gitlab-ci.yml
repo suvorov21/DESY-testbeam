@@ -73,7 +73,7 @@ Google_test:
       - build
 
 # validation
-SpatialResol_raw_test:
+SR_raw_test:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
@@ -82,8 +82,8 @@ SpatialResol_raw_test:
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
     - ./test/SR_test.exe Spatial_test_iter0.root 400;
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
     - ./test/dEdx_test.exe Spatial_test_iter1.root
@@ -91,7 +91,7 @@ SpatialResol_raw_test:
     paths:
       - build
 
-Spatial_resol_slope_diagonal:
+SR_slope_diagonal:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
@@ -107,7 +107,7 @@ Spatial_resol_slope_diagonal:
     paths:
       - build
 
-Spatial_resol_slope_column:
+SR_slope_column:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
@@ -116,14 +116,14 @@ Spatial_resol_slope_column:
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/vert.ini
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/vert.ini
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 650;
   artifacts:
     paths:
       - build
 
-Spatial_resol_slope_3by1:
+SR_slope_3by1:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
@@ -131,18 +131,15 @@ Spatial_resol_slope_3by1:
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
-    - sed -i '29s@.*@cluster = 3by1@' params/default.ini
-    - sed -i '40s@.*@max_mult = 6@' params/default.ini
-    - sed -i '51s@.*@cluster_min  = 31@' params/default.ini
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/3by1.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/3by1.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
   artifacts:
     paths:
       - build
 
-Spatial_resol_inverted:
+SR_inverted:
   stage: validation
   before_script:
     - yum -y install wget
@@ -151,8 +148,8 @@ Spatial_resol_inverted:
     - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
     - mv download input.root
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/vert.ini
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/vert.ini
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
   artifacts:
     paths:
