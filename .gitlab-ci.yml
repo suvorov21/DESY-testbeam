@@ -73,7 +73,7 @@ Google_test:
       - build
 
 # validation
-SR_raw_test:
+SR_horizon:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
@@ -91,7 +91,7 @@ SR_raw_test:
     paths:
       - build
 
-SR_slope_diagonal:
+SR_diagonal:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
@@ -123,7 +123,7 @@ SR_slope_column:
     paths:
       - build
 
-SR_slope_3by1:
+SR_3by1:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
