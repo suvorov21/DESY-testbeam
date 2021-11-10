@@ -19,6 +19,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+add_compile_options(-Wno-inconsistent-missing-override -Wno-nonportable-include-path)
+add_link_options(-Wno-inconsistent-missing-override -Wno-nonportable-include-path)
+
 if (NOT CMAKE_COVERAGE)
   message(STATUS "Switch off coverage flags")
   set(CMAKE_COVERAGE NO)
