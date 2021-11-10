@@ -1,0 +1,19 @@
+# # row column
+# R2021_07_08-05_05_41-0    phi_y_m60_z_m40_200ns_5
+# R2021_07_08-09_17_59-0    phi_y_m60_z_m40_200ns_10
+# R2021_07_08-12_39_27-0    phi_y_m60_z_m40_200ns_20        --param ../params/row_column_slope.ini
+# R2021_07_08-15_56_13-0    phi_y_m60_z_m40_200ns_30        --param ../params/row_column_slope.ini
+# R2021_07_08-16_35_16-0    phi_y_m60_z_m40_200ns_40        --param ../params/row_column_slope.ini
+
+# # inter
+# R2021_07_08-12_39_27-0    phi_y_m60_z_m40_200ns_20_c     --param ../params/3by1_invert.ini
+# R2021_07_08-15_56_13-0    phi_y_m60_z_m40_200ns_30_c     --param ../params/2by1_invert.ini
+
+# # diag
+# R2021_07_08-16_35_16-0    phi_y_m60_z_m40_200ns_40_d     --param ../params/diag.ini
+# R2021_07_08-23_38_16-0    phi_y_m60_z_m40_200ns_45_d     --param ../params/diag.ini
+# R2021_07_09-07_22_07-0    phi_y_m90_z_m40_200ns_50_d     --param ../params/diag.ini
+
+# # inter
+# #phi_y_m60_z_m40_200ns_70_c     --param ../params/3by1.ini
+# #phi_y_m60_z_m40_200ns_80_c     --param ../params/2by1.ini
