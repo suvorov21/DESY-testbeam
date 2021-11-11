@@ -5,26 +5,27 @@
 ```
 SpatialResol.exe
 -i, --input  <f>    input file name or a list of files
--o, -output  <f>    output file name
+-o, --output  <f>    output file name
 
--t <int>            specify the iteration number.
+-t, --iter <int>    specify the iteration number.
 --param, p <file>   files with parameters: selection., etc
 --prev     <file>   specify the file from the previous iteration if different from default
+--corr              whether to perform a fit w/ and w/o particular column and take geometrical mean
 
 --start     <i>     start from event i
 --end       <i>     end with event i
 
 -b                  batch mode. Skip event plotting
--v                  set verbosity level
+-v          <i>     set verbosity level
 -r                  rewrite the output file
 -d                  debug mode. Run over 30 events.
 ```
 # Analysis Flow
 
 ## Initialisation
-Define TTree vars
+- Define TTree vars
 
-Define histograms
+- Define histograms
 
 ## Process Event
 
@@ -66,4 +67,15 @@ for cluster:clusters
     for pad:cluster
         fill PRF
 
+```
+
+## Verbosity
+
+```
+v_progress = 1,
+v_event_number,
+v_analysis_steps,
+v_fit_details,
+v_residuals,
+v_prf
 ```

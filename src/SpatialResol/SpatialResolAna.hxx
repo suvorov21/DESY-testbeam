@@ -46,7 +46,7 @@ class SpatialResolAna: public AnalysisBase {
 
   /// verbosity levels
   enum verbosity_SR {
-    v_analysis_steps = v_base_last + 1,
+    v_analysis_steps = v_event_number + 1,
     v_fit_details,
     v_residuals,
     v_prf

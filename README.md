@@ -36,7 +36,10 @@ Then the code can be run with e.g.
 ```bash
 ./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b
 ```
-The detailed description of the input flags is provided in src/SpatialResol/README.md.
+The detailed description of the input flags is provided in [SpatialResol/README.md](src/SpatialResol/README.md).
+The expected output during the analysis is displayed below:
+
+![Sample_output](doc/output.png)
 
 ## Tool structure
 The scheme of the package for the particular case of the spatial resolution analysis 

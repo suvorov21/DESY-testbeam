@@ -67,6 +67,7 @@ bool SpatialResolAna::Initialize() {
   std::cout << "Verbosity     :   " << _verbose       << std::endl;
   std::cout << "Iteration     :   " << _iteration     << std::endl;
   std::cout << "Debug         :   " << _test_mode     << std::endl;
+  std::cout << "Correction    :   " << _correction     << std::endl;
 
   std::cout << "Initializing spatial resolution ana......";
 

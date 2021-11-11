@@ -161,8 +161,7 @@ class AnalysisBase {
   /// verbosity levels
   enum verbosity_base {
     v_progress = 1,
-    v_event_number,
-    v_base_last
+    v_event_number
   };
 
  protected:
