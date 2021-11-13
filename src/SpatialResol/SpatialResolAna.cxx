@@ -679,7 +679,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (!fit)
     return false;
 
-  _quality = (Float_t)fit->GetChisquare() / fit->GetNDF();
+  _quality = (Float_t)fit->GetChisquare() / (Float_t)fit->GetNDF();
 
   if (_verbose >= v_analysis_steps)
     std::cout << "Track fit done" << std::endl;
@@ -688,7 +688,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   // in case of arc fitting fill the momentum histo
   if (!_do_linear_fit && !_do_para_fit) {
-    _mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
+    _mom = Float_t(1./fit->GetParameter(0) * units::B * units::clight / 1.e9);
     _sin_alpha  = (Float_t)fit->GetParameter(1);
     _offset     = (Float_t)fit->GetParameter(2);
   }
@@ -1313,7 +1313,9 @@ TF1* SpatialResolAna::InitializePRF(const TString& name, bool shift) {
   return func;
 }
 
+//******************************************************************************
 bool SpatialResolAna::Draw() {
+//******************************************************************************
   std::cout << "Draw event " << _ev << std::endl;
   TCanvas c("c_SR", "c_SR", 0, 600, 800, 600);
   TCanvas c2("c_resid", "c_resid", 800, 600, 800, 600);

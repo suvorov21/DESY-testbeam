@@ -43,7 +43,7 @@ class TCluster {
   Int_t GetCharge() const {return _charge;}
 
   TCluster();
-  explicit TCluster(std::shared_ptr<THit> pad);
+  explicit TCluster(const std::shared_ptr<THit>& pad);
 
  private:
   /// vector pf all the hits in the cluster
