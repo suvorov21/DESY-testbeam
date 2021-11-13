@@ -23,6 +23,15 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const std::shared_ptr<TEvent>& event) override;
 
+  /// Treat cross-talk. Either suppress or cherry-pick
+  void TreatCrossTalk(const THitPtr& pad, THitPtrVec& robust_pads, int& pad_id);
+
+  /// Fill output tree vars for a pad
+  void FillPadOutput(const THitPtr& pad, const int& clusterId, const int& padId);
+
+  /// Reset stored vars
+  void Reset(int id);
+
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput() override;
@@ -98,8 +107,6 @@ class SpatialResolAna: public AnalysisBase {
   Float_t _clust_pos[Nclusters];
   /// X position of the cluster
   Float_t _x[Nclusters];
-  /// Y Position of the cluster
-  // Float_t _cluster_av[Nclusters];
   /// X position of the avareged cluster
   Float_t _x_av[Nclusters];
   /// Position of the track
@@ -127,7 +134,6 @@ class SpatialResolAna: public AnalysisBase {
   /** variables for the dEdx analysis */
   /// dE/dx
   Float_t _dEdx;
-  TH1F* _hdEdx;
   Int_t _pad_charge[Nclusters][10];
   Int_t _pad_time[Nclusters][10];
 
@@ -178,10 +184,6 @@ class SpatialResolAna: public AnalysisBase {
 
   TH1F* _prf_time_e;
 
-  /// WARNING TEMP
-  Float_t _fit_up[Nclusters];
-  Float_t _fit_bt[Nclusters];
-
   /// Fitter class for the track and cluster fitting
   TrackFitCern* _fitter;
 
@@ -197,18 +199,6 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Whether to assign uncertainty to charge
   bool _charge_uncertainty;
-
-  TH1F*   _mom_reco;
-  TH1F*   _pos_reco;
-  TH1F*   _ang_reco;
-  TH1F*   _qulity_ratio;
-  TH1F*   _chi2_ratio;
-
-  /// Chi2 function of the track fit
-  TH1F* _chi2_track;
-
-  /// How many columns are used for fit
-  TH1F* _cols_used;
 
   /// Residuals X_track - X_fit histoes
   TH1F* _resol_total;

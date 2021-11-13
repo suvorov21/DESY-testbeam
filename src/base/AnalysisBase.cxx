@@ -281,8 +281,10 @@ bool AnalysisBase::Loop() {
                     _padAmpl_saclay[x][y][t] - 250 :
                     _padAmpl[x][y][t] - 250;
 
-            if (_to_store_wf)
-              hit->SetADC(t, q);
+            if (q < -249)
+              continue;
+
+            hit->SetADC(t, q);
             if (q > Qmax) {
               Qmax = q;
               Tmax = t;

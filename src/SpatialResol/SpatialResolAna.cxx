@@ -243,15 +243,6 @@ bool SpatialResolAna::Initialize() {
 
   } // if iteration
 
-  _qulity_ratio   = new TH1F("quality_ratio",
-    "Quality ratio arc/linear", 100, 0., 2.);
-  _chi2_ratio     = new TH1F("chi_ratio",
-    "Chi2 ratio arc/linear", 100, 0., 2.);
-
-  _mom_reco   = new TH1F("mom_reco", "", 2000, -6., 6.);
-  _pos_reco   = new TH1F("pos_reco", "", 8000, -0.2, 0.2);
-  _ang_reco   = new TH1F("ang_reco", "", 3000, -0.3, 0.3);
-
   // Initialise histoes and graphs
   _prf_histo = new TH2F("PRF_histo","", prf_bin, prf_min, prf_max, 150,0.,1.5);
 
@@ -352,9 +343,6 @@ bool SpatialResolAna::Initialize() {
 
   _output_vector.push_back(_tree);
 
-  _hdEdx  = new TH1F("dEdx","",300,0,5000);
-  _output_vector.push_back(_hdEdx);
-
   _prf_histo_2pad = new TH2F("PRF_histo_2pad",
     "", prf_bin, prf_min, prf_max, 150,0.,1.5);
   _prf_histo_3pad = new TH2F("PRF_histo_3pad",
@@ -418,9 +406,6 @@ bool SpatialResolAna::Initialize() {
   _residual_sigma->SetName("resol_final");
   _residual_mean->SetName("mean");
 
-  _chi2_track = new TH1F("Chi2_Track", "", 1000, 0., 100.);
-  _cols_used  = new TH1F("cols_used", "", 40, 0., 40.);
-
   // schedule the output for writing
   _output_vector.push_back(_prf_function);
   _output_vector.push_back(_prf_histo);
@@ -431,14 +416,6 @@ bool SpatialResolAna::Initialize() {
 
   _output_vector.push_back(_residual_sigma_biased);
   _output_vector.push_back(_residual_sigma_unbiased);
-
-  _output_vector.push_back(_chi2_track);
-  _output_vector.push_back(_cols_used);
-  _output_vector.push_back(_qulity_ratio);
-  _output_vector.push_back(_chi2_ratio);
-  _output_vector.push_back(_mom_reco);
-  _output_vector.push_back(_pos_reco);
-  _output_vector.push_back(_ang_reco);
 
   _uncertainty_vs_prf_gr = new TGraphErrors();
   _uncertainty_vs_prf_gr->SetName("uncertainty_vs_prf_gr");
@@ -545,90 +522,19 @@ bool SpatialResolAna::Initialize() {
     _fitter->SetIndividualPRF(true);
   }
 
-  // Initialize timers
-//  _sw_partial[2] = new TStopwatch();
-//  _sw_partial[2]->Reset();
-//  _sw_partial[3] = new TStopwatch();
-//  _sw_partial[3]->Reset();
-//  _sw_partial[4] = new TStopwatch();
-//  _sw_partial[4]->Reset();
-
   return true;
 }
 
 //******************************************************************************
 bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 //******************************************************************************
-
   auto track_hits = event->GetUsedHits();
   if (track_hits.empty())
     return false;
-
-  _ev = (Int_t)event->GetID();
-
-  _quality    = -999.;
-  _mom        = -999.;
-  _sin_alpha  = -999.;
-  _offset     = -999.;
-  _rob_clusters = -999;
-
-  int cluster_N[Nclusters];
-  double track_pos[Nclusters];
-  double cluster_mean[Nclusters];
-  float charge_max[Nclusters];
-  double a_peak_fit[Nclusters];
-
-  int Ndots = 0;
-
-  // At the moment ommit first and last column
-  // first loop over columns
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
 
   // reset tree values
-  for (auto colId = 0; colId < Nclusters; ++colId) {
-    _multiplicity[colId]  = -999;
-    _charge[colId]        = -999;
-    _residual[colId]      = -999;
-    _residual_corr[colId] = -999;
-    _clust_pos[colId]     = -999;
-    _track_pos[colId]     = -999;
-    _x[colId]             = -999;
-    _x_av[colId]          = -999;
-    // _cluster_av[colId]    = -999;
-    _dEdx               = -999;
-
-    // WARNING TMP
-    _fit_up[colId]        = -999.;
-    _fit_bt[colId]        = -999.;
-
-    for (auto padId = 0; padId < 10; ++padId) {
-      _dx[colId][padId]    = -999;
-      _time[colId][padId]  = -999;
-      _qfrac[colId][padId] = -999;
-
-      //dEdx part
-      _pad_charge[colId][padId] = -999;
-      _pad_time[colId][padId] = -999;
-      _pad_x[colId][padId] = -999;
-      _pad_y[colId][padId] = -999;
-
-      _wf_width[colId][padId] = -999;
-      _wf_fwhm[colId][padId] = -999;
-
-     for (auto nSmp = 0; nSmp < 520; ++nSmp) {
-    //_pad_wf_t[colId][padId][nSmp] = -999;
-    _pad_wf_q[colId][padId][nSmp] = -999;
-
-    	}
-
-    }
-
-    cluster_N[colId]     = 0;
-    charge_max[colId]    = 0;
-    track_pos[colId]     = -999.;
-    cluster_mean[colId]  = 0.;
-    a_peak_fit[colId]    = 0.;
-  }
+  Reset((int)event->GetID());
 // *****************************************************************************
 // ************** See steps documentation in the README.md file ****************
 // *******************  STEP 1 *************************************************
@@ -668,7 +574,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
             return cl1->GetX() < cl2->GetX();
           });
     clusters.erase(clusters.begin(), clusters.begin() + 1);
-    clusters.erase(clusters.end()-1);
+    clusters.erase(clusters.end() - 1);
   }
   // cut on the number of clusters
   if (clusters.size() < uint(_min_clusters))
@@ -691,8 +597,14 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   std::vector <double> QsegmentS; QsegmentS.clear();
   std::vector <int> pad_wf_v; //WF
 
-  _m_mean = 0;
-  auto n = 0;
+  _m_mean = (Float_t)GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
+  _m_max = (int)(*(std::max(robust_clusters.begin(),
+                            robust_clusters.end(),
+                            [](const auto& a, const auto& b){
+                              return (*a)->GetSize() > (*b)->GetSize();
+                            }
+                            )))->GetSize();
+
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
     if (!(*robust_clusters[clusterId])[0])
       continue;
@@ -700,16 +612,12 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     // loop over rows
     auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
     _multiplicity[clusterId] = (int)robust_pads.size();
-    _m_mean += (float)robust_pads.size();
-    n += 1;
-    if (robust_pads.size() > _m_max)
-      _m_max = (int)robust_pads.size();
 
+    // reset vars for a cluster
     _clust_pos[clusterId] = 0.;
     _charge[clusterId] = 0;
 
     int colQ = 0;
-    int padId = 0;
 
     auto pad_id = -1;
     for (auto & pad:robust_pads) {
@@ -719,94 +627,32 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
       // treat cross-talk
       // not for the first pad
-      // TODO move to a separate function
-      if (pad != robust_pads[0] && _cross_talk_treat != def) {
-        auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
-        auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
-        // cross talk selection
-        if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
-          pad->SetQ(0);
-          for (auto time = pad->GetTime() + 4; time < 510; ++time) {
-            if (pad->GetADC(time) > pad->GetQ()) {
-              pad->SetTime(time);
-              pad->SetQ(pad->GetADC(time));
-            }
-          } // over time
-          if (pad->GetQ() == 0) {
-            robust_pads.erase(
-                              robust_pads.begin() + pad_id,
-                              robust_pads.begin() + pad_id + 1
-                              );
-            --pad_id;
-          }
-        } // cross-talk suppression
+      if (pad != robust_pads[0] && _cross_talk_treat != def)
+        TreatCrossTalk(pad, robust_pads, pad_id);
 
-        if (_cross_talk_treat == cherry_pick) {
-          pad->SetQ(0);
-          for (
-               auto time = robust_pads[0]->GetTime() - 4;
-               time < robust_pads[0]->GetTime() + 4;
-               ++time
-               ) {
-            if (pad->GetADC(time) > pad->GetQ() &&
-                pad->GetADC(time) > pad->GetADC(robust_pads[0]->GetTime() + 5)) {
-              pad->SetTime(time);
-              pad->SetQ(pad->GetADC(time));
-            }
-          } // over time
-          if (pad->GetQ() == 0) {
-            robust_pads.erase(
-                              robust_pads.begin() + pad_id,
-                              robust_pads.begin() + pad_id + 1
-                              );
-            --pad_id;
-          }
-        } // cross-talk cherry-picking
-      } // cross-talk block
-
-      _clust_pos[clusterId] += (Float_t)pad->GetQ() * (Float_t)geom::GetYposPad(pad,
-                                                                      _invert,
-                                                                      _clustering->angle);
-      _charge[clusterId] += pad->GetQ();
-
-
-      //dEdx part
       pad_wf_v.clear();
 
       colQ += pad->GetQ();
 
-      _pad_charge[clusterId][padId] = pad->GetQ();
-      _pad_time[clusterId][padId] = pad->GetTime();
-      _pad_x[clusterId][padId] = pad->GetCol(_invert);
-      _pad_y[clusterId][padId] = pad->GetRow(_invert);
-      _wf_width[clusterId][padId] = pad->GetWidth();
-      _wf_fwhm[clusterId][padId] = pad->GetFWHM();
-
-       if (_to_store_wf) {
-           for (int tz = 0; tz < geom::Nsamples; ++tz) {
-               _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
-           }
-    	}
-      ++padId;
+      FillPadOutput(pad, (int)clusterId, pad_id);
     } // loop over pads
+
     _clust_pos[clusterId] /= (Float_t)_charge[clusterId];
     _x[clusterId] = robust_clusters[clusterId]->GetX();
 
     double CoC =  _clust_pos[clusterId];
 
-    ++Ndots;
-
     if (_multiplicity[clusterId] > 1 && _iteration > 0) {
-      track_pos[clusterId] = _fitter->FitCluster(robust_pads,
+      _clust_pos[clusterId] = _fitter->FitCluster(robust_pads,
                                                  _charge[clusterId],
                                                  _clust_pos[clusterId]
                                                  );
-      _clust_pos[clusterId] = (float_t)track_pos[clusterId];
+      _clust_pos[clusterId] = (float_t)_clust_pos[clusterId];
     } else {
-      track_pos[clusterId] = _clust_pos[clusterId];
+      _clust_pos[clusterId] = _clust_pos[clusterId];
     }
 
-    robust_clusters[clusterId]->SetY((Float_t)track_pos[clusterId]);
+    robust_clusters[clusterId]->SetY((Float_t)_clust_pos[clusterId]);
     robust_clusters[clusterId]->SetCharge(_charge[clusterId]);
 
     if (_verbose >= v_fit_details) {
@@ -835,32 +681,26 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       }
     }
 
-    if (_verbose >= v_residuals) {
-      std::cout << "Cluster pos " << track_pos[clusterId] << "\t";
-      std::cout << cluster_mean[clusterId] << std::endl;
-    }
+    if (_verbose >= v_residuals)
+      std::cout << "Cluster pos " << _clust_pos[clusterId] << "\t";
 
-      if (colQ) QsegmentS.push_back(colQ);
+    if (colQ) QsegmentS.push_back(colQ);
 
   } // loop over clusters
-  _m_mean /= (float)n;
 
   if (_verbose >= v_analysis_steps) {
     std::cout << "Loop over columns done" << std::endl;
   }
 
-    //dEdx calculations
-    double alpha = 0.7;
-    sort(QsegmentS.begin(), QsegmentS.end());
-    double totQ = 0.;
-    Int_t i_max = round(alpha * QsegmentS.size());
-    for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
-    float CT= totQ / (alpha * QsegmentS.size());
+  //dEdx calculations
+  double alpha = 0.7;
+  sort(QsegmentS.begin(), QsegmentS.end());
+  double totQ = 0.;
+  Int_t i_max = round(alpha * QsegmentS.size());
+  for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
+  float CT= totQ / (alpha * QsegmentS.size());
 
-    _dEdx = CT;
-    _hdEdx->Fill(CT);
-
-  _cols_used->Fill(Ndots);
+  _dEdx = CT;
 
   _column_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("fitter");
@@ -879,7 +719,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     fit = (TF1*)fit->Clone();
 
   _quality = (Float_t)fit->GetChisquare() / fit->GetNDF();
-  _chi2_track->Fill(_quality);
 
   if (_verbose >= v_analysis_steps)
     std::cout << "Track fit done" << std::endl;
@@ -889,13 +728,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   // in case of arc fitting fill the momentum histo
   // TODO review mess
   if (!_do_linear_fit && !_do_para_fit) {
-    float mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
-    // if (func.CompareTo("circle_dn") == 0) mom *= -1.;
-    _mom_reco->Fill(mom);
-    _pos_reco->Fill(fit->GetParameter(2));
-    _ang_reco->Fill(fit->GetParameter(1));
-
-    _mom        = mom;
+    _mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
     _sin_alpha  = (Float_t)fit->GetParameter(1);
     _offset     = (Float_t)fit->GetParameter(2);
   }
@@ -988,8 +821,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 // ************ STEP 6 *********************************************************
 
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
-    a_peak_fit[clusterId] = robust_clusters[clusterId]->GetCharge();
-
     // don't fill PRF for multiplicity of 1
     if (robust_clusters[clusterId]->GetSize() == 1)
       continue;
@@ -1021,7 +852,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       // time, position wrt track, charge, col/row
       _time[clusterId][padId]  = time;
       _dx[clusterId][padId]    = center_pad_y - track_fit_y;
-      _qfrac[clusterId][padId] = q / a_peak_fit[clusterId];
+      _qfrac[clusterId][padId] = q / robust_clusters[clusterId]->GetCharge();
 
       if (_verbose >= v_prf) {
         std::cout << "PRF fill\t" << _dx[clusterId][padId];
@@ -1074,6 +905,117 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     _passed_events.push_back((Int_t)event->GetID());
 
   return true;
+}
+
+//******************************************************************************
+void SpatialResolAna::TreatCrossTalk(const THitPtr& pad,
+                                     THitPtrVec& robust_pads,
+                                     int& pad_id) {
+  //******************************************************************************
+  auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
+  auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
+  // cross talk selection
+  if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
+    pad->SetQ(0);
+    for (auto time = pad->GetTime() + 4; time < 510; ++time) {
+      if (pad->GetADC(time) > pad->GetQ()) {
+        pad->SetTime(time);
+        pad->SetQ(pad->GetADC(time));
+      }
+    } // over time
+    if (pad->GetQ() == 0) {
+      robust_pads.erase(
+          robust_pads.begin() + pad_id,
+          robust_pads.begin() + pad_id + 1
+      );
+      --pad_id;
+    }
+  } // cross-talk suppression
+
+  if (_cross_talk_treat == cherry_pick) {
+    pad->SetQ(0);
+    for (
+        auto time = robust_pads[0]->GetTime() - 4;
+        time < robust_pads[0]->GetTime() + 4;
+        ++time
+    ) {
+      if (pad->GetADC(time) > pad->GetQ() &&
+          pad->GetADC(time) > pad->GetADC(robust_pads[0]->GetTime() + 5)) {
+        pad->SetTime(time);
+        pad->SetQ(pad->GetADC(time));
+      }
+    } // over time
+    if (pad->GetQ() == 0) {
+      robust_pads.erase(
+          robust_pads.begin() + pad_id,
+          robust_pads.begin() + pad_id + 1
+      );
+      --pad_id;
+    }
+  } // cross-talk cherry-picking
+}
+
+//******************************************************************************
+void SpatialResolAna::FillPadOutput(const THitPtr &pad,
+                                 const int& clusterId,
+                                 const int& padId) {
+//******************************************************************************
+  _clust_pos[clusterId] += (Float_t)pad->GetQ() * (Float_t)geom::GetYposPad(pad,
+                                                                            _invert,
+                                                                            _clustering->angle);
+  _charge[clusterId] += pad->GetQ();
+  _pad_charge[clusterId][padId] = pad->GetQ();
+  _pad_time[clusterId][padId] = pad->GetTime();
+  _pad_x[clusterId][padId] = pad->GetCol(_invert);
+  _pad_y[clusterId][padId] = pad->GetRow(_invert);
+  _wf_width[clusterId][padId] = pad->GetWidth();
+  _wf_fwhm[clusterId][padId] = pad->GetFWHM();
+
+  if (_to_store_wf) {
+    for (int tz = 0; tz < geom::Nsamples; ++tz) {
+      _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
+    }
+  }
+}
+
+void SpatialResolAna::Reset(int id) {
+  _ev = id;
+  _quality    = -999.;
+  _mom        = -999.;
+  _sin_alpha  = -999.;
+  _offset     = -999.;
+  _rob_clusters = -999;
+
+  for (auto colId = 0; colId < Nclusters; ++colId) {
+    _multiplicity[colId]  = -999;
+    _charge[colId]        = -999;
+    _residual[colId]      = -999;
+    _residual_corr[colId] = -999;
+    _clust_pos[colId]     = -999;
+    _track_pos[colId]     = -999;
+    _x[colId]             = -999;
+    _x_av[colId]          = -999;
+    _dEdx               = -999;
+
+    for (auto padId = 0; padId < 10; ++padId) {
+      _dx[colId][padId]    = -999;
+      _time[colId][padId]  = -999;
+      _qfrac[colId][padId] = -999;
+
+      //dEdx part
+      _pad_charge[colId][padId] = -999;
+      _pad_time[colId][padId] = -999;
+      _pad_x[colId][padId] = -999;
+      _pad_y[colId][padId] = -999;
+
+      _wf_width[colId][padId] = -999;
+      _wf_fwhm[colId][padId] = -999;
+
+      for (auto nSmp = 0; nSmp < 520; ++nSmp) {
+        _pad_wf_q[colId][padId][nSmp] = -999;
+      }
+    }
+  }
 }
 
 //******************************************************************************
