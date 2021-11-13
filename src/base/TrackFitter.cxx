@@ -187,8 +187,8 @@ Double_t TrackFitCern::FitCluster(const THitPtrVec& col,
 }
 
 //******************************************************************************
-TF1* TrackFitCern::FitTrack(const TClusterPtrVec& clusters,
-                            const int& miss_id) {
+std::shared_ptr<TF1> TrackFitCern::FitTrack(const TClusterPtrVec& clusters,
+                                            const int& miss_id) {
 //******************************************************************************
 TGraphErrors track_gr;
 
@@ -276,7 +276,7 @@ TGraphErrors track_gr;
   if (!fit)
     return nullptr;
 
-  return fit;
+  return std::make_shared<TF1>(*fit);
 }
 
 //******************************************************************************

@@ -106,9 +106,9 @@ public:
                      );
 
   /// Track fitter
-  TF1* FitTrack(const TClusterPtrVec& clusters,
-                const int& miss_id = -1
-                );
+  std::shared_ptr<TF1> FitTrack(const TClusterPtrVec& clusters,
+                                const int& miss_id = -1
+                                );
 
   /// Set array of PRFs for complicated patterns
   void SetPRFarr(TF1* f[], int n);
@@ -116,46 +116,41 @@ public:
   void SetComplicatedPatternPRF(bool v) {_complicated_pattern_PRF = v;}
   void SetIndividualPRF(bool v) {_individual_column_PRF = v;}
 
-  TrackFitCern(const TrackFitCern& fit):TrackFitterBase(fit) {(void)fit;
-    std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}
-  bool operator==(const TrackFitCern* fit){(void)fit;
-    std::cerr << "Comparison is deprecated" << std::endl; exit(1);}
-
 protected:
   /// Pad Response Function analytical description
-  TF1* _prf_function;
+  TF1* _prf_function{nullptr};
 
   /// PRF uncertainty graph
-  TGraphErrors* _prf_graph;
+  TGraphErrors* _prf_graph{nullptr};
 
   /// Pad Response Function in time
-  TF1* _prf_time_func;
+  TF1* _prf_time_func{nullptr};
   /// histogram with errors for time PRF
-  TH1F* _prf_time_error;
+  TH1F* _prf_time_error{nullptr};
 
   /// bounds of the PRF that are reliable. Outside values are not used
-  float _fit_bound;
+  float _fit_bound{0};
 
   /// Weather to put into account uncertainty on charge with sqrt(Q)
-  bool _charge_uncertainty;
+  bool _charge_uncertainty{false};
 
   /// angle of the cluster
-  Float_t _angle;
+  Float_t _angle{0};
 
   /// Array of PRFs for complicated patterns
-  TF1** _prf_arr;
+  TF1** _prf_arr{nullptr};
 
   /// PRF arr size
-  int _prf_size;
+  int _prf_size{0};
 
   /// Whether to use individual PRFs for columns
-  bool _individual_column_PRF;
+  bool _individual_column_PRF{false};
 
   /// Whether to use individual PRFs for complicated patterns e.g. 2by1 3 by1
-  bool _complicated_pattern_PRF;
+  bool _complicated_pattern_PRF{false};
 
   /// Axis to convert track position into correction bin
-  TAxis* _ax;
+  TAxis* _ax{nullptr};
 
   /// array of corrections should be put here
   float _corr[36][50] = {{}};

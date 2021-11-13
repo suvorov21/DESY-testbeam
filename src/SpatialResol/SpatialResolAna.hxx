@@ -29,8 +29,22 @@ class SpatialResolAna: public AnalysisBase {
   /// Fill output tree vars for a pad
   void FillPadOutput(const THitPtr& pad, const int& clusterId, const int& padId);
 
+  /// Fill SR info
+  void FillSR(const TClusterPtr& cluster,
+              const uint& clusterId,
+              const std::shared_ptr<TF1>& fit,
+              const std::array<std::shared_ptr<TF1>, Nclusters>& fit1);
+  /// Fill PRF Info
+  void FillPRF(const THitPtr& pad,
+               int& padId,
+               const uint& clusterId,
+               const std::shared_ptr<TF1>& fit);
+
   /// Reset stored vars
   void Reset(int id);
+
+  /// Compute dE/dx
+  static Float_t ComputedEdx(std::vector<int>& QsegmentS);
 
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
@@ -62,18 +76,18 @@ class SpatialResolAna: public AnalysisBase {
 
  protected:
   /// Previous iteration output to extract PRF
-  TFile*  _prev_iter_file;
+  TFile*  _prev_iter_file{nullptr};
 
   /// Name of the file from previous iteration
-  TString _prev_iter_name;
+  TString _prev_iter_name{""};
   /// iteration number. Starting from 0
-  Int_t   _iteration;
+  Int_t   _iteration{0};
 
   /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool _correction;
+  bool _correction{false};
 
   /// output tree
-  TTree*  _tree;
+  TTree*  _tree{nullptr};
   /// Oputput tree vars
   // Event vars
   /// event number
@@ -93,7 +107,7 @@ class SpatialResolAna: public AnalysisBase {
   /// angle
   Float_t _sin_alpha{-999};
   /// offset
-  Float_t _offset;
+  Float_t _offset{-999};
 
   /// maximum of the multiplicity
   Int_t _m_max{-999};
@@ -104,52 +118,50 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Cluster vars
   /// Position of the cluster
-  Float_t _clust_pos[Nclusters];
+  Float_t _clust_pos[Nclusters]{0};
   /// X position of the cluster
-  Float_t _x[Nclusters];
+  Float_t _x[Nclusters]{0};
   /// X position of the avareged cluster
-  Float_t _x_av[Nclusters];
+  Float_t _x_av[Nclusters]{0};
   /// Position of the track
-  Float_t _track_pos[Nclusters];
+  Float_t _track_pos[Nclusters]{0};
   /// Residuals (X_track-X_cluster)
-  Float_t _residual[Nclusters];
+  Float_t _residual[Nclusters]{0};
   /// Residuals (X_track-X_cluster) w/o the given cluster in the fit
-  Float_t _residual_corr[Nclusters];
+  Float_t _residual_corr[Nclusters]{0};
   /// charge in the cluster
-  Int_t   _charge[Nclusters];
+  Int_t   _charge[Nclusters]{0};
   /// multiplicity of the cluster
-  Int_t   _multiplicity[Nclusters];
+  Int_t   _multiplicity[Nclusters]{0};
 
   /// Track analytical fit function for plotting
-  TF1* _track_fit_func;
+  std::shared_ptr<TF1> _track_fit_func{nullptr};
 
   /// Pad vars
   /// X_track - X_pad --> X axis of the PRF
-  Float_t _dx[Nclusters][10];
+  Float_t _dx[Nclusters][10]{0};
   /// Fraction of charge Q_pad / Q_cluster --> Y axis of PRF
-  Float_t _qfrac[Nclusters][10];
+  Float_t _qfrac[Nclusters][10]{0};
   /// time of the pad
-  Int_t   _time[Nclusters][10];
+  Int_t   _time[Nclusters][10]{0};
 
   /** variables for the dEdx analysis */
   /// dE/dx
-  Float_t _dEdx;
-  Int_t _pad_charge[Nclusters][10];
-  Int_t _pad_time[Nclusters][10];
+  Float_t _dEdx{0};
+  Int_t _pad_charge[Nclusters][10]{0};
+  Int_t _pad_time[Nclusters][10]{0};
 
   /// pad X position == column
-  Int_t _pad_x[Nclusters][10];
+  Int_t _pad_x[Nclusters][10]{0};
   /// pad Y position === row
-  Int_t _pad_y[Nclusters][10];
+  Int_t _pad_y[Nclusters][10]{0};
 
   /// Waveform width
-  Int_t _wf_width[Nclusters][10];
+  Int_t _wf_width[Nclusters][10]{0};
   /// Waveform width at half maximum
-  Int_t _wf_fwhm[Nclusters][10];
+  Int_t _wf_fwhm[Nclusters][10]{0};
 
-
-  //Int_t _pad_wf_t[Nclusters][10][520];
-  Int_t _pad_wf_q[Nclusters][10][520];
+  Int_t _pad_wf_q[Nclusters][10][520]{0};
 
   /** Histograms **/
   /** Pad response function block **/
@@ -188,47 +200,44 @@ class SpatialResolAna: public AnalysisBase {
   TrackFitCern* _fitter{nullptr};
 
   /** Switchers **/
-  /// Whether to use full track fitting
-  bool _do_full_track_fit;
-
-  /// Whether fit all the pads separatly
-  bool _do_separate_pad_fit;
+  /// Whether fit all the pads separately
+  bool _do_separate_pad_fit{false};
 
   /// Whether to fit residuals with Gaussian
-  bool _gaussian_residuals;
+  bool _gaussian_residuals{false};
 
   /// Whether to assign uncertainty to charge
-  bool _charge_uncertainty;
+  bool _charge_uncertainty{false};
 
   /// Residuals X_track - X_fit histoes
   TH1F* _resol_total{nullptr};
 
-  TH1F* _resol_col_hist[Nclusters];
-  TH1F* _resol_col_hist_except[Nclusters];
+  TH1F* _resol_col_hist[Nclusters]{nullptr};
+  TH1F* _resol_col_hist_except[Nclusters]{nullptr};
 
-  TH1F* _resol_col_hist_2pad[Nclusters];
-  TH1F* _resol_col_hist_2pad_except[Nclusters];
+  TH1F* _resol_col_hist_2pad[Nclusters]{nullptr};
+  TH1F* _resol_col_hist_2pad_except[Nclusters]{nullptr};
 
-  TH1F* _resol_col_hist_3pad[Nclusters];
-  TH1F* _resol_col_hist_3pad_except[Nclusters];
+  TH1F* _resol_col_hist_3pad[Nclusters]{nullptr};
+  TH1F* _resol_col_hist_3pad_except[Nclusters]{nullptr};
 
-  TGraphErrors* _residual_mean;
-  TGraphErrors* _residual_sigma;
+  TGraphErrors* _residual_mean{nullptr};
+  TGraphErrors* _residual_sigma{nullptr};
 
-  TGraphErrors* _residual_sigma_unbiased;
-  TGraphErrors* _residual_sigma_biased;
+  TGraphErrors* _residual_sigma_unbiased{nullptr};
+  TGraphErrors* _residual_sigma_biased{nullptr};
 
-  TH2F* _prf_histo_col[Nclusters];
+  TH2F* _prf_histo_col[Nclusters]{nullptr};
 
   /// separate pad fit study
-  TH1F* _fit_quality_plots[3][Nclusters];
+  TH1F* _fit_quality_plots[3][Nclusters]{nullptr};
   TAxis* _prf_scale_axis;
 
   /// errors vs the PRF value
   static const int prf_error_bins = 10;
   Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
   TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
-  TH1F* _uncertainty_prf_bins[prf_error_bins-1];
+  TH1F* _uncertainty_prf_bins[prf_error_bins-1]{nullptr};
   TGraphErrors* _uncertainty_vs_prf_gr{nullptr};
   TGraphErrors* _uncertainty_vs_prf_gr_prev{nullptr};
   TH1F*         _uncertainty_vs_prf_histo{nullptr};
@@ -239,20 +248,20 @@ class SpatialResolAna: public AnalysisBase {
   const float x_scan_min = -0.035;
   const float x_scan_max = 0.015;
   TAxis* _x_scan_axis{nullptr};
-  TH1F* _resol_col_x_scan[Nclusters][x_scan_bin];
-  TH1F* _mult_x_scan[Nclusters][x_scan_bin];
+  TH1F* _resol_col_x_scan[Nclusters][x_scan_bin]{nullptr};
+  TH1F* _mult_x_scan[Nclusters][x_scan_bin]{nullptr};
 //  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
 
-  TH1F* _resol_col_x_scan_lim_mult[Nclusters][x_scan_bin];
+  TH1F* _resol_col_x_scan_lim_mult[Nclusters][x_scan_bin]{nullptr};
 
-  TH2F* _prf_histo_xscan[4];
-  TGraphErrors* _prf_graph_xscan[4];
+  TH2F* _prf_histo_xscan[4]{nullptr};
+  TGraphErrors* _prf_graph_xscan[4]{nullptr};
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty{-999};
 
   /// vector of events IDs that passed the Reco and selection
-  std::vector<Int_t> _passed_events;
+  std::vector<Int_t> _passed_events{};
 
   // [units are meters]
   const float prf_min     = -0.027;
