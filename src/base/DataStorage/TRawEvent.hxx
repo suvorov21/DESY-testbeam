@@ -15,8 +15,7 @@ class TRawEvent : public TObject{
   explicit TRawEvent(): ID(0) {}
   explicit TRawEvent(Int_t var): ID(var) {}
   explicit TRawEvent(const TRawEvent* event);
-  // dtor
-  ~TRawEvent() override;
+
   // getters
   UInt_t GetID() const  {return ID;}
   THitPtrVec   GetHits()       const  {return fHits;}
@@ -30,7 +29,7 @@ class TRawEvent : public TObject{
 
  protected:
   /// vector of hits in event
-   THitPtrVec fHits;
+  THitPtrVec fHits;
 
   /// Event Id
   UInt_t ID;

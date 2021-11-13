@@ -18,7 +18,6 @@
 class ReconstructionBase {
  public:
   ReconstructionBase(): _verbose(0) {}
-  virtual ~ReconstructionBase() = default;
 
   virtual bool Initialize(int verbose);
   virtual bool SelectEvent(const std::shared_ptr<TEvent>& event);

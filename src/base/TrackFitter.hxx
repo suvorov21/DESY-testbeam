@@ -37,7 +37,6 @@ public:
                   bool invert,
                   int verbose,
                   int it);
-  virtual ~TrackFitterBase() = default;
 
   /// set the shape of the track
   void SetTrackShape(TrackShape shape) {_shape = shape;};
@@ -94,7 +93,6 @@ public:
                TH1F* PRF_time_error,
                Float_t angle
                );
-  ~TrackFitCern() override = default;
 
   TrackFitCern() : TrackFitCern(TrackFitterBase::arc, false, 0, 0,
                                 nullptr, nullptr, 0.,

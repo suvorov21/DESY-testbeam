@@ -13,7 +13,6 @@ const int Nclusters = 70;
 class SpatialResolAna: public AnalysisBase {
  public:
   SpatialResolAna();
-  ~SpatialResolAna() override = default;
 
   /// Initialise histoes, input files, selections
   bool Initialize() override;

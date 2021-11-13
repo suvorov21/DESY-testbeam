@@ -58,7 +58,6 @@ public:
 class AnalysisBase {
  public:
   AnalysisBase();
-  virtual ~AnalysisBase() {;}
 
   /// Read CL arguments
   virtual bool ReadCLI(int argc, char** argv);

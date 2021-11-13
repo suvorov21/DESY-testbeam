@@ -32,7 +32,6 @@ struct DB_Cluster{
 class DBSCANReconstruction: public ReconstructionBase {
  public:
   DBSCANReconstruction();
-  ~DBSCANReconstruction() override = default;
 
   bool Initialize(int verbose) override;
   /// Main function of the reconstruction

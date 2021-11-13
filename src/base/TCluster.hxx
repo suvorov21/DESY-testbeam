@@ -44,7 +44,6 @@ class TCluster {
 
   TCluster();
   explicit TCluster(std::shared_ptr<THit> pad);
-  virtual ~TCluster() = default;
 
  private:
   /// vector pf all the hits in the cluster

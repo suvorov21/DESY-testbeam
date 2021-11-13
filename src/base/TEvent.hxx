@@ -14,8 +14,7 @@ class TEvent: public TRawEvent {
   explicit TEvent(Int_t var): TRawEvent(var){;}
   explicit TEvent(const TRawEvent* event) : TRawEvent(event) {}
   explicit TEvent(const TRawEvent& event) : TRawEvent(event) {}
-  // dtor
-  ~TEvent() override {;}
+
   // getters
   THitPtrVec   GetUsedHits()   const  {return fUsedHits;}
   THitPtrVec   GetUnusedHits() const  {return fUnusedHits;}
