@@ -77,29 +77,29 @@ class SpatialResolAna: public AnalysisBase {
   /// Oputput tree vars
   // Event vars
   /// event number
-  Int_t   _ev;
+  Int_t   _ev{-999};
   /// angle in MM plane
-  Float_t _angle_xy;
+  Float_t _angle_xy{-999};
   /// angle w.r.t. MM
-  Float_t _angle_yz;
+  Float_t _angle_yz{-999};
 
   /// Number of robust clusters in event
-  Int_t _rob_clusters;
+  Int_t _rob_clusters{0};
 
   /// track fit quality Chi2/NDF
-  Float_t _quality;
+  Float_t _quality{-999};
   /// momentum
-  Float_t _mom;
+  Float_t _mom{-999};
   /// angle
-  Float_t _sin_alpha;
+  Float_t _sin_alpha{-999};
   /// offset
   Float_t _offset;
 
   /// maximum of the multiplicity
-  Int_t _m_max;
+  Int_t _m_max{-999};
 
   /// mean multiplicity
-  Float_t _m_mean;
+  Float_t _m_mean{-999};
 
 
   /// Cluster vars
@@ -154,38 +154,38 @@ class SpatialResolAna: public AnalysisBase {
   /** Histograms **/
   /** Pad response function block **/
   /// PRF function from the previous step. Used for Chi2 fit
-  TF1*  _prf_function;
-  TF1**  _prf_function_arr;
+  TF1*  _prf_function{nullptr};
+  TF1**  _prf_function_arr{nullptr};
   /// PRF histoes
-  TH2F* _prf_histo;
+  TH2F* _prf_histo{nullptr};
   // PRF profiling graphs
-  TGraphErrors* _prf_graph;
+  TGraphErrors* _prf_graph{nullptr};
 
   // TF1*    _prf_function_2pad;
   // TF1*    _prf_function_3pad;
   // TF1*    _prf_function_4pad;
 
-  TH2F* _prf_histo_2pad;
-  TH2F* _prf_histo_3pad;
-  TH2F* _prf_histo_4pad;
+  TH2F* _prf_histo_2pad{nullptr};
+  TH2F* _prf_histo_3pad{nullptr};
+  TH2F* _prf_histo_4pad{nullptr};
 
-  TGraphErrors* _prf_graph_2pad;
-  TGraphErrors* _prf_graph_3pad;
-  TGraphErrors* _prf_graph_4pad;
+  TGraphErrors* _prf_graph_2pad{nullptr};
+  TGraphErrors* _prf_graph_3pad{nullptr};
+  TGraphErrors* _prf_graph_4pad{nullptr};
 
   /// Pad response function in time
-  TH2F* _prf_time;
+  TH2F* _prf_time{nullptr};
 
   /// analytical PRF time function
-  TF1* _prf_time_func;
+  TF1* _prf_time_func{nullptr};
 
   /// uncertainties of the time profile
-  TGraphErrors* _prf_time_error;
+  TGraphErrors* _prf_time_error{nullptr};
 
-  TH1F* _prf_time_e;
+  TH1F* _prf_time_e{nullptr};
 
   /// Fitter class for the track and cluster fitting
-  TrackFitCern* _fitter;
+  TrackFitCern* _fitter{nullptr};
 
   /** Switchers **/
   /// Whether to use full track fitting
@@ -201,7 +201,7 @@ class SpatialResolAna: public AnalysisBase {
   bool _charge_uncertainty;
 
   /// Residuals X_track - X_fit histoes
-  TH1F* _resol_total;
+  TH1F* _resol_total{nullptr};
 
   TH1F* _resol_col_hist[Nclusters];
   TH1F* _resol_col_hist_except[Nclusters];
@@ -229,16 +229,16 @@ class SpatialResolAna: public AnalysisBase {
   Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
   TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
   TH1F* _uncertainty_prf_bins[prf_error_bins-1];
-  TGraphErrors* _uncertainty_vs_prf_gr;
-  TGraphErrors* _uncertainty_vs_prf_gr_prev;
-  TH1F*         _uncertainty_vs_prf_histo;
+  TGraphErrors* _uncertainty_vs_prf_gr{nullptr};
+  TGraphErrors* _uncertainty_vs_prf_gr_prev{nullptr};
+  TH1F*         _uncertainty_vs_prf_histo{nullptr};
 
 
   /// x scan data
   static const int x_scan_bin = 50;
   const float x_scan_min = -0.035;
   const float x_scan_max = 0.015;
-  TAxis* _x_scan_axis;
+  TAxis* _x_scan_axis{nullptr};
   TH1F* _resol_col_x_scan[Nclusters][x_scan_bin];
   TH1F* _mult_x_scan[Nclusters][x_scan_bin];
 //  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
@@ -249,7 +249,7 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _prf_graph_xscan[4];
 
   /// Average uncertainty from the previous iteration
-  Float_t _uncertainty;
+  Float_t _uncertainty{-999};
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events;

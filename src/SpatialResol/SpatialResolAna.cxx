@@ -595,7 +595,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     std::cout << "start cluster fit" << std::endl;
 
   std::vector <double> QsegmentS; QsegmentS.clear();
-  std::vector <int> pad_wf_v; //WF
 
   _m_mean = (Float_t)GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
   _m_max = (int)(*(std::max_element(robust_clusters.begin(),
@@ -613,8 +612,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
     _multiplicity[clusterId] = (int)robust_pads.size();
 
-    int colQ = 0;
-
     auto pad_id = -1;
     for (auto & pad:robust_pads) {
       ++pad_id;
@@ -625,10 +622,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       // not for the first pad
       if (pad != robust_pads[0] && _cross_talk_treat != def)
         TreatCrossTalk(pad, robust_pads, pad_id);
-
-      pad_wf_v.clear();
-
-      colQ += pad->GetQ();
 
       FillPadOutput(pad, (int)clusterId, pad_id);
     } // loop over pads
@@ -677,7 +670,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     if (_verbose >= v_residuals)
       std::cout << "Cluster pos " << _clust_pos[clusterId] << "\t";
 
-    if (colQ) QsegmentS.push_back(colQ);
+    if (robust_clusters[clusterId]->GetCharge()) QsegmentS.push_back(robust_clusters[clusterId]->GetCharge());
 
   } // loop over clusters
 
@@ -689,11 +682,9 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   double alpha = 0.7;
   sort(QsegmentS.begin(), QsegmentS.end());
   double totQ = 0.;
-  Int_t i_max = round(alpha * QsegmentS.size());
+  Int_t i_max = round(alpha * (double)QsegmentS.size());
   for (int i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i) totQ += QsegmentS[i];
-  float CT= totQ / (alpha * QsegmentS.size());
-
-  _dEdx = CT;
+  _dEdx = totQ / (alpha * QsegmentS.size());
 
   _column_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("fitter");
@@ -841,8 +832,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       // Pad characteristics
       // time, position wrt track, charge, col/row
       _time[clusterId][padId]  = time;
-      _dx[clusterId][padId]    = center_pad_y - track_fit_y;
-      _qfrac[clusterId][padId] = q / robust_clusters[clusterId]->GetCharge();
+      _dx[clusterId][padId]    = (Float_t)center_pad_y - track_fit_y;
+      _qfrac[clusterId][padId] = (Float_t)q / (Float_t)robust_clusters[clusterId]->GetCharge();
 
       if (_verbose >= v_prf) {
         std::cout << "PRF fill\t" << _dx[clusterId][padId];
