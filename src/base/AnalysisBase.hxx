@@ -110,10 +110,10 @@ class AnalysisBase {
   static TClusterPtrVec GetRobustClusters(TClusterPtrVec & tr);
 
   // TODO consider a better implementation. No need to create all instances
-  Clustering* CL_col;
-  Clustering* CL_diag;
-  Clustering* CL_2by1;
-  Clustering* CL_3by1;
+  Clustering* CL_col{nullptr};
+  Clustering* CL_diag{nullptr};
+  Clustering* CL_2by1{nullptr};
+  Clustering* CL_3by1{nullptr};
 //  Clustering* CL_3by2;
 
   /// An actual clustering procedure
@@ -149,11 +149,6 @@ class AnalysisBase {
       const std::shared_ptr<TEvent>& reco_event
       );
 
-  AnalysisBase(const AnalysisBase& ana){(void)ana;
-    std::cerr << "Copy constructor is deprecated" << std::endl; exit(1);}
-  bool operator==(const AnalysisBase* ana){(void)ana;
-    std::cerr << "Comparison is deprecated" << std::endl; exit(1);}
-
   bool ChainInputFiles(const TString& tree_name);
 
   /// verbosity levels
@@ -164,73 +159,73 @@ class AnalysisBase {
 
  protected:
   /// input file name
-  TString _file_in_name;
+  TString _file_in_name{""};
   /// output file name
-  TString _file_out_name;
+  TString _file_out_name{""};
 
   /// name of the parameter file
-  TString _param_file_name;
+  TString _param_file_name{""};
 
   /// CLI parser
   CmdLineParser _clParser;
 
   /// vector of event IDs that will be analysed
-  std::vector<Int_t> _eventList;
+  std::vector<Int_t> _eventList{};
   /// Whether to store particular event
-  bool    _store_event;
+  bool    _store_event{false};
   /// Event to start the loop
-  int     _start_ID;
+  int     _start_ID{-999};
   /// Last event to analyse
-  int     _end_ID;
+  int     _end_ID{-999};
   /// number of selected events
-  int     _selected;
+  int     _selected{-999};
 
   /// The current processing event
-  std::shared_ptr<TRawEvent> _event;
-  bool    _work_with_event_file;
+  std::shared_ptr<TRawEvent> _event{nullptr};
+  bool    _work_with_event_file{false};
 
   /// output file
-  TFile* _file_out;
+  TFile* _file_out{nullptr};
 
   /// chain with input files
-  TChain* _chain;
+  TChain* _chain{nullptr};
 
   /// choose the input array size, whether to use 510 or 511 time bins
-  bool _saclay_cosmics;
-  Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
-  Int_t _padAmpl_saclay[geom::nPadx][geom::nPady][geom::Nsamples_saclay];
+  bool _saclay_cosmics{false};
+  Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples]{-260};
+  Int_t _padAmpl_saclay[geom::nPadx][geom::nPady][geom::Nsamples_saclay]{-260};
 
   /// output vector to put in the file
-  std::vector<TObject*> _output_vector;
+  std::vector<TObject*> _output_vector{};
 
   /// Reconstruction used in the analysis.
   /**  You can use plenty in the analysis. At least one should be defines */
-  ReconstructionBase* _reconstruction;
+  ReconstructionBase* _reconstruction{nullptr};
 
   /// Selection parameters
   /// The maximum multiplicity of the track
-  Int_t _max_mult;
+  Int_t _max_mult{0};
 
   /// The maximum mean multiplicity for track
-  Float_t _max_mean_mult;
+  Float_t _max_mean_mult{0};
 
   /// Whether to cut tracks with gap in the cluster
   /** E.g. one missed pad in the middle of the column or in the
   * middle of the diagonal
   */
-  bool _cut_gap;
+  bool _cut_gap{false};
 
   /// Vector of broken pads to be excluded from the analysis
-  std::vector<std::pair<int, int>> _broken_pads;
+  std::vector<std::pair<int, int>> _broken_pads{};
 
   /// Minimum number of clusters in the track
-  Int_t _min_clusters;
+  Int_t _min_clusters{0};
 
   /// Maximum angle (abs(tan)) in the MM plane
-  Float_t _max_phi;
+  Float_t _max_phi{0};
 
   /// Maximum angle (abs(tan)) w.r.t. MM plane
-  Float_t _max_theta;
+  Float_t _max_theta{0};
 
   /// Hot to treat cross-talk
   enum cross_talk {
@@ -239,39 +234,39 @@ class AnalysisBase {
     cherry_pick
   };
 
-  cross_talk _cross_talk_treat;
+  cross_talk _cross_talk_treat{def};
 
   /// T2K plotting style
-  TStyle* _t2kstyle;
+  TStyle* _t2kstyle{nullptr};
 
   /// DEBUG vars
-  Int_t _verbose;
-  bool _batch;
-  bool _test_mode;
-  bool _overwrite;
+  Int_t _verbose{0};
+  bool _batch{false};
+  bool _test_mode{false};
+  bool _overwrite{false};
 
   /// Whether to invert track analysis logic
   /** E.g. analyse cosmic tracks. Rows and columns will be replaced */
-  bool _invert;
+  bool _invert{false};
 
   /// Whether to use Gaussian lorentzian PRf fit over polynomial
-  bool _gaus_lorentz_PRF;
+  bool _gaus_lorentz_PRF{false};
 
   /// Whether to use individual PRF
-  bool _individual_column_PRF;
+  bool _individual_column_PRF{false};
 
   /// Whether to make PRF center position a free parameter
-  bool _prf_free_centre;
+  bool _prf_free_centre{false};
 
   /// Whether to use arc function for track fitting
-  bool _do_linear_fit;
-  bool _do_para_fit;
+  bool _do_linear_fit{false};
+  bool _do_para_fit{false};
 
   /// Whether to store the WFs
-  bool _to_store_wf;
+  bool _to_store_wf{false};
 
   /// Time control system
-  TApplication* _app;
+  TApplication* _app{nullptr};
   /// time controller
   long long _loop_start_ts{0};
   long long _read_time{0};
@@ -280,10 +275,6 @@ class AnalysisBase {
   long long _column_time{0};
   long long _fitters_time{0};
   long long _filling_time{0};
-
-//  TStopwatch* _sw_event;
-
-//  TStopwatch* _sw_partial[6];
 };
 
 

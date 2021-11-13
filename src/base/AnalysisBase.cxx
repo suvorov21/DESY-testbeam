@@ -281,8 +281,10 @@ bool AnalysisBase::Loop() {
                     _padAmpl_saclay[x][y][t] - 250 :
                     _padAmpl[x][y][t] - 250;
 
-            if (_to_store_wf)
-              hit->SetADC(t, q);
+            if (q < -249)
+              continue;
+
+            hit->SetADC(t, q);
             if (q > Qmax) {
               Qmax = q;
               Tmax = t;
@@ -706,7 +708,7 @@ bool AnalysisBase::ReadParamFile() {
       } else if (name == "max_mult") {
         _max_mult = TString(value).Atoi();
       } else if (name == "max_mean_mult") {
-        _max_mean_mult = TString(value).Atof();
+        _max_mean_mult = (Float_t)TString(value).Atof();
       } else if (name == "cut_gap") {
         if (value == "0")
           _cut_gap = false;
