@@ -19,7 +19,6 @@ AnalysisBase::AnalysisBase() :
   _selected(0),
   _event(nullptr),
   _work_with_event_file(false),
-  _file_in(nullptr),
   _file_out(nullptr),
   _chain(nullptr),
   _reconstruction(nullptr),
@@ -240,21 +239,11 @@ bool AnalysisBase::Loop() {
   } else
     _end_ID = N_events;
 
-  _sw_event = new TStopwatch();
-
-  _sw_partial[0] = new TStopwatch();
-  _sw_partial[0]->Reset();
-  _sw_partial[1] = new TStopwatch();
-  _sw_partial[1]->Reset();
-  _sw_partial[5] = new TStopwatch();
-  _sw_partial[5]->Reset();
-
   if (_verbose >= v_progress) {
     std::cout << "Input file............................... " << _file_in_name << std::endl;
     std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
     std::cout << "[                              ]   Nevents = " << _end_ID - _start_ID << "\r[";
-    _sw_event->Start(false);
   }
 
   int denominator = 100;
@@ -262,7 +251,6 @@ bool AnalysisBase::Loop() {
     denominator = N_events;
 
   // Event loop
-  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1);
   for (auto eventID = _start_ID; eventID < _end_ID; ++eventID) {
     if (_verbose >= v_event_number) {
       std::cout << "*************************************" << std::endl;
@@ -274,9 +262,9 @@ bool AnalysisBase::Loop() {
     if (_verbose == v_progress && (eventID%(N_events/denominator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
 
+    // start the timer
+    GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
     _chain->GetEntry(_eventList[eventID]);
-
-    _sw_partial[5]->Start(false);
 
     if (!_work_with_event_file) {
       // create TRawEvent from 3D array
@@ -286,18 +274,15 @@ bool AnalysisBase::Loop() {
       for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
           auto hit = std::make_shared<THit>(x, y);
-          // std::vector<int> adc;
           auto Qmax = -1;
           auto Tmax = -1;
-          for (auto t = 0; t < geom::Nsamples; ++t) {
-            // ommit last
-            if (_saclay_cosmics && t == geom::Nsamples)
-              continue;
+          for (auto t = 0; t < geom::Nsamples - 1; ++t) {
             int q = _saclay_cosmics ?
                     _padAmpl_saclay[x][y][t] - 250 :
                     _padAmpl[x][y][t] - 250;
 
-            hit->SetADC(t, q);
+            if (_to_store_wf)
+              hit->SetADC(t, q);
             if (q > Qmax) {
               Qmax = q;
               Tmax = t;
@@ -308,7 +293,6 @@ bool AnalysisBase::Loop() {
             //   _padAmpl[x][y][t] *= 0.95;
             /** */
           } // over time
-          // hit->SetWF_v(adc);
           if (Qmax > 0){
             // compute FWHM
             int fwhm = 0;
@@ -331,18 +315,18 @@ bool AnalysisBase::Loop() {
       } // over X
     } // if 3D array input
 
-    _sw_partial[5]->Stop();
+    _read_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
 
     _store_event = false;
 
-    _sw_partial[0]->Start(false);
+    GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
 
     // copy event to a child class to be filled with reconstruction
     std::shared_ptr<TEvent> reco_event = std::make_shared<TEvent>(*_event);
     if (!_reconstruction->SelectEvent(reco_event)) {
       continue;
     }
-    _sw_partial[0]->Stop();
+    _reco_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
     // do basic plotting
     auto c = std::make_unique<TCanvas>();
     if (!_batch) {
@@ -352,18 +336,13 @@ bool AnalysisBase::Loop() {
       c->WaitPrimitive();
     }
 
-    _sw_partial[1]->Start(false);
+    GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("ana");
     ProcessEvent(reco_event);
-    _sw_partial[1]->Stop();
+    _ana_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("ana");
 
     if (_store_event)
       ++_selected;
   } // end of event loop
-//  std::cout << "time" << std::endl;
-//   TODO move all time management to GT
-//  std::cout << GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds(1) << std::endl;
-
-
   // if progress bar is active --> go to the next line
   if (_verbose == v_progress)
     std::cout << std::endl;
@@ -809,14 +788,17 @@ bool AnalysisBase::ChainInputFiles(const TString& tree_name) {
 void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
 //******************************************************************************
   auto mem = GenericToolbox::getProcessMemoryUsage();
-  double CPUtime  = _sw_event->CpuTime();
-  double REALtime = _sw_event->RealTime();
+  if (eventID)
+    _loop_start_ts += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("loop");
+  else
+    GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("loop");
+
   int m, s;
   if (eventID) {
-    int EET         = (int)((N_events - eventID) * REALtime / eventID);
-    CPUtime *= 1.e3;  CPUtime /= eventID;
-    m = EET / 60;
-    s = EET % 60;
+    long long EET         = (int)((N_events - eventID) * _loop_start_ts / eventID);
+    EET /= 1e6;
+    m = (int)EET / 60;
+    s = (int)EET % 60;
   }
 
   for (auto i = 0; i < 30; ++i)
@@ -826,12 +808,11 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
   std::cout << "\t Memory  " <<  mem / 1048576 << " " << "MB";
   std::cout << "\t Selected  " << _selected;
   if (eventID) {
-    std::cout << "\t Av speed CPU " << CPUtime << " ms/event";
+    std::cout << "\t Av speed " << (double)_loop_start_ts / 1e3 / eventID << " ms/event";
     std::cout << "\t EET real " << m << ":";
     if (s < 10)
       std::cout << "0";
     std::cout << s;
   }
   std::cout << "      \r[" << std::flush;
-  _sw_event->Continue();
 }

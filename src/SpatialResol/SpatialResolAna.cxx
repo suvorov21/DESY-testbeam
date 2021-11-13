@@ -546,12 +546,12 @@ bool SpatialResolAna::Initialize() {
   }
 
   // Initialize timers
-  _sw_partial[2] = new TStopwatch();
-  _sw_partial[2]->Reset();
-  _sw_partial[3] = new TStopwatch();
-  _sw_partial[3]->Reset();
-  _sw_partial[4] = new TStopwatch();
-  _sw_partial[4]->Reset();
+//  _sw_partial[2] = new TStopwatch();
+//  _sw_partial[2]->Reset();
+//  _sw_partial[3] = new TStopwatch();
+//  _sw_partial[3]->Reset();
+//  _sw_partial[4] = new TStopwatch();
+//  _sw_partial[4]->Reset();
 
   return true;
 }
@@ -582,7 +582,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   // At the moment ommit first and last column
   // first loop over columns
-  _sw_partial[2]->Start(false);
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
 
   // reset tree values
   for (auto colId = 0; colId < Nclusters; ++colId) {
@@ -862,8 +862,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   _cols_used->Fill(Ndots);
 
-  _sw_partial[2]->Stop();
-  _sw_partial[3]->Start(false);
+  _column_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("fitter");
 
 //******************** STEP 3 **************************************************
 
@@ -952,8 +952,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     }
   }
 
-  _sw_partial[3]->Stop();
-  _sw_partial[4]->Start(false);
+  _fitters_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("fitter");
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("filling");
 
 //****************** STEP 5 ****************************************************
 
@@ -1057,7 +1057,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       ++padId;
     }
   } // loop over columns
-  _sw_partial[4]->Stop();
+  _filling_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("filling");
   for (auto & i : fit1)
     if (i && _correction) {
       delete i;
@@ -1270,12 +1270,12 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   std::cout << "*************** Time consuming **************" << std::endl;
-  std::cout << "Reading 3D array:\t"        << _sw_partial[5]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Reconstruction:\t"        << _sw_partial[0]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Analysis:      \t"        << _sw_partial[1]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Col loop:    \t"        << _sw_partial[2]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Fitters:     \t"        << _sw_partial[3]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Filling:     \t"        << _sw_partial[4]->CpuTime() * 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Reading 3D array:\t" << (double)_read_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Reconstruction:  \t" << (double)_reco_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_eventList.size() << std::endl;
   return true;
 }
 

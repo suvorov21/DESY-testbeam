@@ -32,7 +32,6 @@ public:
   Clustering(Float_t a,
              int n_pads
              ):angle(a), n_pads(n_pads) {coeff = (n_pads == 0)?0.001:1./n_pads;}
-  virtual ~Clustering(){;};
   /// angle of a reference frame rotation
   Float_t angle;
   /// Number of pads in a row
@@ -99,7 +98,7 @@ class AnalysisBase {
 
   /// Process a cluster and return only pads that are suggested to be robust
   /** E.g. function can return only 2 pads in a column.
-   * Another use case is to ommit pads with wrong timestamps.
+   * Another use case is to omit pads with wrong timestamps.
    * Any user defined selection may be applied.
    */
   THitPtrVec GetRobustPadsInCluster(THitPtrVec col);
@@ -115,7 +114,7 @@ class AnalysisBase {
   Clustering* CL_diag;
   Clustering* CL_2by1;
   Clustering* CL_3by1;
-  Clustering* CL_3by2;
+//  Clustering* CL_3by2;
 
   /// An actual clustering procedure
   Clustering* _clustering;
@@ -190,13 +189,10 @@ class AnalysisBase {
   std::shared_ptr<TRawEvent> _event;
   bool    _work_with_event_file;
 
-  /// input file
-  /* Maybe a single ROOT file or a list of files*/
-  TFile* _file_in;
   /// output file
   TFile* _file_out;
 
-  /// chain with inpout files
+  /// chain with input files
   TChain* _chain;
 
   /// choose the input array size, whether to use 510 or 511 time bins
@@ -276,9 +272,18 @@ class AnalysisBase {
 
   /// Time control system
   TApplication* _app;
-  TStopwatch* _sw_event;
+  /// time controller
+  long long _loop_start_ts{0};
+  long long _read_time{0};
+  long long _reco_time{0};
+  long long _ana_time{0};
+  long long _column_time{0};
+  long long _fitters_time{0};
+  long long _filling_time{0};
 
-  TStopwatch* _sw_partial[6];
+//  TStopwatch* _sw_event;
+
+//  TStopwatch* _sw_partial[6];
 };
 
 
