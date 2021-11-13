@@ -598,12 +598,12 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   std::vector <int> pad_wf_v; //WF
 
   _m_mean = (Float_t)GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
-  _m_max = (int)(*(std::max(robust_clusters.begin(),
-                            robust_clusters.end(),
-                            [](const auto& a, const auto& b){
-                              return (*a)->GetSize() > (*b)->GetSize();
-                            }
-                            )))->GetSize();
+  _m_max = (int)(*(std::max_element(robust_clusters.begin(),
+                                    robust_clusters.end(),
+                                    [](const auto& a, const auto& b){
+                                      return a->GetSize() > b->GetSize();
+                                    }
+                                    )))->GetSize();
 
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
     if (!(*robust_clusters[clusterId])[0])
@@ -612,10 +612,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     // loop over rows
     auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
     _multiplicity[clusterId] = (int)robust_pads.size();
-
-    // reset vars for a cluster
-    _clust_pos[clusterId] = 0.;
-    _charge[clusterId] = 0;
 
     int colQ = 0;
 
@@ -643,16 +639,13 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     double CoC =  _clust_pos[clusterId];
 
     if (_multiplicity[clusterId] > 1 && _iteration > 0) {
-      _clust_pos[clusterId] = _fitter->FitCluster(robust_pads,
+      _clust_pos[clusterId] = (Float_t)_fitter->FitCluster(robust_pads,
                                                  _charge[clusterId],
                                                  _clust_pos[clusterId]
                                                  );
-      _clust_pos[clusterId] = (float_t)_clust_pos[clusterId];
-    } else {
-      _clust_pos[clusterId] = _clust_pos[clusterId];
     }
 
-    robust_clusters[clusterId]->SetY((Float_t)_clust_pos[clusterId]);
+    robust_clusters[clusterId]->SetY(_clust_pos[clusterId]);
     robust_clusters[clusterId]->SetCharge(_charge[clusterId]);
 
     if (_verbose >= v_fit_details) {
@@ -706,9 +699,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("fitter");
 
 //******************** STEP 3 **************************************************
-
-  TF1* fit = nullptr;
-  fit = _fitter->FitTrack(robust_clusters);
+  auto fit = _fitter->FitTrack(robust_clusters);
   _track_fit_func = fit;
 
   if (!fit)
@@ -792,7 +783,6 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   // second loop over columns
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
-//    auto cluster = robust_clusters[clusterId];
     if (!robust_clusters[clusterId]) continue;
 
     _x_av[clusterId]      = robust_clusters[clusterId]->GetX();
@@ -988,10 +978,10 @@ void SpatialResolAna::Reset(int id) {
 
   for (auto colId = 0; colId < Nclusters; ++colId) {
     _multiplicity[colId]  = -999;
-    _charge[colId]        = -999;
+    _charge[colId]        = 0;
     _residual[colId]      = -999;
     _residual_corr[colId] = -999;
-    _clust_pos[colId]     = -999;
+    _clust_pos[colId]     = 0;
     _track_pos[colId]     = -999;
     _x[colId]             = -999;
     _x_av[colId]          = -999;
