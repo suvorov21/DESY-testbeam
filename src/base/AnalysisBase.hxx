@@ -96,6 +96,8 @@ class AnalysisBase {
   void setDebugMode(const bool var) {_test_mode = var;}
   void setOverwrite(const bool var) { _overwrite = var;}
 
+  void setClusterisation(std::shared_ptr<Clustering> var) {_clustering = var;}
+
   /// Process a cluster and return only pads that are suggested to be robust
   /** E.g. function can return only 2 pads in a column.
    * Another use case is to omit pads with wrong timestamps.
@@ -109,15 +111,14 @@ class AnalysisBase {
    */
   static TClusterPtrVec GetRobustClusters(TClusterPtrVec & tr);
 
-  // TODO consider a better implementation. No need to create all instances
-  Clustering* CL_col{nullptr};
-  Clustering* CL_diag{nullptr};
-  Clustering* CL_2by1{nullptr};
-  Clustering* CL_3by1{nullptr};
+  std::shared_ptr<Clustering> CL_col{nullptr};
+  std::shared_ptr<Clustering> CL_diag{nullptr};
+  std::shared_ptr<Clustering> CL_2by1{nullptr};
+  std::shared_ptr<Clustering> CL_3by1{nullptr};
 //  Clustering* CL_3by2;
 
   /// An actual clustering procedure
-  Clustering* _clustering;
+  std::shared_ptr<Clustering> _clustering;
 
   /// Split track into clusters
   /** Extract the vector of clusters from the whole track.
@@ -200,7 +201,7 @@ class AnalysisBase {
 
   /// Reconstruction used in the analysis.
   /**  You can use plenty in the analysis. At least one should be defines */
-  ReconstructionBase* _reconstruction{nullptr};
+  std::unique_ptr<ReconstructionBase> _reconstruction{nullptr};
 
   /// Selection parameters
   /// The maximum multiplicity of the track
@@ -275,6 +276,7 @@ class AnalysisBase {
   long long _column_time{0};
   long long _fitters_time{0};
   long long _filling_time{0};
+  long long _sel_time{0};
 };
 
 

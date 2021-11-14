@@ -484,7 +484,7 @@ bool SpatialResolAna::Initialize() {
   }
 
   // Initilise selection
-  _reconstruction = new DBSCANReconstruction();
+  _reconstruction = std::make_unique<DBSCANReconstruction>();
   _reconstruction->Initialize(_verbose);
 
   // Initialise track fitter
@@ -495,7 +495,7 @@ bool SpatialResolAna::Initialize() {
     shape = TrackFitterBase::parabola;
   }
 
-  _fitter = new TrackFitCern(shape,
+  _fitter = std::make_unique<TrackFitCern>(shape,
                              _invert,
                              _verbose,
                              _iteration,
@@ -527,7 +527,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   auto track_hits = event->GetUsedHits();
   if (track_hits.empty())
     return false;
-  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
 
   // reset tree values
   Reset((int)event->GetID());
@@ -542,7 +542,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
   // selection
-  if (!sel::CrossingTrackSelection(clusters,
+  bool sel = sel::CrossingTrackSelection(clusters,
                                    _max_mult,
                                    _max_mean_mult,
                                    _cut_gap,
@@ -551,9 +551,12 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
                                    _broken_pads,
                                    _invert,
                                    _verbose
-                                   ))
+                                   );
+  _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
+  if (!sel)
     return false;
 
+  // TODO prevent multiple fitter call
   std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
   std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
 
@@ -566,7 +569,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       return false;
     // clean first and last cluster
     sort(clusters.begin(), clusters.end(),
-         [&](TClusterPtr & cl1, TClusterPtr & cl2){
+         [&](const TClusterPtr & cl1, const TClusterPtr & cl2){
             return cl1->GetX() < cl2->GetX();
           });
     clusters.erase(clusters.begin(), clusters.begin() + 1);
@@ -585,6 +588,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   /// decide that track is accepted by selection
   _store_event = true;
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
 // *******************  STEP 2 *************************************************
 
   if (_verbose >= v_analysis_steps)
@@ -1189,10 +1193,11 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "*************** Time consuming **************" << std::endl;
   std::cout << "Reading 3D array:\t" << (double)_read_time / 1.e3 / (double)_eventList.size() << std::endl;
   std::cout << "Reconstruction:  \t" << (double)_reco_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Selection:  \t" << (double)_sel_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_selected << std::endl;
   return true;
 }
 

@@ -44,18 +44,7 @@ public:
   /// General function for fitting the cluster
   virtual Double_t FitCluster();
   /// General function for fitting the whole track
-  virtual TF1* FitTrack();
-
-  TrackFitterBase(const TrackFitterBase& fit): _circle_function(nullptr),
-                                                _iteration(0),
-                                                _verbose(0),
-                                                _invert(false),
-                                                _shape(arc)
-  {
-    (void)fit;
-    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);
-  }
-
+  virtual std::shared_ptr<TF1> FitTrack();
 
 protected:
   /// Arc function used for track fitting

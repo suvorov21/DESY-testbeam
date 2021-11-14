@@ -197,7 +197,7 @@ class SpatialResolAna: public AnalysisBase {
   TH1F* _prf_time_e{nullptr};
 
   /// Fitter class for the track and cluster fitting
-  TrackFitCern* _fitter{nullptr};
+  std::unique_ptr<TrackFitCern> _fitter{nullptr};
 
   /** Switchers **/
   /// Whether fit all the pads separately
