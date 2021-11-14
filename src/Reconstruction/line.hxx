@@ -83,9 +83,6 @@ public:
     return dir;
   }
 
-  /// a default destructor
-  virtual ~TLine_att() {};
-
   void Print() {
     std::cout << "TLine_att: pos:dir" << std::endl;
     pos.Print();

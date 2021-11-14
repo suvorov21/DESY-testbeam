@@ -52,6 +52,9 @@ class T2K {
       FontSizeTitle = 0.05;
       YOffsetTitle = 1.6;
       break;
+    default:
+      std::cerr << "Wrong style number" << std::endl;
+      exit(1);
     }
 
     // use plain black on white colors
