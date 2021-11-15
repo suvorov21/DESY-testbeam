@@ -26,7 +26,7 @@ Double_t TrackFitterBase::FitCluster() {
   throw std::logic_error("This is fitter template. Please, use a real fitter");
 }
 
-TF1* TrackFitterBase::FitTrack() {
+std::shared_ptr<TF1> TrackFitterBase::FitTrack() {
  throw std::logic_error("This is fitter template. Please, use a real fitter");
 }
 

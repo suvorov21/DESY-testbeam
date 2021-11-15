@@ -1,10 +1,6 @@
 #include "DBSCANReconstruction.hxx"
-#include <TCanvas.h>
 #include <TStyle.h>
-#include <TNtuple.h>
 #include <TF1.h>
-#include <TH2F.h>
-#include <TH3F.h>
 
 DBSCANReconstruction::DBSCANReconstruction(): ReconstructionBase() {}
 
@@ -83,7 +79,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const std::shared_ptr<TEvent>&
     if (hit->GetQ() > 0) {
       Node node;
       node.hit  = hit;
-      node.id = nodes.size();
+      node.id = (int)nodes.size();
       nodes.push_back(node);
     }
   }

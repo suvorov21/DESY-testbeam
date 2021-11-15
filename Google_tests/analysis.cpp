@@ -12,13 +12,24 @@ auto GetDummyEvent() {
   return event;
 }
 
+auto GetDummyTrack() {
+  THitPtrVec track;
+  for (auto col = 0; col < geom::nPadx; ++col) {
+    for (auto row = 15; row < 18; ++row) {
+      auto hit = std::make_shared<THit>(col, row, 100, 200);
+      track.push_back(hit);
+    }
+  }
+  return track;
+}
+
 TEST(InitialisationTest, ParamFileRead) {
-  auto ana = new AnalysisBase();
+  auto ana = std::make_unique<AnalysisBase>();
   EXPECT_EQ(ana->ReadParamFile(), true);
 }
 
 TEST(InitialisationTest, ParamFileNotRead) {
-  auto ana = new AnalysisBase();
+  auto ana = std::make_unique<AnalysisBase>();
   ana->setParamFile("blabla.ini");
   EXPECT_EQ(ana->ReadParamFile(), false);
 }
@@ -37,13 +48,13 @@ TEST(InitialisationTest, CLIread) {
   argv_test2[0] =  argv1;
   argv_test2[1] =  argv3;
 
-  auto ana = new AnalysisBase();
+  auto ana = std::make_unique<AnalysisBase>();
   EXPECT_THROW(ana->ReadCLI(argc, argv_test1), std::logic_error);
   EXPECT_EQ(ana->ReadCLI(argc, argv_test2), true);
 }
 
 TEST(InitialisationTest, outputWriteErr) {
-  auto ana = new AnalysisBase();
+  auto ana = std::make_unique<AnalysisBase>();
   EXPECT_EQ(ana->WriteOutput(), false);
 }
 
@@ -60,12 +71,24 @@ TEST(InitialisationTest, inputException) {
 }
 
 TEST(InitialisationTest, baseProcessEvent) {
-  auto ana = new AnalysisBase();
+  auto ana = std::make_unique<AnalysisBase>();
   auto event = GetDummyEvent();
   EXPECT_THROW(ana->ProcessEvent(event), std::logic_error);
   auto reconstruction = new ReconstructionBase();
   reconstruction->Initialize(0);
   EXPECT_EQ(reconstruction->SelectEvent(event), true);
+}
+
+TEST(AnalysisTest, Clusterisation) {
+  auto ana = std::make_unique<AnalysisBase>();
+  auto track = GetDummyTrack();
+  auto clusters = ana->ClusterTrack(track);
+  EXPECT_EQ(clusters.size(), 34);
+  ana->setInvert(true);
+  clusters = ana->ClusterTrack(track);
+  EXPECT_EQ(clusters.size(), 3);
+  ana->setClusterisation(nullptr);
+  EXPECT_EXIT(ana->ClusterTrack(track), testing::ExitedWithCode(1), "ERROR");
 }
 
 //TEST(Graphics, drawEvent) {

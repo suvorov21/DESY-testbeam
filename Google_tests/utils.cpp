@@ -20,7 +20,7 @@ TEST(GeomThrowTest, OferflowY) {
 }
 
 TEST(CtorTests, hitCtor) {
-  auto hit = new THit();
+  auto hit = std::make_unique<THit>();
   hit->SetADC(1, 10);
   hit->SetADC(1000, 10);
 
@@ -29,14 +29,13 @@ TEST(CtorTests, hitCtor) {
 }
 
 TEST(CtorTests, eventCtor) {
-  auto event = new TRawEvent();
+  auto event = std::make_unique<TRawEvent>();
   ASSERT_EQ(event->GetID(), 0);
 }
 
 TEST(CtorTests, clusterCtor) {
-  auto cluster = new TCluster();
+  auto cluster = std::make_unique<TCluster>();
   ASSERT_EQ(cluster->GetCharge(), 0);
-  delete cluster;
 }
 
 TEST(fitterTest, exepFitterBase) {
@@ -47,7 +46,7 @@ TEST(fitterTest, exepFitterBase) {
 }
 
 TEST(fitterTest, exepEmptyPRF) {
-  auto fitter = new TrackFitCern();
+  auto fitter = std::make_unique<TrackFitCern>();
   std::vector<std::shared_ptr<THit>> col;
   col.emplace_back(std::make_shared<THit>());
   col[0]->SetQ(10);

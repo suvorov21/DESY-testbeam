@@ -40,6 +40,14 @@ AnalysisBase::AnalysisBase() :
   _app(nullptr)
 {
 //******************************************************************************
+  // clusterisation initialization
+  CL_col = std::make_shared<Clustering>(0., 0);
+  CL_diag = std::make_shared<Clustering>(units::a45, 1);
+  CL_2by1 = std::make_shared<Clustering>(units::a2, 2);
+  CL_3by1 = std::make_shared<Clustering>(units::a3, 3);
+  // CL_3by2 = new Clustering(units::a32, 2./3.);
+  _clustering = CL_col;
+
   // CLI reader
   _clParser.setIsUnixGnuMode(true);
   _clParser.setIsFascist((true));
@@ -89,12 +97,6 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
 //******************************************************************************
 bool AnalysisBase::Initialize() {
 //******************************************************************************
-  CL_col = new Clustering(0., 0);
-  CL_diag = new Clustering(units::a45, 1);
-  CL_2by1 = new Clustering(units::a2, 2);
-  CL_3by1 = new Clustering(units::a3, 3);
-  // CL_3by2 = new Clustering(units::a32, 2./3.);
-
   // Read parameter file
   if (!ReadParamFile()) {
     std::cerr << "ERROR! " << __func__ << "(). Parameter file is not read" << std::endl;
@@ -325,10 +327,11 @@ bool AnalysisBase::Loop() {
 
     // copy event to a child class to be filled with reconstruction
     std::shared_ptr<TEvent> reco_event = std::make_shared<TEvent>(*_event);
-    if (!_reconstruction->SelectEvent(reco_event)) {
+    bool sel = _reconstruction->SelectEvent(reco_event);
+    _reco_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
+    if (!sel) {
       continue;
     }
-    _reco_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
     // do basic plotting
     auto c = std::make_unique<TCanvas>();
     if (!_batch) {
@@ -647,7 +650,7 @@ bool AnalysisBase::ReadParamFile() {
       auto delimiterPos = line.find('=');
       auto name = line.substr(0, delimiterPos);
       auto value = line.substr(delimiterPos + 1);
-      // std::cout << name << " " << value << '\n';
+
       if (name == "cluster") {
         if (value == "column") {
           _clustering = CL_col;

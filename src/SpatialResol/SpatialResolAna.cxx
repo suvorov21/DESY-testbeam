@@ -149,8 +149,8 @@ bool SpatialResolAna::Initialize() {
         _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-        TString s = TString().Itoa(_clustering->n_pads, 10);
-        TString r = TString().Itoa(rest, 10);
+        TString s = TString::Itoa(_clustering->n_pads, 10);
+        TString r = TString::Itoa(rest, 10);
         tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
         auto gr_tmp = new TGraphErrors();
         ProfilePRF(tmp, gr_tmp);
@@ -168,8 +168,8 @@ bool SpatialResolAna::Initialize() {
         _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-        TString s = TString().Itoa(_clustering->n_pads, 10);
-        TString r = TString().Itoa(colId, 10);
+        TString s = TString::Itoa(_clustering->n_pads, 10);
+        TString r = TString::Itoa(colId, 10);
         tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
         auto gr_tmp = new TGraphErrors();
         ProfilePRF(tmp, gr_tmp);
@@ -484,7 +484,7 @@ bool SpatialResolAna::Initialize() {
   }
 
   // Initilise selection
-  _reconstruction = new DBSCANReconstruction();
+  _reconstruction = std::make_unique<DBSCANReconstruction>();
   _reconstruction->Initialize(_verbose);
 
   // Initialise track fitter
@@ -495,7 +495,7 @@ bool SpatialResolAna::Initialize() {
     shape = TrackFitterBase::parabola;
   }
 
-  _fitter = new TrackFitCern(shape,
+  _fitter = std::make_unique<TrackFitCern>(shape,
                              _invert,
                              _verbose,
                              _iteration,
@@ -527,7 +527,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   auto track_hits = event->GetUsedHits();
   if (track_hits.empty())
     return false;
-  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
 
   // reset tree values
   Reset((int)event->GetID());
@@ -542,7 +542,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
   // selection
-  if (!sel::CrossingTrackSelection(clusters,
+  bool sel = sel::CrossingTrackSelection(clusters,
                                    _max_mult,
                                    _max_mean_mult,
                                    _cut_gap,
@@ -551,9 +551,12 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
                                    _broken_pads,
                                    _invert,
                                    _verbose
-                                   ))
+                                   );
+  _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
+  if (!sel)
     return false;
 
+  // TODO prevent multiple fitter call
   std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
   std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
 
@@ -566,7 +569,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       return false;
     // clean first and last cluster
     sort(clusters.begin(), clusters.end(),
-         [&](TClusterPtr & cl1, TClusterPtr & cl2){
+         [&](const TClusterPtr & cl1, const TClusterPtr & cl2){
             return cl1->GetX() < cl2->GetX();
           });
     clusters.erase(clusters.begin(), clusters.begin() + 1);
@@ -585,6 +588,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   /// decide that track is accepted by selection
   _store_event = true;
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
 // *******************  STEP 2 *************************************************
 
   if (_verbose >= v_analysis_steps)
@@ -679,7 +683,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (!fit)
     return false;
 
-  _quality = (Float_t)fit->GetChisquare() / fit->GetNDF();
+  _quality = (Float_t)fit->GetChisquare() / (Float_t)fit->GetNDF();
 
   if (_verbose >= v_analysis_steps)
     std::cout << "Track fit done" << std::endl;
@@ -688,7 +692,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   // in case of arc fitting fill the momentum histo
   if (!_do_linear_fit && !_do_para_fit) {
-    _mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
+    _mom = Float_t(1./fit->GetParameter(0) * units::B * units::clight / 1.e9);
     _sin_alpha  = (Float_t)fit->GetParameter(1);
     _offset     = (Float_t)fit->GetParameter(2);
   }
@@ -1158,7 +1162,7 @@ bool SpatialResolAna::WriteOutput() {
       auto func = _resol_total->GetFunction("gaus");
       TString output = "NaN";
       if (func)
-        output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
+        output = TString::Itoa((int)round(1.e6*func->GetParameter(2)), 10) + " um";
 
       std::cout << "Spatial resolution\t" << output << std::endl;
     }
@@ -1189,10 +1193,11 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "*************** Time consuming **************" << std::endl;
   std::cout << "Reading 3D array:\t" << (double)_read_time / 1.e3 / (double)_eventList.size() << std::endl;
   std::cout << "Reconstruction:  \t" << (double)_reco_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Selection:  \t" << (double)_sel_time / 1.e3 / (double)_eventList.size() << std::endl;
+  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_selected << std::endl;
   return true;
 }
 
@@ -1313,7 +1318,9 @@ TF1* SpatialResolAna::InitializePRF(const TString& name, bool shift) {
   return func;
 }
 
+//******************************************************************************
 bool SpatialResolAna::Draw() {
+//******************************************************************************
   std::cout << "Draw event " << _ev << std::endl;
   TCanvas c("c_SR", "c_SR", 0, 600, 800, 600);
   TCanvas c2("c_resid", "c_resid", 800, 600, 800, 600);
@@ -1350,7 +1357,7 @@ bool SpatialResolAna::Draw() {
   }
 
   c.cd();
-  gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));
+  gr_c->SetTitle("Event " + TString::Itoa(_ev, 10));
   gr_c->GetYaxis()->SetTitle("Reference Y, [mm]");
   gr_c->GetXaxis()->SetTitle("Reference X, [mm]");
   gPad->SetGrid();
