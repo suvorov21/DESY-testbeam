@@ -95,6 +95,7 @@ class AnalysisBase {
   void setBatchMode(const bool var) {_batch = var;}
   void setDebugMode(const bool var) {_test_mode = var;}
   void setOverwrite(const bool var) { _overwrite = var;}
+  void setInvert(const bool var) {_invert = var;}
 
   void setClusterisation(std::shared_ptr<Clustering> var) {_clustering = var;}
 

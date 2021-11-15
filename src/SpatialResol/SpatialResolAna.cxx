@@ -149,8 +149,8 @@ bool SpatialResolAna::Initialize() {
         _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-        TString s = TString().Itoa(_clustering->n_pads, 10);
-        TString r = TString().Itoa(rest, 10);
+        TString s = TString::Itoa(_clustering->n_pads, 10);
+        TString r = TString::Itoa(rest, 10);
         tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
         auto gr_tmp = new TGraphErrors();
         ProfilePRF(tmp, gr_tmp);
@@ -168,8 +168,8 @@ bool SpatialResolAna::Initialize() {
         _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-        TString s = TString().Itoa(_clustering->n_pads, 10);
-        TString r = TString().Itoa(colId, 10);
+        TString s = TString::Itoa(_clustering->n_pads, 10);
+        TString r = TString::Itoa(colId, 10);
         tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
         auto gr_tmp = new TGraphErrors();
         ProfilePRF(tmp, gr_tmp);
@@ -1162,7 +1162,7 @@ bool SpatialResolAna::WriteOutput() {
       auto func = _resol_total->GetFunction("gaus");
       TString output = "NaN";
       if (func)
-        output = TString().Itoa(1.e6*func->GetParameter(2), 10) + " um";
+        output = TString::Itoa((int)round(1.e6*func->GetParameter(2)), 10) + " um";
 
       std::cout << "Spatial resolution\t" << output << std::endl;
     }
@@ -1357,7 +1357,7 @@ bool SpatialResolAna::Draw() {
   }
 
   c.cd();
-  gr_c->SetTitle("Event " + TString().Itoa(_ev, 10));
+  gr_c->SetTitle("Event " + TString::Itoa(_ev, 10));
   gr_c->GetYaxis()->SetTitle("Reference Y, [mm]");
   gr_c->GetXaxis()->SetTitle("Reference X, [mm]");
   gPad->SetGrid();

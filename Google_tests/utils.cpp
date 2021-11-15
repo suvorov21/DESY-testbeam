@@ -36,7 +36,6 @@ TEST(CtorTests, eventCtor) {
 TEST(CtorTests, clusterCtor) {
   auto cluster = std::make_unique<TCluster>();
   ASSERT_EQ(cluster->GetCharge(), 0);
-  delete cluster;
 }
 
 TEST(fitterTest, exepFitterBase) {

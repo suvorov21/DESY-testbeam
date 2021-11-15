@@ -84,6 +84,9 @@ TEST(AnalysisTest, Clusterisation) {
   auto track = GetDummyTrack();
   auto clusters = ana->ClusterTrack(track);
   EXPECT_EQ(clusters.size(), 34);
+  ana->setInvert(true);
+  clusters = ana->ClusterTrack(track);
+  EXPECT_EQ(clusters.size(), 3);
   ana->setClusterisation(nullptr);
   EXPECT_EXIT(ana->ClusterTrack(track), testing::ExitedWithCode(1), "ERROR");
 }
