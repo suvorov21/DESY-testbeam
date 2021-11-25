@@ -1190,11 +1190,11 @@ bool SpatialResolAna::WriteOutput() {
 
   std::cout << "done" << std::endl;
 
-  std::cout << "*************** Time consuming **************" << std::endl;
+  std::cout << "************** Time consumption *************" << std::endl;
   std::cout << "Reading 3D array:\t" << (double)_read_time / 1.e3 / (double)_eventList.size() << std::endl;
   std::cout << "Reconstruction:  \t" << (double)_reco_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Selection:  \t" << (double)_sel_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_reconstructed << std::endl;
+  std::cout << "  Selection:     \t" << (double)_sel_time / 1.e3 / (double)_reconstructed << std::endl;
   std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_selected << std::endl;
   std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_selected << std::endl;
   std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_selected << std::endl;

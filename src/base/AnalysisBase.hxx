@@ -182,6 +182,9 @@ class AnalysisBase {
   /// number of selected events
   int     _selected{-999};
 
+  /// number of reconstructed events
+  int _reconstructed{-999};
+
   /// The current processing event
   std::shared_ptr<TRawEvent> _event{nullptr};
   bool    _work_with_event_file{false};

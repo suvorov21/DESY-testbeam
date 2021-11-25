@@ -17,6 +17,7 @@ AnalysisBase::AnalysisBase() :
   _start_ID(-1),
   _end_ID(-1),
   _selected(0),
+  _reconstructed{0},
   _event(nullptr),
   _work_with_event_file(false),
   _file_out(nullptr),
@@ -332,6 +333,9 @@ bool AnalysisBase::Loop() {
     if (!sel) {
       continue;
     }
+
+    ++_reconstructed;
+
     // do basic plotting
     auto c = std::make_unique<TCanvas>();
     if (!_batch) {
