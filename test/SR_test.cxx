@@ -18,7 +18,9 @@ int main(int argc, char** argv) {
 
   std::cout << "SR_test. Open file " << argv[1] << std::endl;
   auto f = new TFile(argv[1], "READ");
-  auto resol_total = (TH1F*)f->Get("resol_total");
+  auto t = (TTree*)f->Get("outtree");
+  auto resol_total = new TH1F("resol", "", 200, -0.004, 0.004);
+  t->Project("resol_total", "residual");
 
   if (!resol_total || !resol_total->GetEntries()) {
     std::cerr << "ERROR! SR_test::main(): no entries in resol_total" << std::endl;
