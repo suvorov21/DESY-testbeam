@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "TFile.h"
+#include "TTree.h"
 #include "TH1F.h"
 #include "TF1.h"
 #include "TGraphErrors.h"
