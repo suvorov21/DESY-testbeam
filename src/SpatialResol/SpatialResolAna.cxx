@@ -1,7 +1,5 @@
 /** @cond */
 #include "TVector3.h"
-//#include "Math/Functor.h"
-//#include "Fit/Fitter.h"
 #include "GenericToolbox.Root.h"
 /** @endcond */
 
@@ -17,10 +15,7 @@ SpatialResolAna::SpatialResolAna():
   _correction(false),
   _tree(nullptr),
   _do_separate_pad_fit(false),
-  _gaussian_residuals(true),
-  _charge_uncertainty(true),
-  _prf_scale_axis(nullptr),
-  _x_scan_axis(nullptr) {
+  _charge_uncertainty(true) {
 //******************************************************************************
   _clParser.addOption("prev_file",
                       {"--prev"},
@@ -76,19 +71,10 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_histo   = nullptr;
 
   _prf_function = InitializePRF("PRF_function", _prf_free_centre);
-  // _prf_function_2pad = InitializePRF("PRF_function_2pad");
-  // _prf_function_3pad = InitializePRF("PRF_function_3pad");
-  // _prf_function_4pad = InitializePRF("PRF_function_4pad");
 
   // Initialize graph for PRF profiling
   _prf_graph = new TGraphErrors();
   _prf_graph->SetName("PRF_graph");
-  _prf_graph_2pad = new TGraphErrors();
-  _prf_graph_2pad->SetName("PRF_graph_2pad");
-  _prf_graph_3pad = new TGraphErrors();
-  _prf_graph_3pad->SetName("PRF_graph_3pad");
-  _prf_graph_4pad = new TGraphErrors();
-  _prf_graph_4pad->SetName("PRF_graph_4pad");
 
   // load information from previous iteration
   if (_iteration) {
@@ -128,11 +114,10 @@ bool SpatialResolAna::Initialize() {
       _prf_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
     // TODO think about memory control
     _prf_function = (TF1*)_prf_graph->GetFunction("PRF_function")->Clone("PRF_function");
-    auto uncertainty_graph = (TH1F*)_prev_iter_file->Get("resol_total");
 
-    if (!_prf_function || !uncertainty_graph) {
+    if (!_prf_function) {
       std::cerr << "ERROR. " << __func__ ;
-      std::cerr << "PRF function or resolution is not specified" << std::endl;
+      std::cerr << "  PRF function is not specified" << std::endl;
       std::cerr << "Search in " << _prev_iter_name << std::endl;
       exit(1);
     }
@@ -202,13 +187,11 @@ bool SpatialResolAna::Initialize() {
     _prf_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
     _prf_time_func = _prf_time_error->GetFunction("pol2");
 
-    Double_t mean;
-    Double_t sigma;
-    mean = uncertainty_graph->GetMean();
-    sigma = GenericToolbox::getFWHM(uncertainty_graph);
-//    sigma = 0.5 * GetFWHM(uncertainty_graph, mean);
-    uncertainty_graph->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
-    _uncertainty = (Float_t)uncertainty_graph->GetFunction("gaus")->GetParameter(2);
+    auto* oldtree = (TTree*)_prev_iter_file->Get("outtree");
+    TH1F h("resol", "", resol_bin, resol_min, resol_max);
+    oldtree->Project("resol", "residual");
+    h.Fit("gaus", "Q", "");
+    _uncertainty = (Float_t)h.GetFunction("gaus")->GetParameter(2);
 
     TGraphErrors* temp = nullptr;
     if (_do_separate_pad_fit)
@@ -241,10 +224,6 @@ bool SpatialResolAna::Initialize() {
 
   // Initialise histoes and graphs
   _prf_histo = new TH2F("PRF_histo","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-
-  // PRF for different multiplicities
-  auto dir_prf_mult = _file_out->mkdir("prf_mult");
-  _output_vector.push_back(dir_prf_mult);
 
   // PRF in time
   _prf_time = new TH2F("PRF_histo_time","", prf_bin, prf_min, prf_max, 100, -20., 80.);
@@ -339,79 +318,10 @@ bool SpatialResolAna::Initialize() {
 
   _output_vector.push_back(_tree);
 
-  _prf_histo_2pad = new TH2F("PRF_histo_2pad",
-    "", prf_bin, prf_min, prf_max, 150,0.,1.5);
-  _prf_histo_3pad = new TH2F("PRF_histo_3pad",
-    "", prf_bin, prf_min, prf_max, 150,0.,1.5);
-  _prf_histo_4pad = new TH2F("PRF_histo_4pad",
-    "", prf_bin, prf_min, prf_max, 150,0.,1.5);
-
-  dir_prf_mult->Append(_prf_histo_2pad);
-  dir_prf_mult->Append(_prf_histo_3pad);
-  dir_prf_mult->Append(_prf_histo_4pad);
-
-  // dir_prf_mult->Append(_prf_function_2pad);
-  // dir_prf_mult->Append(_prf_function_3pad);
-  // dir_prf_mult->Append(_prf_function_4pad);
-
-  dir_prf_mult->Append(_prf_graph_2pad);
-  dir_prf_mult->Append(_prf_graph_3pad);
-  dir_prf_mult->Append(_prf_graph_4pad);
-
-  for (auto i = 0; i < Nclusters; ++i)
-    _prf_histo_col[i] = new TH2F(Form("PRF_histo_col_%i", i),
-      "", prf_bin, prf_min, prf_max, 150,0.,1.5);
-
-  for (auto i = 0; i < 4; ++i) {
-    _prf_histo_xscan[i] = new TH2F(Form("PRF_histo_pad_%i", i),
-      "", prf_bin, prf_min, prf_max, 150,0.,1.5);
-    _prf_graph_xscan[i] = new TGraphErrors();
-    _prf_graph_xscan[i]->SetName(Form("PRF_graph_pad_%i", i));
-  }
-
-  _resol_total = new TH1F("resol_total",
-     "", resol_bin, resol_min, resol_max);
-
-  _output_vector.push_back(_resol_total);
-
-  for (auto j = 0; j < Nclusters; ++j) {
-    _resol_col_hist[j]  = new TH1F(Form("resol_histo_%i", j),
-     "", resol_bin, resol_min, resol_max);
-    _resol_col_hist_except[j]  = new TH1F(Form("resol_histo1__%i", j),
-     "", resol_bin, resol_min, resol_max);
-
-    _resol_col_hist_2pad[j]  = new TH1F(Form("resol_histo_2pad_%i", j),
-      "", resol_bin, resol_min, resol_max);
-    _resol_col_hist_2pad_except[j]  = new TH1F(Form("resol_histo1_2pad_%i", j),
-     "", resol_bin, resol_min, resol_max);
-
-    _resol_col_hist_3pad[j]  = new TH1F(Form("resol_histo_3pad_%i", j),
-      "", resol_bin, resol_min, resol_max);
-    _resol_col_hist_3pad_except[j]  = new TH1F(Form("resol_histo1_3pad_%i", j),
-     "", resol_bin, resol_min, resol_max);
-  }
-
-  _residual_sigma_unbiased  = new TGraphErrors();
-  _residual_sigma_biased    = new TGraphErrors();
-  _residual_sigma           = new TGraphErrors();
-
-  _residual_mean            = new TGraphErrors();
-
-  _residual_sigma_unbiased->SetName("resol_unb");
-  _residual_sigma_biased->SetName("resol_bia");
-  _residual_sigma->SetName("resol_final");
-  _residual_mean->SetName("mean");
-
   // schedule the output for writing
   _output_vector.push_back(_prf_function);
   _output_vector.push_back(_prf_histo);
   _output_vector.push_back(_prf_graph);
-
-  _output_vector.push_back(_residual_sigma);
-  _output_vector.push_back(_residual_mean);
-
-  _output_vector.push_back(_residual_sigma_biased);
-  _output_vector.push_back(_residual_sigma_unbiased);
 
   _uncertainty_vs_prf_gr = new TGraphErrors();
   _uncertainty_vs_prf_gr->SetName("uncertainty_vs_prf_gr");
@@ -419,57 +329,15 @@ bool SpatialResolAna::Initialize() {
 
   auto dir_resol = _file_out->mkdir("resol_column");
   _output_vector.push_back(dir_resol);
-  for (auto j = 0; j < Nclusters; ++j) {
-    dir_resol->Append(_resol_col_hist[j]);
-    dir_resol->Append(_resol_col_hist_except[j]);
-  }
 
-  if (_do_separate_pad_fit) {
-    Double_t arr[4] = {0., .15, .7, 1.01};
-    _prf_scale_axis = new TAxis(3, arr);
-    for (auto j = 0; j < Nclusters; ++j) {
-      for (auto id=0; id < 3; ++id) {
-        _fit_quality_plots[id][j] = new TH1F(Form("pad_fit_q_%i_%i", j, id),
-         "", 300, 0., 30.);
-        _output_vector.push_back(_fit_quality_plots[id][j]);
-      }
-    }
-  }
 
   auto dir_x_scan = _file_out->mkdir("x_scan");
   _output_vector.push_back(dir_x_scan);
-
-  _x_scan_axis = new TAxis(x_scan_bin, x_scan_min, x_scan_max);
-  for (auto j = 0; j < Nclusters; ++j) {
-    for (auto i = 0; i < x_scan_bin; ++i) {
-      _resol_col_x_scan[j][i] = new TH1F(Form("resol_histo_Xscan_%i_%i", j, i),
-       "", resol_bin, resol_min, resol_max);
-      dir_x_scan->Append(_resol_col_x_scan[j][i]);
-      _mult_x_scan[j][i] = new TH1F(Form("mult_histo_Xscan_%i_%i", j, i),
-       "multiplicity", 10, 0., 10.);
-      dir_x_scan->Append(_mult_x_scan[j][i]);
-    }
-  }
-
-  for (auto j = 0; j < Nclusters; ++j) {
-    for (auto i = 0; i < x_scan_bin; ++i) {
-      _resol_col_x_scan_lim_mult[j][i] =
-        new TH1F(Form("resol_histo_Xscan_%i_%i", j, i), "",
-        resol_bin, resol_min, resol_max);
-      dir_x_scan->Append(_resol_col_x_scan_lim_mult[j][i]);
-    }
-  }
 
   for (auto i = 0; i < prf_error_bins-1; ++i) {
     _uncertainty_prf_bins[i] = new TH1F(Form("error_prf_bin_%i", i),
       "", resol_bin, resol_min, resol_max);
     // _output_vector.push_back(_uncertainty_prf_bins[i]);
-  }
-
-  auto dir_prf = _file_out->mkdir("prf_column");
-  _output_vector.push_back(dir_prf);
-  for (auto & j : _prf_histo_col) {
-    dir_prf->Append(j);
   }
 
   _passed_events.clear();
@@ -760,6 +628,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     if (robust_clusters[clusterId]->GetSize() == 1)
       continue;
     // Fill PRF
+    // TODO cache the result of GetRobustPadsInCluster?
     auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
     int padId = 0;
     for (const auto& pad:robust_pads)
@@ -889,10 +758,6 @@ void SpatialResolAna::FillSR(const TClusterPtr& cluster,
   _track_pos[clusterId] = (Float_t)track_fit_y;
   _residual[clusterId] = (Float_t)(_clust_pos[clusterId] - track_fit_y);
   _residual_corr[clusterId] = (Float_t)(_clust_pos[clusterId] - track_fit_y1);
-
-  _resol_col_hist[clusterId]->Fill(_clust_pos[clusterId] - track_fit_y);
-  _resol_col_hist_except[clusterId]->Fill(_clust_pos[clusterId] - track_fit_y1);
-
 }
 
 //******************************************************************************
@@ -932,22 +797,6 @@ void SpatialResolAna::FillPRF(const THitPtr& pad,
   _prf_histo->Fill( _dx[clusterId][padId],
                    _qfrac[clusterId][padId]
   );
-  _prf_histo_col[clusterId]->Fill( _dx[clusterId][padId],
-                                  _qfrac[clusterId][padId]
-  );
-
-  if (_multiplicity[clusterId] == 2)
-    _prf_histo_2pad->Fill( _dx[clusterId][padId],
-                          _qfrac[clusterId][padId]
-    );
-  else if (_multiplicity[clusterId] == 3)
-    _prf_histo_3pad->Fill( _dx[clusterId][padId],
-                          _qfrac[clusterId][padId]
-    );
-  else if (_multiplicity[clusterId] == 4)
-    _prf_histo_4pad->Fill( _dx[clusterId][padId],
-                          _qfrac[clusterId][padId]
-    );
 
   if (padId > 0)
     _prf_time->Fill(_dx[clusterId][padId],
@@ -1007,9 +856,6 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "PRF profiling............................";
 
   ProfilePRF(_prf_histo, _prf_graph);
-  ProfilePRF(_prf_histo_2pad, _prf_graph_2pad);
-  ProfilePRF(_prf_histo_3pad, _prf_graph_3pad);
-  ProfilePRF(_prf_histo_4pad, _prf_graph_4pad);
 
   std::cout << "done" << std::endl;
   std::cout << "PRF fit..................................";
@@ -1017,103 +863,12 @@ bool SpatialResolAna::WriteOutput() {
   // MAGIC
   for (auto i = 0; i < 3; ++i)
     _prf_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
-  // _prf_graph_2pad->Fit("PRF_function_2pad", "Q", "", -0.014, 0.014);
-  // _prf_graph_3pad->Fit("PRF_function_3pad", "Q", "", fit_bound_left, fit_bound_right);
-  // _prf_graph_4pad->Fit("PRF_function_4pad", "Q", "", fit_bound_left, fit_bound_right);
+
 
   std::cout << "done" << std::endl;
-  std::cout << "Process x histoes........................";
-
-  for (auto i = 0; i < 4; ++i)
-    ProfilePRF(_prf_histo_xscan[i], _prf_graph_xscan[i]);
 
   std::cout << "done" << std::endl;
   std::cout << "Process histoes..........................";
-
-  TH1F* resol = new TH1F("resol", "", 1000, 0., 0.001);
-
-  for (auto i = 0; i <= Nclusters - 1; ++i)
-      _resol_total->Add(_resol_col_hist[i]);
-
-  for (auto i = 1; i < Nclusters - 1; ++i) {
-
-    TH1F* res     = _resol_col_hist[i];
-    TH1F* res_e   =  _resol_col_hist_except[i];
-
-    Double_t mean, sigma, sigma_ex;
-    Double_t mean_e = 0., sigma_e = 0., sigma_ex_e = 0.;
-
-    mean = res->GetMean();
-    sigma = 0.5 * GenericToolbox::getFWHM(res);
-
-    if (res->Integral() < 1.e-9) {
-      if (i < 10)
-        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty residuals at " << i << std::endl;
-      continue;
-    }
-
-    if (_gaussian_residuals) {
-      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
-      _resol_col_hist_2pad[i]->Fit("gaus", "Q");
-      _resol_col_hist_3pad[i]->Fit("gaus", "Q");
-
-
-
-      TF1* func = res->GetFunction("gaus");
-
-      if (!func) {
-        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
-        continue;
-      }
-
-      res_e->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
-      _resol_col_hist_2pad_except[i]->Fit("gaus", "Q");
-      _resol_col_hist_3pad_except[i]->Fit("gaus", "Q");
-
-      TF1* func_ex = res_e->GetFunction("gaus");
-      if (!func_ex) {
-        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Exeptional residual fit fail" << std::endl;
-        continue;
-      }
-
-      mean     = func->GetParameter(1);
-      sigma    = func->GetParameter(2);
-      sigma_ex = func_ex->GetParameter(2);
-
-      mean_e      = func->GetParError(1);
-      sigma_e     = func->GetParError(2);
-      sigma_ex_e  = func_ex->GetParError(2);
-    } else {
-      // use FWHM
-      mean = res_e->GetMean();
-      sigma_ex = 0.5 * GenericToolbox::getFWHM(res_e);
-    }
-
-    _residual_sigma_biased->SetPoint(_residual_sigma_biased->GetN(),
-                                      i+1, sigma);
-    _residual_sigma_biased->SetPointError(_residual_sigma_biased->GetN()-1,
-                                      0, sigma_e);
-
-    _residual_sigma_unbiased->SetPoint(_residual_sigma_unbiased->GetN(),
-                                      i+1, sigma_ex);
-    _residual_sigma_unbiased->SetPointError(_residual_sigma_unbiased->GetN()-1,
-                                      0, sigma_ex);
-
-    Double_t val, err;
-    val = sqrt(sigma * sigma_ex);
-    if (val > 0)
-      err = 0.5 / val;
-    else err = 0.;
-    err *= sigma_e * sigma_ex + sigma * sigma_ex_e;
-    _residual_sigma->SetPoint(_residual_sigma->GetN(), i+1, val);
-    _residual_sigma->SetPointError(_residual_sigma->GetN()-1, 0, err);
-
-    _residual_mean->SetPoint(_residual_mean->GetN(), i+1, mean);
-    _residual_mean->SetPointError(_residual_mean->GetN()-1, 0, mean_e);
-
-    // print out monitoring function
-    resol->Fill(sqrt(sigma * sigma_ex));
-  } // loop over column
 
   if (_do_separate_pad_fit && _iteration) {
     for (auto res : _uncertainty_prf_bins) {
@@ -1154,18 +909,15 @@ bool SpatialResolAna::WriteOutput() {
     std::cout << "  Chi2/NDF " << _prf_graph->GetFunction("PRF_function")->GetChisquare()
               << "/" << _prf_graph->GetFunction("PRF_function")->GetNDF() << std::endl;
     std::cout << std::endl;
-
-    _resol_total->Fit("gaus", "Q");
-    if (_resol_total->Integral() < 1.e-9) {
-      std::cout << "WARNING. SpatialResolAna::WriteOutput(). Empty global residual" << std::endl;
-    } else {
-      auto func = _resol_total->GetFunction("gaus");
-      TString output = "NaN";
-      if (func)
-        output = TString::Itoa((int)round(1.e6*func->GetParameter(2)), 10) + " um";
-
-      std::cout << "Spatial resolution\t" << output << std::endl;
-    }
+    TH1F sr_h("h", "", resol_bin, resol_min, resol_max);
+    _tree->Project("h", "residual");
+    sr_h.Fit("gaus", "Q");
+    std::cout << "Spatial resolution\t" << sr_h.GetFunction("gaus")->GetParameter(2) * 1e6 << " um" << std::endl;
+    TH1F e_h("h_e", "", 1000, 0., 10000);
+    _tree->Project("h_e", "dEdx");
+    e_h.Fit("gaus", "Q");
+    auto resol = e_h.GetFunction("gaus")->GetParameter(2) / e_h.GetFunction("gaus")->GetParameter(1);
+    std::cout << "dE/dx             \t" << resol * 100 << "%" << std::endl;
   }
 
   // Write objects

@@ -173,18 +173,6 @@ class SpatialResolAna: public AnalysisBase {
   // PRF profiling graphs
   TGraphErrors* _prf_graph{nullptr};
 
-  // TF1*    _prf_function_2pad;
-  // TF1*    _prf_function_3pad;
-  // TF1*    _prf_function_4pad;
-
-  TH2F* _prf_histo_2pad{nullptr};
-  TH2F* _prf_histo_3pad{nullptr};
-  TH2F* _prf_histo_4pad{nullptr};
-
-  TGraphErrors* _prf_graph_2pad{nullptr};
-  TGraphErrors* _prf_graph_3pad{nullptr};
-  TGraphErrors* _prf_graph_4pad{nullptr};
-
   /// Pad response function in time
   TH2F* _prf_time{nullptr};
 
@@ -203,37 +191,11 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether fit all the pads separately
   bool _do_separate_pad_fit{false};
 
-  /// Whether to fit residuals with Gaussian
-  bool _gaussian_residuals{false};
-
   /// Whether to assign uncertainty to charge
   bool _charge_uncertainty{false};
 
-  /// Residuals X_track - X_fit histoes
-  TH1F* _resol_total{nullptr};
-
-  TH1F* _resol_col_hist[Nclusters]{nullptr};
-  TH1F* _resol_col_hist_except[Nclusters]{nullptr};
-
-  TH1F* _resol_col_hist_2pad[Nclusters]{nullptr};
-  TH1F* _resol_col_hist_2pad_except[Nclusters]{nullptr};
-
-  TH1F* _resol_col_hist_3pad[Nclusters]{nullptr};
-  TH1F* _resol_col_hist_3pad_except[Nclusters]{nullptr};
-
-  TGraphErrors* _residual_mean{nullptr};
-  TGraphErrors* _residual_sigma{nullptr};
-
-  TGraphErrors* _residual_sigma_unbiased{nullptr};
-  TGraphErrors* _residual_sigma_biased{nullptr};
-
-  TH2F* _prf_histo_col[Nclusters]{nullptr};
-
-  /// separate pad fit study
-  TH1F* _fit_quality_plots[3][Nclusters]{nullptr};
-  TAxis* _prf_scale_axis;
-
   /// errors vs the PRF value
+  // TODO consider removing
   static const int prf_error_bins = 10;
   Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
   TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
@@ -241,21 +203,6 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _uncertainty_vs_prf_gr{nullptr};
   TGraphErrors* _uncertainty_vs_prf_gr_prev{nullptr};
   TH1F*         _uncertainty_vs_prf_histo{nullptr};
-
-
-  /// x scan data
-  static const int x_scan_bin = 50;
-  const float x_scan_min = -0.035;
-  const float x_scan_max = 0.015;
-  TAxis* _x_scan_axis{nullptr};
-  TH1F* _resol_col_x_scan[Nclusters][x_scan_bin]{nullptr};
-  TH1F* _mult_x_scan[Nclusters][x_scan_bin]{nullptr};
-//  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
-
-  TH1F* _resol_col_x_scan_lim_mult[Nclusters][x_scan_bin]{nullptr};
-
-  TH2F* _prf_histo_xscan[4]{nullptr};
-  TGraphErrors* _prf_graph_xscan[4]{nullptr};
 
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty{-999};
