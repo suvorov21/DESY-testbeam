@@ -28,7 +28,7 @@ cd build
 ```
 Then you need to configure the build and run the compilation
 ```bash
-cmake ../src
+cmake ../
 make
 ```
 
