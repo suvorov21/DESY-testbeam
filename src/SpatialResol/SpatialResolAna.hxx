@@ -23,6 +23,12 @@ class SpatialResolAna: public AnalysisBase {
   /// Process the selection output called Event
   bool ProcessEvent(const std::shared_ptr<TEvent>& event) override;
 
+  /// Fit and fill cluster information
+  void ProcessCluster(const TClusterPtr& cluster, uint id);
+
+  /// Fit the global track
+  std::shared_ptr<TF1> ProcessTrack(const TClusterPtrVec& track);
+
   /// Treat cross-talk. Either suppress or cherry-pick
   void TreatCrossTalk(const THitPtr& pad, THitPtrVec& robust_pads, int& pad_id);
 
@@ -44,7 +50,7 @@ class SpatialResolAna: public AnalysisBase {
   void Reset(int id);
 
   /// Compute dE/dx
-  static Float_t ComputedEdx(std::vector<int>& QsegmentS);
+  Float_t ComputedEdx();
 
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */

@@ -462,8 +462,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (_verbose >= v_analysis_steps)
     std::cout << "start cluster fit" << std::endl;
 
-  std::vector<int> QsegmentS;
-
+  // fill multiplicity info
   _m_mean = (Float_t)GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
   _m_max = (int)(*(std::max_element(robust_clusters.begin(),
                                     robust_clusters.end(),
@@ -473,135 +472,20 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
                                     )))->GetSize();
 
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
-    if (!(*robust_clusters[clusterId])[0])
-      continue;
-
-    // loop over rows
-    auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
-    _multiplicity[clusterId] = (int)robust_pads.size();
-
-    auto pad_id = -1;
-    for (auto & pad:robust_pads) {
-      ++pad_id;
-      if (!pad)
-        continue;
-
-      // treat cross-talk
-      // not for the first pad
-      if (pad != robust_pads[0] && _cross_talk_treat != def)
-        TreatCrossTalk(pad, robust_pads, pad_id);
-
-      FillPadOutput(pad, (int)clusterId, pad_id);
-    } // loop over pads
-
-    _clust_pos[clusterId] /= (Float_t)_charge[clusterId];
-    _x[clusterId] = robust_clusters[clusterId]->GetX();
-
-    double CoC =  _clust_pos[clusterId];
-
-    if (_multiplicity[clusterId] > 1 && _iteration > 0) {
-      _clust_pos[clusterId] = (Float_t)_fitter->FitCluster(robust_pads,
-                                                 _charge[clusterId],
-                                                 _clust_pos[clusterId]
-                                                 );
-    }
-
-    robust_clusters[clusterId]->SetY(_clust_pos[clusterId]);
-    robust_clusters[clusterId]->SetCharge(_charge[clusterId]);
-
-    if (_verbose >= v_fit_details) {
-      for (const auto& pad:*robust_clusters[clusterId]) {
-        std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
-      }
-      std::cout << std::endl;
-    }
-
-    if (_verbose >= v_fit_details)
-      std::cout << "X:CoC:Fit\t" << robust_clusters[clusterId]->GetX() << "\t" << CoC << "\t" << robust_clusters[clusterId]->GetY() << std::endl;
-
-    if (robust_clusters[clusterId]->GetSize() == 1) {
-      robust_clusters[clusterId]->SetYE(0.002);
-    } else {
-      if (_iteration)
-        robust_clusters[clusterId]->SetYE(_uncertainty);
-      else
-        robust_clusters[clusterId]->SetYE(0.001);
-    }
-
-    if (_verbose >= v_residuals)
-      std::cout << "Cluster pos " << _clust_pos[clusterId] << "\t";
-
-    if (robust_clusters[clusterId]->GetCharge()) QsegmentS.push_back(robust_clusters[clusterId]->GetCharge());
-
+    ProcessCluster(robust_clusters[clusterId], clusterId);
   } // loop over clusters
 
   if (_verbose >= v_analysis_steps) {
     std::cout << "Loop over columns done" << std::endl;
   }
 
-  _dEdx = ComputedEdx(QsegmentS);
+  _dEdx = ComputedEdx();
 
   _column_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("fitter");
 
 //******************** STEP 3 **************************************************
-  auto fit = _fitter->FitTrack(robust_clusters);
-  _track_fit_func = fit;
-
-  if (!fit)
-    return false;
-
-  _quality = (Float_t)fit->GetChisquare() / (Float_t)fit->GetNDF();
-
-  if (_verbose >= v_analysis_steps)
-    std::cout << "Track fit done" << std::endl;
-
-  TString func = fit->GetName();
-
-  // in case of arc fitting fill the momentum histo
-  if (!_do_linear_fit && !_do_para_fit) {
-    _mom = Float_t(1./fit->GetParameter(0) * units::B * units::clight / 1.e9);
-    _sin_alpha  = (Float_t)fit->GetParameter(1);
-    _offset     = (Float_t)fit->GetParameter(2);
-  }
-
-  if (_do_para_fit) {
-    // pol2 := [p0]+[p1]*x+[p2]*pow(x,2)
-
-    double x1 = robust_clusters[0]->GetX();
-    TVector3 start(x1, fit->Eval(x1), 0.);
-    double x2 = (*(robust_clusters.end()-1))->GetX();
-    TVector3 end(x2, fit->Eval(x2), 0.);
-    TLine_att line(start, end);
-
-    double a = fit->GetParameter(2);
-    double b = fit->GetParameter(1);
-
-    double x0 = - b * (x2-x1) + a*x2*x2 + b*x2 - a*x1*x1 - b*x1 ;
-    x0 /= 2*a*(x2-x1);
-    TVector3 max_sag(x0, fit->Eval(x0), 0.);
-    double sag = line.GetDistVec(max_sag).Mag();
-    double L = (end - start).Mag();
-
-    if (abs(sag) > 1e-10) {
-      _mom = (Float_t)(L*L /8/sag + sag / 2);
-      _mom *= (Float_t)(units::B * units::clight / 1.e9);
-      if (a < 0)
-        _mom *= -1;
-    }
-
-    _sin_alpha = (Float_t)TMath::Sin(TMath::ATan(fit->Derivative(x1)));
-    _offset    = (Float_t)start.Y();
-
-    if (_verbose > v_analysis_steps) {
-      std::cout << "start:end:max\t" << start.X() << ", " << start.Y();
-      std::cout << "\t" << end.X() << ", " << end.Y();
-      std::cout << "\t" << max_sag.X() << ", " << max_sag.Y() << std::endl;
-      std::cout << "Line at x0\t" << line.EvalX((Float_t)max_sag.X()).Y() << std::endl;
-      std::cout << "Sagitta:\t" << sag << "\tLength:\t" << L << std::endl;
-      std::cout << "mom:\t" << _mom << std::endl;
-    }
-  }
+  auto fit = ProcessTrack(robust_clusters);
 
 //****************** STEP 4 ****************************************************
 
@@ -649,10 +533,132 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 }
 
 //******************************************************************************
+void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
+//******************************************************************************
+  if (!(*cluster)[0])
+    return;
+
+  // loop over rows
+  auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
+  _multiplicity[id] = (int)robust_pads.size();
+
+  auto pad_id = -1;
+  for (auto & pad:robust_pads) {
+    ++pad_id;
+    if (!pad)
+      continue;
+
+    // treat cross-talk
+    // not for the first pad
+    if (pad != robust_pads[0] && _cross_talk_treat != def)
+      TreatCrossTalk(pad, robust_pads, pad_id);
+
+    FillPadOutput(pad, (int)id, pad_id);
+  } // loop over pads
+
+  _clust_pos[id] /= (Float_t)_charge[id];
+  _x[id] = cluster->GetX();
+
+  double CoC =  _clust_pos[id];
+
+  if (_multiplicity[id] > 1 && _iteration > 0) {
+    _clust_pos[id] = (Float_t)_fitter->FitCluster(robust_pads,
+                                                         _charge[id],
+                                                         _clust_pos[id]
+    );
+  }
+
+  cluster->SetY(_clust_pos[id]);
+  cluster->SetCharge(_charge[id]);
+
+  if (_verbose >= v_fit_details) {
+    for (const auto& pad:*cluster) {
+      std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
+    }
+    std::cout << std::endl;
+  }
+
+  if (_verbose >= v_fit_details)
+    std::cout << "X:CoC:Fit\t" << cluster->GetX() << "\t" << CoC << "\t" << cluster->GetY() << std::endl;
+
+  if (cluster->GetSize() == 1) {
+    cluster->SetYE(0.002);
+  } else {
+    if (_iteration)
+      cluster->SetYE(_uncertainty);
+    else
+      cluster->SetYE(0.001);
+  }
+}
+
+//******************************************************************************
+std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) {
+//******************************************************************************
+  auto fit = _fitter->FitTrack(track);
+  _track_fit_func = fit;
+
+  if (!fit)
+    return nullptr;
+
+  _quality = (Float_t)fit->GetChisquare() / (Float_t)fit->GetNDF();
+
+  if (_verbose >= v_analysis_steps)
+    std::cout << "Track fit done" << std::endl;
+
+  TString func = fit->GetName();
+
+  // in case of arc fitting fill the momentum histo
+  if (!_do_linear_fit && !_do_para_fit) {
+    _mom = Float_t(1./fit->GetParameter(0) * units::B * units::clight / 1.e9);
+    _sin_alpha  = (Float_t)fit->GetParameter(1);
+    _offset     = (Float_t)fit->GetParameter(2);
+  }
+
+  if (_do_para_fit) {
+    // pol2 := [p0]+[p1]*x+[p2]*pow(x,2)
+
+    double x1 = track[0]->GetX();
+    TVector3 start(x1, fit->Eval(x1), 0.);
+    double x2 = (*(track.end()-1))->GetX();
+    TVector3 end(x2, fit->Eval(x2), 0.);
+    TLine_att line(start, end);
+
+    double a = fit->GetParameter(2);
+    double b = fit->GetParameter(1);
+
+    double x0 = - b * (x2-x1) + a*x2*x2 + b*x2 - a*x1*x1 - b*x1 ;
+    x0 /= 2*a*(x2-x1);
+    TVector3 max_sag(x0, fit->Eval(x0), 0.);
+    double sag = line.GetDistVec(max_sag).Mag();
+    double L = (end - start).Mag();
+
+    if (abs(sag) > 1e-10) {
+      _mom = (Float_t)(L*L /8/sag + sag / 2);
+      _mom *= (Float_t)(units::B * units::clight / 1.e9);
+      if (a < 0)
+        _mom *= -1;
+    }
+
+    _sin_alpha = (Float_t)TMath::Sin(TMath::ATan(fit->Derivative(x1)));
+    _offset    = (Float_t)start.Y();
+
+    if (_verbose > v_analysis_steps) {
+      std::cout << "start:end:max\t" << start.X() << ", " << start.Y();
+      std::cout << "\t" << end.X() << ", " << end.Y();
+      std::cout << "\t" << max_sag.X() << ", " << max_sag.Y() << std::endl;
+      std::cout << "Line at x0\t" << line.EvalX((Float_t)max_sag.X()).Y() << std::endl;
+      std::cout << "Sagitta:\t" << sag << "\tLength:\t" << L << std::endl;
+      std::cout << "mom:\t" << _mom << std::endl;
+    }
+  }
+  return fit;
+}
+
+//******************************************************************************
 void SpatialResolAna::TreatCrossTalk(const THitPtr& pad,
                                      THitPtrVec& robust_pads,
                                      int& pad_id) {
-  //******************************************************************************
+//******************************************************************************
   auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
   auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
   // cross talk selection
@@ -720,9 +726,14 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
 }
 
 //******************************************************************************
-Float_t SpatialResolAna::ComputedEdx(std::vector<int>& QsegmentS) {
+Float_t SpatialResolAna::ComputedEdx() {
 //******************************************************************************
   Float_t alpha = 0.7;
+  std::vector<int> QsegmentS;
+  std::copy_if(_charge[0],
+               _charge[Nclusters-1],
+               std::back_inserter(QsegmentS),
+               [](int charge) {return charge > 0;});
   sort(QsegmentS.begin(), QsegmentS.end());
   double totQ = 0.;
   auto i_max = (int)round(alpha * (double)QsegmentS.size());
