@@ -730,8 +730,8 @@ Float_t SpatialResolAna::ComputedEdx() {
 //******************************************************************************
   Float_t alpha = 0.7;
   std::vector<int> QsegmentS;
-  std::copy_if(_charge[0],
-               _charge[Nclusters-1],
+  std::copy_if(std::begin(_charge),
+               std::end(_charge),
                std::back_inserter(QsegmentS),
                [](int charge) {return charge > 0;});
   sort(QsegmentS.begin(), QsegmentS.end());
