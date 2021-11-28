@@ -7,7 +7,7 @@
 #include "Selection.hxx"
 #include "TrackFitter.hxx"
 
-const int Nclusters = 70;
+constexpr int Nclusters = 70;
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
@@ -52,6 +52,8 @@ class SpatialResolAna: public AnalysisBase {
   /// Compute dE/dx
   Float_t ComputedEdx();
 
+  static void DeletePadFromCluster(THitPtrVec& robust_pads, int& pad_id);
+
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
   bool WriteOutput() override;
@@ -67,14 +69,16 @@ class SpatialResolAna: public AnalysisBase {
    * @param shift Whether the PRF center position is a free parameter
    * @return initialised PRF histo object
    */
-  TF1* InitializePRF(const TString& name, bool shift=false);
+  static TF1* InitializePRF(const TString& name,
+                            bool shift=false,
+                            bool gaus_lorentz_PRF=false);
 
   /// Draw the histograms of interest
   bool Draw();
 
   /// verbosity levels
-  enum verbosity_SR {
-    v_analysis_steps = v_event_number + 1,
+  enum class verbosity_SR {
+    v_analysis_steps = static_cast<int>(verbosity_base::v_event_number) + 1,
     v_fit_details,
     v_residuals,
     v_prf
@@ -217,13 +221,13 @@ class SpatialResolAna: public AnalysisBase {
   std::vector<Int_t> _passed_events{};
 
   // [units are meters]
-  const float prf_min     = -0.027;
-  const float prf_max     = 0.027;
-  const int   prf_bin     = 180;
+  static constexpr float prf_min     = -0.027;
+  static constexpr float prf_max     = 0.027;
+  static constexpr int   prf_bin     = 180;
 
-  const float resol_min   = -0.004;
-  const float resol_max   = 0.004;
-  const int   resol_bin   = 200.;
+  static constexpr float resol_min   = -0.004;
+  static constexpr float resol_max   = 0.004;
+  static constexpr int   resol_bin   = 200.;
 
   /// space limit for the PRF usage
   /// pads that are far away are supposed to be unreliable

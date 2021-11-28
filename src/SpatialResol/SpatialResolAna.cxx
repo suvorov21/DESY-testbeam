@@ -70,7 +70,7 @@ bool SpatialResolAna::Initialize() {
   _uncertainty_vs_prf_gr_prev = nullptr;
   _uncertainty_vs_prf_histo   = nullptr;
 
-  _prf_function = InitializePRF("PRF_function", _prf_free_centre);
+  _prf_function = InitializePRF("PRF_function", _prf_free_centre, _gaus_lorentz_PRF);
 
   // Initialize graph for PRF profiling
   _prf_graph = new TGraphErrors();
@@ -131,7 +131,7 @@ bool SpatialResolAna::Initialize() {
     if (_clustering->n_pads > 1) {
       _prf_function_arr = new TF1*[3];
       for (auto rest = 0; rest < std::min(_clustering->n_pads, 3); ++rest) {
-        _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true);
+        _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true, _gaus_lorentz_PRF);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
         TString s = TString::Itoa(_clustering->n_pads, 10);
@@ -150,7 +150,7 @@ bool SpatialResolAna::Initialize() {
 
       _prf_function_arr = new TF1*[36];
       for (auto colId = 0; colId < geom::GetNColumn(_invert); ++colId) {
-        _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre);
+        _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre, _gaus_lorentz_PRF);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
         TString s = TString::Itoa(_clustering->n_pads, 10);
@@ -341,9 +341,8 @@ bool SpatialResolAna::Initialize() {
   }
 
   _passed_events.clear();
-
   std::cout << "done" << std::endl;
-  if (_verbose >= v_event_number) {
+  if (_verbose >= static_cast<int>(verbosity_base::v_event_number)) {
     std::cout << "\t PRF(x) = " << _prf_function->GetFormula()->GetExpFormula();
     std::cout << "  with ";
     for (auto i = 0; i < _prf_function->GetNpar(); ++i)
@@ -406,7 +405,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   TClusterPtrVec clusters;
   clusters = ClusterTrack(track_hits);
 
-  if (_verbose >= v_analysis_steps)
+  if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
   // selection
@@ -449,7 +448,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   // truncation
   auto robust_clusters = GetRobustClusters(clusters);
 
-  if (_verbose >= v_analysis_steps)
+  if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
   _rob_clusters = (int)robust_clusters.size();
@@ -459,7 +458,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
 // *******************  STEP 2 *************************************************
 
-  if (_verbose >= v_analysis_steps)
+  if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "start cluster fit" << std::endl;
 
   // fill multiplicity info
@@ -475,7 +474,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     ProcessCluster(robust_clusters[clusterId], clusterId);
   } // loop over clusters
 
-  if (_verbose >= v_analysis_steps) {
+  if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps)) {
     std::cout << "Loop over columns done" << std::endl;
   }
 
@@ -563,22 +562,20 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
 
   if (_multiplicity[id] > 1 && _iteration > 0) {
     _clust_pos[id] = (Float_t)_fitter->FitCluster(robust_pads,
-                                                         _charge[id],
-                                                         _clust_pos[id]
-    );
+                                                  _clust_pos[id]);
   }
 
   cluster->SetY(_clust_pos[id]);
   cluster->SetCharge(_charge[id]);
 
-  if (_verbose >= v_fit_details) {
+  if (_verbose >= static_cast<int>(verbosity_SR::v_fit_details)) {
     for (const auto& pad:*cluster) {
       std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
     }
     std::cout << std::endl;
   }
 
-  if (_verbose >= v_fit_details)
+  if (_verbose >= static_cast<int>(verbosity_SR::v_fit_details))
     std::cout << "X:CoC:Fit\t" << cluster->GetX() << "\t" << CoC << "\t" << cluster->GetY() << std::endl;
 
   if (cluster->GetSize() == 1) {
@@ -602,7 +599,7 @@ std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) 
 
   _quality = (Float_t)fit->GetChisquare() / (Float_t)fit->GetNDF();
 
-  if (_verbose >= v_analysis_steps)
+  if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "Track fit done" << std::endl;
 
   TString func = fit->GetName();
@@ -642,7 +639,7 @@ std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) 
     _sin_alpha = (Float_t)TMath::Sin(TMath::ATan(fit->Derivative(x1)));
     _offset    = (Float_t)start.Y();
 
-    if (_verbose > v_analysis_steps) {
+    if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps)) {
       std::cout << "start:end:max\t" << start.X() << ", " << start.Y();
       std::cout << "\t" << end.X() << ", " << end.Y();
       std::cout << "\t" << max_sag.X() << ", " << max_sag.Y() << std::endl;
@@ -664,42 +661,28 @@ void SpatialResolAna::TreatCrossTalk(const THitPtr& pad,
   // cross talk selection
   if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
     pad->SetQ(0);
-    for (auto time = pad->GetTime() + 4; time < 510; ++time) {
-      if (pad->GetADC(time) > pad->GetQ()) {
-        pad->SetTime(time);
-        pad->SetQ(pad->GetADC(time));
-      }
-    } // over time
-    if (pad->GetQ() == 0) {
-      robust_pads.erase(
-          robust_pads.begin() + pad_id,
-          robust_pads.begin() + pad_id + 1
-      );
-      --pad_id;
-    }
+    pad->FindMaxInTime(pad->GetTime() + 4, 510);
+    if (pad->GetQ() == 0)
+      DeletePadFromCluster(robust_pads, pad_id);
   } // cross-talk suppression
 
   if (_cross_talk_treat == cherry_pick) {
     pad->SetQ(0);
-    for (
-        auto time = robust_pads[0]->GetTime() - 4;
-        time < robust_pads[0]->GetTime() + 4;
-        ++time
-    ) {
-      if (pad->GetADC(time) > pad->GetQ() &&
-          pad->GetADC(time) > pad->GetADC(robust_pads[0]->GetTime() + 5)) {
-        pad->SetTime(time);
-        pad->SetQ(pad->GetADC(time));
-      }
-    } // over time
-    if (pad->GetQ() == 0) {
-      robust_pads.erase(
-          robust_pads.begin() + pad_id,
-          robust_pads.begin() + pad_id + 1
-      );
-      --pad_id;
-    }
+    pad->FindMaxInTime(pad->GetTime() - 4, pad->GetTime() + 4);
+    if (pad->GetQ() == 0)
+      DeletePadFromCluster(robust_pads, pad_id);
   } // cross-talk cherry-picking
+}
+
+//******************************************************************************
+void SpatialResolAna::DeletePadFromCluster(THitPtrVec& robust_pads,
+                                           int& pad_id) {
+//******************************************************************************
+  robust_pads.erase(
+      robust_pads.begin() + pad_id,
+      robust_pads.begin() + pad_id + 1
+  );
+  --pad_id;
 }
 
 //******************************************************************************
@@ -755,7 +738,7 @@ void SpatialResolAna::FillSR(const TClusterPtr& cluster,
   double track_fit_y    = fit->Eval(_x_av[clusterId]);
   double track_fit_y1   = fit1[clusterId]->Eval(_x_av[clusterId]);
 
-  if (_verbose >= v_residuals) {
+  if (_verbose >= static_cast<int>(verbosity_SR::v_residuals)) {
     std::cout << "Residuals id:x:cluster:track\t" << clusterId << "\t";
     std::cout << _x_av[clusterId] << "\t";
     std::cout << cluster->GetY() << "\t";
@@ -798,7 +781,7 @@ void SpatialResolAna::FillPRF(const THitPtr& pad,
   _dx[clusterId][padId]    = (Float_t)(center_pad_y - track_fit_y_pad);
   _qfrac[clusterId][padId] = (Float_t)q / (Float_t)_charge[clusterId];
 
-  if (_verbose >= v_prf) {
+  if (_verbose >= static_cast<int>(verbosity_SR::v_prf)) {
     std::cout << "PRF fill\t" << _dx[clusterId][padId];
     std::cout << "\t" << _qfrac[clusterId][padId];
     std::cout << "\t" << _time[clusterId][padId] - _time[clusterId][0] << std::endl;
@@ -1029,10 +1012,10 @@ bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PR
 }
 
 //******************************************************************************
-TF1* SpatialResolAna::InitializePRF(const TString& name, bool shift) {
+TF1* SpatialResolAna::InitializePRF(const TString& name, bool shift, bool gaus_lorentz_PRF) {
 //******************************************************************************
   TF1* func;
-  if (_gaus_lorentz_PRF) {
+  if (gaus_lorentz_PRF) {
     func = new TF1(name,
       "[0] * exp(-4*TMath::Log(2)*(1-[1])*TMath::Power(x/[2], 2.)) / (1+4 * [1] * TMath::Power(x/[2], 2.) )",
       prf_min, prf_max);

@@ -154,7 +154,7 @@ class AnalysisBase {
   bool ChainInputFiles(const TString& tree_name);
 
   /// verbosity levels
-  enum verbosity_base {
+  enum class verbosity_base {
     v_progress = 1,
     v_event_number
   };
