@@ -1,9 +1,9 @@
 //
 // Created by SERGEY SUVOROV on 18/09/2021.
 //
-#include "gtest/gtest.h"
 #include "AnalysisBase.hxx"
-#include "DummyMaker.h"
+#include "FakeMaker.h"
+#include "gtest/gtest.h"
 
 TEST(InitialisationTest, ParamFileRead) {
   auto ana = std::make_unique<AnalysisBase>();
@@ -54,7 +54,7 @@ TEST(InitialisationTest, inputException) {
 
 TEST(InitialisationTest, baseProcessEvent) {
   auto ana = std::make_unique<AnalysisBase>();
-  auto event = dummy::GetEvent();
+  auto event = fake::GetEvent();
   EXPECT_THROW(ana->ProcessEvent(event), std::logic_error);
   auto reconstruction = new ReconstructionBase();
   reconstruction->Initialize(0);
@@ -63,7 +63,7 @@ TEST(InitialisationTest, baseProcessEvent) {
 
 TEST(AnalysisTest, Clusterisation) {
   auto ana = std::make_unique<AnalysisBase>();
-  auto track = dummy::GetTrack();
+  auto track = fake::GetTrack();
   auto clusters = ana->ClusterTrack(track);
   EXPECT_EQ(clusters.size(), 34);
   ana->setInvert(true);
