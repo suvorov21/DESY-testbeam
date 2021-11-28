@@ -43,6 +43,10 @@ class THit : public TObject{
     fwhm = -999;
     fw = -999;
   }
+
+  /// redefine charge and time of the hit with the maximum in given time range
+  void FindMaxInTime(const int& low, const int& high);
+
   // setters
   void SetRow(int row)    {fRow = row;}
   void SetCol(int col)    {fColumn = col;}

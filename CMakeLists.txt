@@ -53,8 +53,9 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src//SpatialResol/)    #---SR analysis
 add_subdirectory(${PROJECT_SOURCE_DIR}/src/base/)
 
 #---Create  a main program using the library
-add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx ${PROJECT_SOURCE_DIR}/src/SpatialResol/SpatialResolAna.cxx)
-target_link_libraries(SpatialResol.exe TRawEvent TBase)
+add_library(TSpatialResol ${PROJECT_SOURCE_DIR}/src/SpatialResol/SpatialResolAna.cxx)
+add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx)
+target_link_libraries(SpatialResol.exe TRawEvent TBase TSpatialResol)
 
 add_subdirectory(Google_tests)
 include_directories(Google_tests/lib/googletest/include)
