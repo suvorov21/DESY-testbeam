@@ -37,18 +37,3 @@ TEST(CtorTests, clusterCtor) {
   auto cluster = std::make_unique<TCluster>();
   ASSERT_EQ(cluster->GetCharge(), 0);
 }
-
-TEST(fitterTest, exepFitterBase) {
-  auto shape = TrackFitterBase::arc;
-  auto fitter = new TrackFitterBase(shape, false, 1, 0);
-  EXPECT_THROW(fitter->FitCluster(), std::logic_error);
-  EXPECT_THROW(fitter->FitTrack(), std::logic_error);
-}
-
-TEST(fitterTest, exepEmptyPRF) {
-  auto fitter = std::make_unique<TrackFitCern>();
-  std::vector<std::shared_ptr<THit>> col;
-  col.emplace_back(std::make_shared<THit>());
-  col[0]->SetQ(10);
-  EXPECT_THROW(fitter->FitCluster(col, 0, 0), std::logic_error);
-}

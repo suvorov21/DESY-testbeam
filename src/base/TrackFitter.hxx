@@ -84,14 +84,13 @@ public:
                );
 
   TrackFitCern() : TrackFitCern(TrackFitterBase::arc, false, 0, 0,
-                                nullptr, nullptr, 0.,
+                                nullptr, nullptr, 0.0,
                                 false, nullptr,
                                 nullptr, 0.) {};
 
   /// Cluster fitter
   Double_t FitCluster(const THitPtrVec& col,
-                     const int& cluster,
-                     const double& pos
+                     const double& pos = 0
                      );
 
   /// Track fitter

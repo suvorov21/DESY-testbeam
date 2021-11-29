@@ -154,7 +154,7 @@ class AnalysisBase {
   bool ChainInputFiles(const TString& tree_name);
 
   /// verbosity levels
-  enum verbosity_base {
+  enum class verbosity_base {
     v_progress = 1,
     v_event_number
   };
@@ -181,6 +181,9 @@ class AnalysisBase {
   int     _end_ID{-999};
   /// number of selected events
   int     _selected{-999};
+
+  /// number of reconstructed events
+  int _reconstructed{-999};
 
   /// The current processing event
   std::shared_ptr<TRawEvent> _event{nullptr};

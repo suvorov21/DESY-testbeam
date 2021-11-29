@@ -1,27 +1,9 @@
 //
 // Created by SERGEY SUVOROV on 18/09/2021.
 //
-#include "gtest/gtest.h"
 #include "AnalysisBase.hxx"
-
-auto GetDummyEvent() {
-  auto event = std::make_shared<TEvent>();
-  event->SetID(2);
-  auto hit = std::make_shared<THit>(10, 10, 200, 20);
-  event->AddUsedHit(hit);
-  return event;
-}
-
-auto GetDummyTrack() {
-  THitPtrVec track;
-  for (auto col = 0; col < geom::nPadx; ++col) {
-    for (auto row = 15; row < 18; ++row) {
-      auto hit = std::make_shared<THit>(col, row, 100, 200);
-      track.push_back(hit);
-    }
-  }
-  return track;
-}
+#include "FakeMaker.h"
+#include "gtest/gtest.h"
 
 TEST(InitialisationTest, ParamFileRead) {
   auto ana = std::make_unique<AnalysisBase>();
@@ -72,7 +54,7 @@ TEST(InitialisationTest, inputException) {
 
 TEST(InitialisationTest, baseProcessEvent) {
   auto ana = std::make_unique<AnalysisBase>();
-  auto event = GetDummyEvent();
+  auto event = fake::GetEvent();
   EXPECT_THROW(ana->ProcessEvent(event), std::logic_error);
   auto reconstruction = new ReconstructionBase();
   reconstruction->Initialize(0);
@@ -81,7 +63,7 @@ TEST(InitialisationTest, baseProcessEvent) {
 
 TEST(AnalysisTest, Clusterisation) {
   auto ana = std::make_unique<AnalysisBase>();
-  auto track = GetDummyTrack();
+  auto track = fake::GetTrack();
   auto clusters = ana->ClusterTrack(track);
   EXPECT_EQ(clusters.size(), 34);
   ana->setInvert(true);
@@ -93,5 +75,5 @@ TEST(AnalysisTest, Clusterisation) {
 
 //TEST(Graphics, drawEvent) {
 //  auto ana = new AnalysisBase();
-//  EXPECT_NO_THROW(ana->DrawSelection(GetDummyEvent(), false));
+//  EXPECT_NO_THROW(ana->DrawSelection(GetEvent(), false));
 //}

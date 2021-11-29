@@ -7,7 +7,7 @@
 #include "Selection.hxx"
 #include "TrackFitter.hxx"
 
-const int Nclusters = 70;
+constexpr int Nclusters = 70;
 
 /// Spatial resolution analysis
 class SpatialResolAna: public AnalysisBase {
@@ -22,6 +22,12 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Process the selection output called Event
   bool ProcessEvent(const std::shared_ptr<TEvent>& event) override;
+
+  /// Fit and fill cluster information
+  void ProcessCluster(const TClusterPtr& cluster, uint id);
+
+  /// Fit the global track
+  std::shared_ptr<TF1> ProcessTrack(const TClusterPtrVec& track);
 
   /// Treat cross-talk. Either suppress or cherry-pick
   void TreatCrossTalk(const THitPtr& pad, THitPtrVec& robust_pads, int& pad_id);
@@ -44,7 +50,9 @@ class SpatialResolAna: public AnalysisBase {
   void Reset(int id);
 
   /// Compute dE/dx
-  static Float_t ComputedEdx(std::vector<int>& QsegmentS);
+  Float_t ComputedEdx();
+
+  static void DeletePadFromCluster(THitPtrVec& robust_pads, int& pad_id);
 
   /// Write output files (histos, trees)
   /** Specify only for the values that are not included in the vector */
@@ -61,14 +69,16 @@ class SpatialResolAna: public AnalysisBase {
    * @param shift Whether the PRF center position is a free parameter
    * @return initialised PRF histo object
    */
-  TF1* InitializePRF(const TString& name, bool shift=false);
+  static TF1* InitializePRF(const TString& name,
+                            bool shift=false,
+                            bool gaus_lorentz_PRF=false);
 
   /// Draw the histograms of interest
   bool Draw();
 
   /// verbosity levels
-  enum verbosity_SR {
-    v_analysis_steps = v_event_number + 1,
+  enum class verbosity_SR {
+    v_analysis_steps = static_cast<int>(verbosity_base::v_event_number) + 1,
     v_fit_details,
     v_residuals,
     v_prf
@@ -173,18 +183,6 @@ class SpatialResolAna: public AnalysisBase {
   // PRF profiling graphs
   TGraphErrors* _prf_graph{nullptr};
 
-  // TF1*    _prf_function_2pad;
-  // TF1*    _prf_function_3pad;
-  // TF1*    _prf_function_4pad;
-
-  TH2F* _prf_histo_2pad{nullptr};
-  TH2F* _prf_histo_3pad{nullptr};
-  TH2F* _prf_histo_4pad{nullptr};
-
-  TGraphErrors* _prf_graph_2pad{nullptr};
-  TGraphErrors* _prf_graph_3pad{nullptr};
-  TGraphErrors* _prf_graph_4pad{nullptr};
-
   /// Pad response function in time
   TH2F* _prf_time{nullptr};
 
@@ -203,37 +201,11 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether fit all the pads separately
   bool _do_separate_pad_fit{false};
 
-  /// Whether to fit residuals with Gaussian
-  bool _gaussian_residuals{false};
-
   /// Whether to assign uncertainty to charge
   bool _charge_uncertainty{false};
 
-  /// Residuals X_track - X_fit histoes
-  TH1F* _resol_total{nullptr};
-
-  TH1F* _resol_col_hist[Nclusters]{nullptr};
-  TH1F* _resol_col_hist_except[Nclusters]{nullptr};
-
-  TH1F* _resol_col_hist_2pad[Nclusters]{nullptr};
-  TH1F* _resol_col_hist_2pad_except[Nclusters]{nullptr};
-
-  TH1F* _resol_col_hist_3pad[Nclusters]{nullptr};
-  TH1F* _resol_col_hist_3pad_except[Nclusters]{nullptr};
-
-  TGraphErrors* _residual_mean{nullptr};
-  TGraphErrors* _residual_sigma{nullptr};
-
-  TGraphErrors* _residual_sigma_unbiased{nullptr};
-  TGraphErrors* _residual_sigma_biased{nullptr};
-
-  TH2F* _prf_histo_col[Nclusters]{nullptr};
-
-  /// separate pad fit study
-  TH1F* _fit_quality_plots[3][Nclusters]{nullptr};
-  TAxis* _prf_scale_axis;
-
   /// errors vs the PRF value
+  // TODO consider removing
   static const int prf_error_bins = 10;
   Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
   TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
@@ -242,21 +214,6 @@ class SpatialResolAna: public AnalysisBase {
   TGraphErrors* _uncertainty_vs_prf_gr_prev{nullptr};
   TH1F*         _uncertainty_vs_prf_histo{nullptr};
 
-
-  /// x scan data
-  static const int x_scan_bin = 50;
-  const float x_scan_min = -0.035;
-  const float x_scan_max = 0.015;
-  TAxis* _x_scan_axis{nullptr};
-  TH1F* _resol_col_x_scan[Nclusters][x_scan_bin]{nullptr};
-  TH1F* _mult_x_scan[Nclusters][x_scan_bin]{nullptr};
-//  TH1F* _x_pads = new TH1F("padX", "", 4, -0.03, 0.01);
-
-  TH1F* _resol_col_x_scan_lim_mult[Nclusters][x_scan_bin]{nullptr};
-
-  TH2F* _prf_histo_xscan[4]{nullptr};
-  TGraphErrors* _prf_graph_xscan[4]{nullptr};
-
   /// Average uncertainty from the previous iteration
   Float_t _uncertainty{-999};
 
@@ -264,13 +221,13 @@ class SpatialResolAna: public AnalysisBase {
   std::vector<Int_t> _passed_events{};
 
   // [units are meters]
-  const float prf_min     = -0.027;
-  const float prf_max     = 0.027;
-  const int   prf_bin     = 180;
+  static constexpr float prf_min     = -0.027;
+  static constexpr float prf_max     = 0.027;
+  static constexpr int   prf_bin     = 180;
 
-  const float resol_min   = -0.004;
-  const float resol_max   = 0.004;
-  const int   resol_bin   = 200.;
+  static constexpr float resol_min   = -0.004;
+  static constexpr float resol_max   = 0.004;
+  static constexpr int   resol_bin   = 200.;
 
   /// space limit for the PRF usage
   /// pads that are far away are supposed to be unreliable

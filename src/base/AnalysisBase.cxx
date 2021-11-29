@@ -17,6 +17,7 @@ AnalysisBase::AnalysisBase() :
   _start_ID(-1),
   _end_ID(-1),
   _selected(0),
+  _reconstructed{0},
   _event(nullptr),
   _work_with_event_file(false),
   _file_out(nullptr),
@@ -241,7 +242,7 @@ bool AnalysisBase::Loop() {
   } else
     _end_ID = N_events;
 
-  if (_verbose >= v_progress) {
+  if (_verbose >= static_cast<int>(verbosity_base::v_progress)) {
     std::cout << "Input file............................... " << _file_in_name << std::endl;
     std::cout << "Output file.............................. " << _file_out_name << std::endl;
     std::cout << "Processing" << std::endl;
@@ -254,14 +255,15 @@ bool AnalysisBase::Loop() {
 
   // Event loop
   for (auto eventID = _start_ID; eventID < _end_ID; ++eventID) {
-    if (_verbose >= v_event_number) {
+    if (_verbose >= static_cast<int>(verbosity_base::v_event_number)) {
       std::cout << "*************************************" << std::endl;
       std::cout << "Event " << eventID << std::endl;
       std::cout << "*************************************" << std::endl;
     }
 
     // Dump progress in command line
-    if (_verbose == v_progress && (eventID%(N_events/denominator)) == 0)
+    if (_verbose == static_cast<int>(verbosity_base::v_progress) \
+        && (eventID%(N_events/denominator)) == 0)
       this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
 
     // start the timer
@@ -332,6 +334,9 @@ bool AnalysisBase::Loop() {
     if (!sel) {
       continue;
     }
+
+    ++_reconstructed;
+
     // do basic plotting
     auto c = std::make_unique<TCanvas>();
     if (!_batch) {
@@ -349,7 +354,7 @@ bool AnalysisBase::Loop() {
       ++_selected;
   } // end of event loop
   // if progress bar is active --> go to the next line
-  if (_verbose == v_progress)
+  if (_verbose == static_cast<int>(verbosity_base::v_progress))
     std::cout << std::endl;
 
   return true;

@@ -59,13 +59,14 @@ TrackFitCern::TrackFitCern(TrackShape shape,
 
 //******************************************************************************
 Double_t TrackFitCern::FitCluster(const THitPtrVec& col,
-                                  const int& cluster,
                                   const double& pos) {
 //******************************************************************************
 //  auto t_leading = -1;
   auto maxQ = -1;
   // WARNING pads should be already sorted
+  auto sum = 0;
   for (auto & pad:col) {
+    sum += pad->GetQ();
     if (pad->GetQ() > maxQ) {
       maxQ = pad->GetQ();
 //      t_leading = pad->GetTime();
@@ -83,11 +84,11 @@ Double_t TrackFitCern::FitCluster(const THitPtrVec& col,
       if (!q)
         continue;
 
-      double a = 1. * q / cluster;
+      double a = 1. * q / sum;
       double center_pad_y;
       center_pad_y = geom::GetYposPad(pad, _invert, _angle);
 
-      // avoid using pads wich are far away from track
+      // avoid using pads which are far away from track
       // limit by PRF fitting range (PRF function robustness)
       if (abs(center_pad_y - pos) > _fit_bound)
         continue;
@@ -110,7 +111,7 @@ Double_t TrackFitCern::FitCluster(const THitPtrVec& col,
 
       if (_charge_uncertainty) {
         /** Poisson fluctuations only */
-        double c = 1.*cluster;
+        double c = 1.*sum;
         double b = 1.*q;
         auto error_1 = c*sqrt(b) + b*sqrt(c);
         error_1 /= c*c;
@@ -119,8 +120,8 @@ Double_t TrackFitCern::FitCluster(const THitPtrVec& col,
         /** Pedestal driven approach
         * sigma_q = 9; sigma_Q = 9*sqrt(n)
         */
-        // auto error_2 = 1.*cluster * 9 + 1.* sqrt(col.size()) * 9 * q;
-        // error_2 /= 1.* cluster * cluster;
+        // auto error_2 = 1.*sum * 9 + 1.* sqrt(col.size()) * 9 * q;
+        // error_2 /= 1.* sum * sum;
         /** */
 
         /** Profile uncertainty */
