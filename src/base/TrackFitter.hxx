@@ -27,7 +27,7 @@ public:
   /// 1. Arc (circle)
   /// 2. parabolic (pol2)
   /// 3. linear (pol1)
-  enum TrackShape {
+  enum class TrackShape {
     arc = 0,
     parabola,
     linear
@@ -83,7 +83,7 @@ public:
                Float_t angle
                );
 
-  TrackFitCern() : TrackFitCern(TrackFitterBase::arc, false, 0, 0,
+  TrackFitCern() : TrackFitCern(TrackShape::arc, false, 0, 0,
                                 nullptr, nullptr, 0.0,
                                 false, nullptr,
                                 nullptr, 0.) {};

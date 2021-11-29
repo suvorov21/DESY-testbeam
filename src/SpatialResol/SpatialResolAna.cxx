@@ -355,11 +355,11 @@ bool SpatialResolAna::Initialize() {
   _reconstruction->Initialize(_verbose);
 
   // Initialise track fitter
-  TrackFitterBase::TrackShape shape = TrackFitterBase::arc;
+  TrackFitterBase::TrackShape shape = TrackFitterBase::TrackShape::arc;
   if (_do_linear_fit) {
-    shape = TrackFitterBase::linear;
+    shape = TrackFitterBase::TrackShape::linear;
   } else if (_do_para_fit) {
-    shape = TrackFitterBase::parabola;
+    shape = TrackFitterBase::TrackShape::parabola;
   }
 
   _fitter = std::make_unique<TrackFitCern>(shape,

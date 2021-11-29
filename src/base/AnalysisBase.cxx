@@ -819,7 +819,7 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
   std::cout << "\t Selected  " << _selected;
   if (eventID) {
     std::cout << "\t Av speed " << (double)_loop_start_ts / 1e3 / eventID << " ms/event";
-    std::cout << "\t EET real " << m << ":";
+    std::cout << "\t EET " << m << ":";
     if (s < 10)
       std::cout << "0";
     std::cout << s;
