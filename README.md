@@ -58,7 +58,7 @@ The range can be specified with `--start` and `--end` flags.
 
 4. For each event the pattern recognition (reconstruction) is called. 
 The waveform treatment is done at this step. 
-The reconstruction output is a `TEvent` object that contains `TTrack` consists of `THit`. 
+The reconstruction output is a `TEvent` object that contains a collection of `THit`. 
 The default one is DBSCANReconstruction that returns one track per event. 
 The maximum number of pads per track is set to 200 pads that is sufficient 
 to select only single tracks, but may be a subject of change for other analysis.

@@ -5,7 +5,7 @@
 
 //! Class that contains the output from the reconstruction
 
-//! Hits are devided into used and unused in the track
+//! Hits are divided into used and unused in the track
 //! This class is used internally in the package and should NOT be used for I/O
 class TEvent: public TRawEvent {
  public:

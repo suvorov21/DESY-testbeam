@@ -84,4 +84,20 @@ namespace units {
     // const float a3_inv  =   1.2783096;
 }
 
+namespace num {
+    /// safe cast for numerical values
+    template <class T, class TT>
+    T cast(TT tt) {
+      T t = static_cast<T>(tt);
+      if (static_cast<TT>(t) != tt)
+        throw std::bad_cast();
+
+      if ((std::is_signed<T>::value ^ std::is_signed<TT>::value) &&  \
+          (t < T(0) || tt < TT(0)))
+        throw std::bad_cast();
+
+      return t;
+    }
+}
+
 #endif

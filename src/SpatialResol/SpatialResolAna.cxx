@@ -397,7 +397,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
 
   // reset tree values
-  Reset((int)event->GetID());
+  Reset(num::cast<int>(event->GetID()));
 // *****************************************************************************
 // ************** See steps documentation in the README.md file ****************
 // *******************  STEP 1 *************************************************
@@ -451,7 +451,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
-  _rob_clusters = (int)robust_clusters.size();
+  _rob_clusters = num::cast<int>(robust_clusters.size());
 
   /// decide that track is accepted by selection
   _store_event = true;
@@ -463,12 +463,12 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 
   // fill multiplicity info
   _m_mean = (Float_t)GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
-  _m_max = (int)(*(std::max_element(robust_clusters.begin(),
-                                    robust_clusters.end(),
-                                    [](const auto& a, const auto& b){
-                                      return a->GetSize() > b->GetSize();
-                                    }
-                                    )))->GetSize();
+  _m_max = num::cast<int>((*(std::max_element(robust_clusters.begin(),
+                                              robust_clusters.end(),
+                                              [](const auto& a, const auto& b){
+                                                return a->GetSize() > b->GetSize();
+                                              }
+                                              )))->GetSize());
 
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
     ProcessCluster(robust_clusters[clusterId], clusterId);
@@ -539,7 +539,7 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
 
   // loop over rows
   auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
-  _multiplicity[id] = (int)robust_pads.size();
+  _multiplicity[id] = num::cast<int>(robust_pads.size());
 
   auto pad_id = -1;
   for (auto & pad:robust_pads) {
@@ -552,7 +552,7 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
     if (pad != robust_pads[0] && _cross_talk_treat != def)
       TreatCrossTalk(pad, robust_pads, pad_id);
 
-    FillPadOutput(pad, (int)id, pad_id);
+    FillPadOutput(pad, id, pad_id);
   } // loop over pads
 
   _clust_pos[id] /= (Float_t)_charge[id];
@@ -686,8 +686,8 @@ void SpatialResolAna::DeletePadFromCluster(THitPtrVec& robust_pads,
 }
 
 //******************************************************************************
-void SpatialResolAna::FillPadOutput(const THitPtr &pad,
-                                    const int& clusterId,
+void SpatialResolAna::FillPadOutput(const THitPtr &pad, 
+                                    const uint &clusterId,
                                     const int& padId) {
 //******************************************************************************
   _clust_pos[clusterId] += (Float_t)pad->GetQ() * (Float_t)geom::GetYposPad(pad,
@@ -719,7 +719,7 @@ Float_t SpatialResolAna::ComputedEdx() {
                [](int charge) {return charge > 0;});
   sort(QsegmentS.begin(), QsegmentS.end());
   double totQ = 0.;
-  auto i_max = (int)round(alpha * (double)QsegmentS.size());
+  auto i_max = num::cast<int>(round(alpha * num::cast<double>(QsegmentS.size())));
   for (auto i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i)
     totQ += QsegmentS[i];
 
@@ -937,13 +937,13 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   std::cout << "************** Time consumption *************" << std::endl;
-  std::cout << "Reading 3D array:\t" << (double)_read_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Reconstruction:  \t" << (double)_reco_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_reconstructed << std::endl;
-  std::cout << "  Selection:     \t" << (double)_sel_time / 1.e3 / (double)_reconstructed << std::endl;
-  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_selected << std::endl;
-  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_selected << std::endl;
-  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "Reading 3D array:\t" << num::cast<double>(_read_time) / 1.e3 / num::cast<double>(_eventList.size()) << std::endl;
+  std::cout << "Reconstruction:  \t" << num::cast<double>(_reco_time) / 1.e3 / num::cast<double>(_eventList.size()) << std::endl;
+  std::cout << "Analysis:        \t" << num::cast<double>(_ana_time) / 1.e3 / num::cast<double>(_reconstructed) << std::endl;
+  std::cout << "  Selection:     \t" << num::cast<double>(_sel_time) / 1.e3 / num::cast<double>(_reconstructed) << std::endl;
+  std::cout << "  Col loop:      \t" << num::cast<double>(_column_time) / 1.e3 / num::cast<double>(_selected) << std::endl;
+  std::cout << "  Fitters:       \t" << num::cast<double>(_fitters_time) / 1.e3 / num::cast<double>(_selected) << std::endl;
+  std::cout << "  Filling:       \t" << num::cast<double>(_filling_time) / 1.e3 / num::cast<double>(_selected) << std::endl;
   return true;
 }
 

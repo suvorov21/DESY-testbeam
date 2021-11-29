@@ -33,7 +33,7 @@ class SpatialResolAna: public AnalysisBase {
   void TreatCrossTalk(const THitPtr& pad, THitPtrVec& robust_pads, int& pad_id);
 
   /// Fill output tree vars for a pad
-  void FillPadOutput(const THitPtr& pad, const int& clusterId, const int& padId);
+  void FillPadOutput(const THitPtr& pad, const uint &clusterId, const int& padId);
 
   /// Fill SR info
   void FillSR(const TClusterPtr& cluster,

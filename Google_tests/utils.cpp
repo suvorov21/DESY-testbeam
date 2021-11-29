@@ -37,3 +37,24 @@ TEST(CtorTests, clusterCtor) {
   auto cluster = std::make_unique<TCluster>();
   ASSERT_EQ(cluster->GetCharge(), 0);
 }
+
+TEST(cast, normalCast) {
+  int i = 5;
+  auto f = num::cast<float>(i);
+  EXPECT_EQ(f, i);
+}
+
+TEST(cast, errorThrowSign) {
+  uint i = std::numeric_limits<int>::max() + 2;
+  EXPECT_THROW(num::cast<int>(i), std::bad_cast);
+}
+
+TEST(cast, errorThrowPrecision) {
+  int i = std::numeric_limits<int>::max();
+  EXPECT_THROW(num::cast<float>(i), std::bad_cast);
+}
+
+TEST(cast, enoughPrecision) {
+  int i = std::numeric_limits<int>::max();
+  EXPECT_EQ(num::cast<double>(i), i);
+}

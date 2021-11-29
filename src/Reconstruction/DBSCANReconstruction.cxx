@@ -22,7 +22,7 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node>& nodes){
   std::vector <Node> nodesToCheck;
   int clusterID = -1;
   int clustered = 0;
-  while (clustered < (int) nodes.size()){
+  while (clustered < num::cast<int>(nodes.size())) {
     if (nodesToCheck.empty()){
       clusterID++;
       auto it = std::find_if(nodes.begin(), nodes.end(),
@@ -79,7 +79,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const std::shared_ptr<TEvent>&
     if (hit->GetQ() > 0) {
       Node node;
       node.hit  = hit;
-      node.id = (int)nodes.size();
+      node.id = num::cast<int>(nodes.size());
       nodes.push_back(node);
     }
   }
