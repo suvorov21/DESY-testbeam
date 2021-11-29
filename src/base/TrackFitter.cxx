@@ -216,13 +216,13 @@ TGraphErrors track_gr;
   TString opt = "Q";
   if (_verbose > 2)
     opt = "";
-  if (_shape == parabola) {
+  if (_shape == TrackShape::parabola) {
     track_gr.Fit("pol2", opt);
     fit = (TF1*)track_gr.GetFunction("pol2")->Clone();
-  } else if (_shape == linear) {
+  } else if (_shape == TrackShape::linear) {
     track_gr.Fit("pol1", opt);
     fit = (TF1*)track_gr.GetFunction("pol1")->Clone();
-  } else if (_shape == arc) {
+  } else if (_shape == TrackShape::arc) {
     // Float_t q_up, q_down;
     // q_up = q_down = 1.e9;
     // _circle_function_dn->SetParameters(80., 0, 0.);
