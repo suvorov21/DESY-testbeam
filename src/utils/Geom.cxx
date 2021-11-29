@@ -1,7 +1,5 @@
 #include "Geom.hxx"
 
-using namespace geom;
-
 Double_t geom::GetYpos(int it_y, bool invert) {
   if ((!invert && it_y >= geom::nPady) ||
       (invert && it_y >= geom::nPadx) || it_y < 0) {
@@ -10,9 +8,9 @@ Double_t geom::GetYpos(int it_y, bool invert) {
     throw std::logic_error(msg);
   }
   if (!invert)
-    return geom::y_pos[it_y];
+    return geom::GetYraw(it_y);
   else
-    return geom::x_pos[it_y];
+    return geom::GetXraw(it_y);
 }
 
 Double_t geom::GetXposPad(const THitPtr& h, bool invert, Float_t angle) {
@@ -33,9 +31,9 @@ Double_t geom::GetXpos(int it_x, bool invert) {
     throw std::logic_error(msg);
   }
   if (!invert)
-    return geom::x_pos[it_x];
+    return geom::GetXraw(it_x);
   else
-    return geom::y_pos[it_x];
+    return geom::GetYraw(it_x);
 }
 
 int geom::GetNColumn(bool invert) {
@@ -46,5 +44,13 @@ int geom::GetNColumn(bool invert) {
 }
 
 int geom::GetNRow(bool invert) {
-  return GetNColumn(!invert);
+  return geom::GetNColumn(!invert);
+}
+
+constexpr Double_t geom::GetXraw(int padXid) {
+  return dx * (padXid - 1.*(nPadx-1) / 2);
+}
+
+constexpr Double_t geom::GetYraw(int padYid) {
+  return dy * (padYid - 1.*(nPady-1) / 2);
 }
