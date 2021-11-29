@@ -20,7 +20,8 @@ one wants to store and the logic how to fill it.
 
 ## Compilation
 For the compilation you need to pull dependencies and create the build folder.
-The requirements are C++14 compatible compiler (gcc 5+ or clang 3.4+)
+The requirements are C++14 compatible compiler (gcc 5+ or clang 3.4+). 
+To work at LXPLUS the gcc9 should be enabled with `. /opt/rh/devtoolset-9/enable` 
 ```bash
 git submodule update --init
 mkdir build
