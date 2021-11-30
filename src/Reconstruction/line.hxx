@@ -72,7 +72,7 @@ public:
     double k = (x - pos.X()) / dir.X();
     return {pos.X() + k * dir.X(),
             pos.Y() + k * dir.Y(),
-            pos.Z() + k * dir.Z())};
+            pos.Z() + k * dir.Z()};
   }
 
   TVector3 GetPos() {
