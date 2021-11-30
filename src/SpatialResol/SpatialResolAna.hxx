@@ -50,7 +50,7 @@ class SpatialResolAna: public AnalysisBase {
   void Reset(int id);
 
   /// Compute dE/dx
-  Float_t ComputedEdx();
+  Double_t ComputedEdx();
 
   static void DeletePadFromCluster(THitPtrVec& robust_pads, int& pad_id);
 
@@ -103,42 +103,42 @@ class SpatialResolAna: public AnalysisBase {
   /// event number
   Int_t   _ev{-999};
   /// angle in MM plane
-  Float_t _angle_xy{-999};
+  Double_t _angle_xy{-999};
   /// angle w.r.t. MM
-  Float_t _angle_yz{-999};
+  Double_t _angle_yz{-999};
 
   /// Number of robust clusters in event
   Int_t _rob_clusters{0};
 
   /// track fit quality Chi2/NDF
-  Float_t _quality{-999};
+  Double_t _quality{-999};
   /// momentum
-  Float_t _mom{-999};
+  Double_t _mom{-999};
   /// angle
-  Float_t _sin_alpha{-999};
+  Double_t _sin_alpha{-999};
   /// offset
-  Float_t _offset{-999};
+  Double_t _offset{-999};
 
   /// maximum of the multiplicity
   Int_t _m_max{-999};
 
   /// mean multiplicity
-  Float_t _m_mean{-999};
+  Double_t _m_mean{-999};
 
 
   /// Cluster vars
   /// Position of the cluster
-  Float_t _clust_pos[Nclusters]{0};
+  Double_t _clust_pos[Nclusters]{0};
   /// X position of the cluster
-  Float_t _x[Nclusters]{0};
+  Double_t _x[Nclusters]{0};
   /// X position of the avareged cluster
-  Float_t _x_av[Nclusters]{0};
+  Double_t _x_av[Nclusters]{0};
   /// Position of the track
-  Float_t _track_pos[Nclusters]{0};
+  Double_t _track_pos[Nclusters]{0};
   /// Residuals (X_track-X_cluster)
-  Float_t _residual[Nclusters]{0};
+  Double_t _residual[Nclusters]{0};
   /// Residuals (X_track-X_cluster) w/o the given cluster in the fit
-  Float_t _residual_corr[Nclusters]{0};
+  Double_t _residual_corr[Nclusters]{0};
   /// charge in the cluster
   Int_t   _charge[Nclusters]{0};
   /// multiplicity of the cluster
@@ -149,15 +149,15 @@ class SpatialResolAna: public AnalysisBase {
 
   /// Pad vars
   /// X_track - X_pad --> X axis of the PRF
-  Float_t _dx[Nclusters][10]{0};
+  Double_t _dx[Nclusters][10]{0};
   /// Fraction of charge Q_pad / Q_cluster --> Y axis of PRF
-  Float_t _qfrac[Nclusters][10]{0};
+  Double_t _qfrac[Nclusters][10]{0};
   /// time of the pad
   Int_t   _time[Nclusters][10]{0};
 
   /** variables for the dEdx analysis */
   /// dE/dx
-  Float_t _dEdx{0};
+  Double_t _dEdx{0};
   Int_t _pad_charge[Nclusters][10]{0};
   Int_t _pad_time[Nclusters][10]{0};
 
@@ -215,7 +215,7 @@ class SpatialResolAna: public AnalysisBase {
   TH1F*         _uncertainty_vs_prf_histo{nullptr};
 
   /// Average uncertainty from the previous iteration
-  Float_t _uncertainty{-999};
+  Double_t _uncertainty{-999};
 
   /// vector of events IDs that passed the Reco and selection
   std::vector<Int_t> _passed_events{};

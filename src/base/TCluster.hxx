@@ -13,10 +13,10 @@ using TClusterPtrVec = std::vector<TClusterPtr>;
 class TCluster {
  public:
   void AddHit(const THitPtr& hit) {_hits.push_back(hit);};
-  void SetX(Float_t x) {_x = x;}
-  void SetY(Float_t y) {_y = y;}
-  void SetYE(Float_t ye) {_y_error = ye;}
-  void SetPos(Float_t x, Float_t y, Float_t y_e) {
+  void SetX(Double_t x) {_x = x;}
+  void SetY(Double_t y) {_y = y;}
+  void SetYE(Double_t ye) {_y_error = ye;}
+  void SetPos(Double_t x, Double_t y, Double_t y_e) {
     _x = x; _y = y; _y_error = y_e;
   }
 
@@ -36,9 +36,9 @@ class TCluster {
   /// loop iterator end
   typename THitPtrVec::iterator end();
 
-  Float_t GetX() const {return _x;}
-  Float_t GetY() const {return _y;}
-  Float_t GetYE() const {return _y_error;}
+  Double_t GetX() const {return _x;}
+  Double_t GetY() const {return _y;}
+  Double_t GetYE() const {return _y_error;}
 
   Int_t GetCharge() const {return _charge;}
 
@@ -48,9 +48,9 @@ class TCluster {
  private:
   /// vector pf all the hits in the cluster
   THitPtrVec _hits;
-  Float_t _x;
-  Float_t _y;
-  Float_t _y_error;
+  Double_t _x;
+  Double_t _y;
+  Double_t _y_error;
   Int_t   _charge;
 
 };
