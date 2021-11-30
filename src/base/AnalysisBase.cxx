@@ -1,6 +1,7 @@
 #include <algorithm>
 //#include <unistd.h>
 #include <cstdlib>
+#include <iomanip>
 
 #include "TROOT.h"
 
@@ -815,14 +816,15 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  std::cout << "\t Memory  " <<  mem / 1048576 << " " << "MB";
-  std::cout << "\t Selected  " << _selected;
+  std::cout << "\t Selected  " << _selected << " (" << round(1.*_selected/eventID * 100) << "%)";
+  std::cout << "\t Memory  " <<  std::setw(4) << mem / 1048576 << " " << "MB";
   if (eventID) {
-    std::cout << "\t Av speed " << num::cast<double>(_loop_start_ts / 1e3 / eventID) << " ms/event";
-    std::cout << "\t EET " << m << ":";
-    if (s < 10)
-      std::cout << "0";
+    std::cout.precision(4);
+    std::cout << "\t Av speed " << std::setw(5) << num::cast<double>(_loop_start_ts) / 1e3 / eventID << " ms/event";
+    std::cout << "\t EET " << std::setw(2) << m << ":";
+    std::cout << std::setw(2) << std::setfill('0');
     std::cout << s;
+    std::cout << std::setfill(' ');
   }
   std::cout << "      \r[" << std::flush;
 }
