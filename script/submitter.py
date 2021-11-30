@@ -149,7 +149,7 @@ def main():
             file_out.write("#!/bin/bash\n")
             file_out.write("cd " + bin_dir + "\n")
             if submit:
-                file_out.write("source . /opt/rh/devtoolset-9/enable\n")
+                file_out.write("source /opt/rh/devtoolset-9/enable\n")
             file_out.write(command + "\n")
 
             file_out.close()
