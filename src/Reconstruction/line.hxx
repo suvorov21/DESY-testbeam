@@ -49,30 +49,30 @@ public:
     return dot - norm_point;
   }
 
-  float GetDistX(const TVector3& dot) {
+  Double_t GetDistX(const TVector3& dot) {
     return GetDistVec(dot).X();
   }
 
-  float GetDistY(const TVector3& dot) {
+  Double_t GetDistY(const TVector3& dot) {
     return GetDistVec(dot).Y();
   }
 
-  float GetDistZ(const TVector3& dot) {
+  Double_t GetDistZ(const TVector3& dot) {
     return GetDistVec(dot).Z();
   }
 
-  TVector3 EvalY(float y) {
+  TVector3 EvalY(double y) {
     double k = (y - pos.Y()) / dir.Y();
-    return TVector3(pos.X() + k * dir.X(),
-                    pos.Y() + k * dir.Y(),
-                    pos.Z() + k * dir.Z());
+    return {pos.X() + k * dir.X(),
+            pos.Y() + k * dir.Y(),
+            pos.Z() + k * dir.Z()};
   }
 
-  TVector3 EvalX(float x) {
+  TVector3 EvalX(double x) {
     double k = (x - pos.X()) / dir.X();
-    return TVector3(pos.X() + k * dir.X(),
-                    pos.Y() + k * dir.Y(),
-                    pos.Z() + k * dir.Z());
+    return {pos.X() + k * dir.X(),
+            pos.Y() + k * dir.Y(),
+            pos.Z() + k * dir.Z()};
   }
 
   TVector3 GetPos() {

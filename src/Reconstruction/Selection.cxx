@@ -49,12 +49,12 @@ void sel::GetMultiplicity(const TClusterPtrVec &track,
     auto mult = col->GetSize();
     if (mult < 1)
       continue;
-    m_mean += (float)mult;
+    m_mean += num::cast<float>(mult);
     n += 1;
     if ((int)mult > m_max)
-      m_max = (int)mult;
+      m_max = num::cast<int>(mult);
   }
-  m_mean /= (float)n;
+  m_mean /= num::cast<float>(n);
 }
 
 //******************************************************************************

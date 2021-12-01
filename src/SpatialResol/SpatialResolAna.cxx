@@ -191,7 +191,7 @@ bool SpatialResolAna::Initialize() {
     TH1F h("resol", "", resol_bin, resol_min, resol_max);
     oldtree->Project("resol", "residual");
     h.Fit("gaus", "Q", "");
-    _uncertainty = (Float_t)h.GetFunction("gaus")->GetParameter(2);
+    _uncertainty = num::cast<Double_t>(h.GetFunction("gaus")->GetParameter(2));
 
     TGraphErrors* temp = nullptr;
     if (_do_separate_pad_fit)
@@ -397,7 +397,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
 
   // reset tree values
-  Reset((int)event->GetID());
+  Reset(num::cast<int>(event->GetID()));
 // *****************************************************************************
 // ************** See steps documentation in the README.md file ****************
 // *******************  STEP 1 *************************************************
@@ -427,8 +427,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
   std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
 
-  _angle_xy = (Float_t)fit_v[2];
-  _angle_yz = (Float_t)fit_xz[2] * sel::v_drift_est;
+  _angle_xy = num::cast<Double_t>(fit_v[2]);
+  _angle_yz = num::cast<Double_t>(fit_xz[2] * sel::v_drift_est);
 
   // if not a column clustering
   if (_clustering->n_pads > 0) {
@@ -451,7 +451,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
-  _rob_clusters = (int)robust_clusters.size();
+  _rob_clusters = num::cast<int>(robust_clusters.size());
 
   /// decide that track is accepted by selection
   _store_event = true;
@@ -462,13 +462,13 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     std::cout << "start cluster fit" << std::endl;
 
   // fill multiplicity info
-  _m_mean = (Float_t)GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
-  _m_max = (int)(*(std::max_element(robust_clusters.begin(),
-                                    robust_clusters.end(),
-                                    [](const auto& a, const auto& b){
-                                      return a->GetSize() > b->GetSize();
-                                    }
-                                    )))->GetSize();
+  _m_mean = GenericToolbox::getAverage(robust_clusters, [](auto cluster) {return cluster->GetSize();});
+  _m_max = num::cast<int>((*(std::max_element(robust_clusters.begin(),
+                                              robust_clusters.end(),
+                                              [](const auto& a, const auto& b){
+                                                return a->GetSize() > b->GetSize();
+                                              }
+                                              )))->GetSize());
 
   for (uint clusterId = 0; clusterId < robust_clusters.size(); ++clusterId) {
     ProcessCluster(robust_clusters[clusterId], clusterId);
@@ -539,7 +539,7 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
 
   // loop over rows
   auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
-  _multiplicity[id] = (int)robust_pads.size();
+  _multiplicity[id] = num::cast<int>(robust_pads.size());
 
   auto pad_id = -1;
   for (auto & pad:robust_pads) {
@@ -552,17 +552,17 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
     if (pad != robust_pads[0] && _cross_talk_treat != def)
       TreatCrossTalk(pad, robust_pads, pad_id);
 
-    FillPadOutput(pad, (int)id, pad_id);
+    FillPadOutput(pad, id, pad_id);
   } // loop over pads
 
-  _clust_pos[id] /= (Float_t)_charge[id];
+  _clust_pos[id] /= num::cast<Double_t>(_charge[id]);
   _x[id] = cluster->GetX();
 
   double CoC =  _clust_pos[id];
 
   if (_multiplicity[id] > 1 && _iteration > 0) {
-    _clust_pos[id] = (Float_t)_fitter->FitCluster(robust_pads,
-                                                  _clust_pos[id]);
+    _clust_pos[id] = _fitter->FitCluster(robust_pads,
+                                         _clust_pos[id]);
   }
 
   cluster->SetY(_clust_pos[id]);
@@ -597,7 +597,7 @@ std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) 
   if (!fit)
     return nullptr;
 
-  _quality = (Float_t)fit->GetChisquare() / (Float_t)fit->GetNDF();
+  _quality = fit->GetChisquare() / fit->GetNDF();
 
   if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "Track fit done" << std::endl;
@@ -606,9 +606,9 @@ std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) 
 
   // in case of arc fitting fill the momentum histo
   if (!_do_linear_fit && !_do_para_fit) {
-    _mom = Float_t(1./fit->GetParameter(0) * units::B * units::clight / 1.e9);
-    _sin_alpha  = (Float_t)fit->GetParameter(1);
-    _offset     = (Float_t)fit->GetParameter(2);
+    _mom = 1./fit->GetParameter(0) * units::B * units::clight / 1.e9;
+    _sin_alpha  = fit->GetParameter(1);
+    _offset     = fit->GetParameter(2);
   }
 
   if (_do_para_fit) {
@@ -630,20 +630,20 @@ std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) 
     double L = (end - start).Mag();
 
     if (abs(sag) > 1e-10) {
-      _mom = (Float_t)(L*L /8/sag + sag / 2);
-      _mom *= (Float_t)(units::B * units::clight / 1.e9);
+      _mom = (L*L /8/sag + sag / 2);
+      _mom *= (units::B * units::clight / 1.e9);
       if (a < 0)
         _mom *= -1;
     }
 
-    _sin_alpha = (Float_t)TMath::Sin(TMath::ATan(fit->Derivative(x1)));
-    _offset    = (Float_t)start.Y();
+    _sin_alpha = TMath::Sin(TMath::ATan(fit->Derivative(x1)));
+    _offset    = start.Y();
 
     if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps)) {
       std::cout << "start:end:max\t" << start.X() << ", " << start.Y();
       std::cout << "\t" << end.X() << ", " << end.Y();
       std::cout << "\t" << max_sag.X() << ", " << max_sag.Y() << std::endl;
-      std::cout << "Line at x0\t" << line.EvalX((Float_t)max_sag.X()).Y() << std::endl;
+      std::cout << "Line at x0\t" << line.EvalX(num::cast<Double_t>(max_sag.X())).Y() << std::endl;
       std::cout << "Sagitta:\t" << sag << "\tLength:\t" << L << std::endl;
       std::cout << "mom:\t" << _mom << std::endl;
     }
@@ -686,13 +686,13 @@ void SpatialResolAna::DeletePadFromCluster(THitPtrVec& robust_pads,
 }
 
 //******************************************************************************
-void SpatialResolAna::FillPadOutput(const THitPtr &pad,
-                                    const int& clusterId,
+void SpatialResolAna::FillPadOutput(const THitPtr &pad, 
+                                    const uint &clusterId,
                                     const int& padId) {
 //******************************************************************************
-  _clust_pos[clusterId] += (Float_t)pad->GetQ() * (Float_t)geom::GetYposPad(pad,
-                                                                            _invert,
-                                                                            _clustering->angle);
+  _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
+                                                        _invert,
+                                                        _clustering->angle);
   _charge[clusterId] += pad->GetQ();
   _pad_charge[clusterId][padId] = pad->GetQ();
   _pad_time[clusterId][padId] = pad->GetTime();
@@ -709,9 +709,9 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
 }
 
 //******************************************************************************
-Float_t SpatialResolAna::ComputedEdx() {
+Double_t SpatialResolAna::ComputedEdx() {
 //******************************************************************************
-  Float_t alpha = 0.7;
+  Double_t alpha = 0.7;
   std::vector<int> QsegmentS;
   std::copy_if(std::begin(_charge),
                std::end(_charge),
@@ -719,11 +719,11 @@ Float_t SpatialResolAna::ComputedEdx() {
                [](int charge) {return charge > 0;});
   sort(QsegmentS.begin(), QsegmentS.end());
   double totQ = 0.;
-  auto i_max = (int)round(alpha * (double)QsegmentS.size());
+  auto i_max = num::cast<int>(round(alpha * num::cast<double>(QsegmentS.size())));
   for (auto i = 0; i < std::min(i_max, int(QsegmentS.size())); ++i)
     totQ += QsegmentS[i];
 
-  return Float_t(totQ / (alpha * (Float_t)QsegmentS.size()));
+  return (totQ / (alpha * num::cast<Double_t>(QsegmentS.size())));
 
 }
 
@@ -749,9 +749,9 @@ void SpatialResolAna::FillSR(const TClusterPtr& cluster,
 
   // fill SR
   _clust_pos[clusterId] = cluster->GetY();
-  _track_pos[clusterId] = (Float_t)track_fit_y;
-  _residual[clusterId] = (Float_t)(_clust_pos[clusterId] - track_fit_y);
-  _residual_corr[clusterId] = (Float_t)(_clust_pos[clusterId] - track_fit_y1);
+  _track_pos[clusterId] = num::cast<Double_t>(track_fit_y);
+  _residual[clusterId] = num::cast<Double_t>((_clust_pos[clusterId] - track_fit_y));
+  _residual_corr[clusterId] = num::cast<Double_t>((_clust_pos[clusterId] - track_fit_y1));
 }
 
 //******************************************************************************
@@ -778,8 +778,8 @@ void SpatialResolAna::FillPRF(const THitPtr& pad,
   // Pad characteristics
   // time, position wrt track, charge, col/row
   _time[clusterId][padId]  = time;
-  _dx[clusterId][padId]    = (Float_t)(center_pad_y - track_fit_y_pad);
-  _qfrac[clusterId][padId] = (Float_t)q / (Float_t)_charge[clusterId];
+  _dx[clusterId][padId]    = num::cast<Double_t>((center_pad_y - track_fit_y_pad));
+  _qfrac[clusterId][padId] = num::cast<Double_t>(num::cast<Double_t>(q) / num::cast<Double_t>(_charge[clusterId]));
 
   if (_verbose >= static_cast<int>(verbosity_SR::v_prf)) {
     std::cout << "PRF fill\t" << _dx[clusterId][padId];
@@ -937,13 +937,13 @@ bool SpatialResolAna::WriteOutput() {
   std::cout << "done" << std::endl;
 
   std::cout << "************** Time consumption *************" << std::endl;
-  std::cout << "Reading 3D array:\t" << (double)_read_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Reconstruction:  \t" << (double)_reco_time / 1.e3 / (double)_eventList.size() << std::endl;
-  std::cout << "Analysis:        \t" << (double)_ana_time / 1.e3 / (double)_reconstructed << std::endl;
-  std::cout << "  Selection:     \t" << (double)_sel_time / 1.e3 / (double)_reconstructed << std::endl;
-  std::cout << "  Col loop:      \t" << (double)_column_time / 1.e3 / (double)_selected << std::endl;
-  std::cout << "  Fitters:       \t" << (double)_fitters_time / 1.e3 / (double)_selected << std::endl;
-  std::cout << "  Filling:       \t" << (double)_filling_time / 1.e3 / (double)_selected << std::endl;
+  std::cout << "Reading 3D array:\t" << num::cast<double>(_read_time) / 1.e3 / num::cast<double>(_eventList.size()) << std::endl;
+  std::cout << "Reconstruction:  \t" << num::cast<double>(_reco_time) / 1.e3 / num::cast<double>(_eventList.size()) << std::endl;
+  std::cout << "Analysis:        \t" << num::cast<double>(_ana_time) / 1.e3 / num::cast<double>(_reconstructed) << std::endl;
+  std::cout << "  Selection:     \t" << num::cast<double>(_sel_time) / 1.e3 / num::cast<double>(_reconstructed) << std::endl;
+  std::cout << "  Col loop:      \t" << num::cast<double>(_column_time) / 1.e3 / num::cast<double>(_selected) << std::endl;
+  std::cout << "  Fitters:       \t" << num::cast<double>(_fitters_time) / 1.e3 / num::cast<double>(_selected) << std::endl;
+  std::cout << "  Filling:       \t" << num::cast<double>(_filling_time) / 1.e3 / num::cast<double>(_selected) << std::endl;
   return true;
 }
 

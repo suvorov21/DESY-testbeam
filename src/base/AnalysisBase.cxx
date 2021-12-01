@@ -1,6 +1,7 @@
 #include <algorithm>
 //#include <unistd.h>
 #include <cstdlib>
+#include <iomanip>
 
 #include "TROOT.h"
 
@@ -231,9 +232,9 @@ bool AnalysisBase::Initialize() {
 //******************************************************************************
 bool AnalysisBase::Loop() {
 //******************************************************************************
-  auto N_events = (int)_eventList.size();
+  auto N_events = num::cast<int>(_eventList.size());
   if (_test_mode)
-    N_events = std::min((int)_eventList.size(), 100);
+    N_events = std::min(num::cast<int>(_eventList.size()), 100);
 
   if (_start_ID < 0)
     _start_ID = 0;
@@ -515,7 +516,7 @@ TClusterPtrVec AnalysisBase::GetRobustClusters(TClusterPtrVec & tr) {
   // truncation cut
   /* NO TRUNCATION */
   auto frac = 1.00;
-  auto i_max = (int)round(frac * (double)tr.size());
+  auto i_max = num::cast<int>(round(frac * num::cast<double>(tr.size())));
   result.reserve(i_max);
   for (auto i = 0; i < i_max; ++i) {
     result.push_back(std::move(tr[i]));
@@ -604,7 +605,7 @@ TClusterPtrVec AnalysisBase::ClusterTrack(const THitPtrVec &tr) const {
         /** update X position */
         auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
         auto mult  = (*it)->GetSize();
-        auto x_new = ((*it)->GetX() * ((Float_t)mult - 1) + x_pad) / (double)mult;
+        auto x_new = ((*it)->GetX() * ((Float_t)mult - 1) + x_pad) / num::cast<double>(mult);
         (*it)->SetX((float_t)x_new);
         /** */
 
@@ -805,24 +806,25 @@ void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
 
   int m, s;
   if (eventID) {
-    long long EET         = (int)((N_events - eventID) * _loop_start_ts / eventID);
+    long long EET         = num::cast<int>(((N_events - eventID) * _loop_start_ts / eventID));
     EET /= 1e6;
-    m = (int)EET / 60;
-    s = (int)EET % 60;
+    m = num::cast<int>(EET / 60);
+    s = num::cast<int>(EET % 60);
   }
 
   for (auto i = 0; i < 30; ++i)
     if (i < 30.*eventID/N_events) std::cout << "#";
     else std::cout << " ";
   std::cout << "]   Nevents = " << N_events << "\t" << round(1.*eventID/N_events * 100) << "%";
-  std::cout << "\t Memory  " <<  mem / 1048576 << " " << "MB";
-  std::cout << "\t Selected  " << _selected;
+  std::cout << "\t Selected  " << _selected << " (" << round(1.*_selected/eventID * 100) << "%)";
+  std::cout << "\t Memory  " <<  std::setw(4) << mem / 1048576 << " " << "MB";
   if (eventID) {
-    std::cout << "\t Av speed " << (double)_loop_start_ts / 1e3 / eventID << " ms/event";
-    std::cout << "\t EET " << m << ":";
-    if (s < 10)
-      std::cout << "0";
+    std::cout.precision(4);
+    std::cout << "\t Av speed " << std::setw(5) << num::cast<double>(_loop_start_ts) / 1e3 / eventID << " ms/event";
+    std::cout << "\t EET " << std::setw(2) << m << ":";
+    std::cout << std::setw(2) << std::setfill('0');
     std::cout << s;
+    std::cout << std::setfill(' ');
   }
   std::cout << "      \r[" << std::flush;
 }
