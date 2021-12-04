@@ -191,7 +191,7 @@ pages:
   script:
     - mkdir .public
     - cp -r doc/html/* .public/
-    - mkdir public/doc; cp doc/*.png .public/doc/
+    - mkdir .public/doc; cp doc/*.png .public/doc/
     - mv .public public
   artifacts:
     paths:
