@@ -18,7 +18,6 @@ compile_gcc:
   stage: build
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
     - git submodule update --init --recursive
   script:
     - mkdir build; cd build
@@ -35,36 +34,17 @@ build_tests:
   before_script:
     - cd test/
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
   script:
     - make all
   artifacts:
     paths:
       - test/SR_test.exe
       - test/dEdx_test.exe
-
-# tests
-clang:
-    stage: test
-    before_script:
-      - git submodule update --init --recursive
-      - yum install -y llvm-toolset-7-clang-tools-extra
-#      - . /opt/rh/llvm-toolset-7/enable
-      - yum install -y llvm-toolset-7-clang.x86_64
-      - curl https://raw.githubusercontent.com/llvm-mirror/clang-tools-extra/master/clang-tidy/tool/run-clang-tidy.py --output /run-clang-tidy.py
-      - chmod +x /run-clang-tidy.py
-    script:
-      - cd build; cmake3 ../
-      - /run-clang-tidy.py 2>&1 | tee -a ../clang-tidy.log
-    artifacts:
-      paths:
-        - clang-tidy.log
-
+#tests
 Google_test:
   stage: test
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
   script:
     - ./build/Google_tests/Google_Tests_run
   artifacts:
@@ -76,7 +56,6 @@ SR_horizon:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
@@ -94,7 +73,6 @@ SR_diagonal:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
     - mv download input.root
@@ -110,7 +88,6 @@ SR_slope_column:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
@@ -126,7 +103,6 @@ SR_3by1:
   stage: validation
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
@@ -143,7 +119,6 @@ SR_inverted:
   before_script:
     - yum -y install wget
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
     - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
     - mv download input.root
   script:
@@ -161,7 +136,6 @@ coverage:
     - python3 -m pip install gcovr
     - git submodule update --init --recursive
     - . $COMMON_INSTALL_PREFIX/setup.sh
-#    - . /opt/rh/devtoolset-7/enable
   script:
     - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --exclude='src/Reconstruction/CrossingReconstruction.*' --html-details --html=coverage.html > coverage.xml
     - wget --no-check-certificate https://coverage.codacy.com/get.sh
