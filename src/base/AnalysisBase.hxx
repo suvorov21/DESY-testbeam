@@ -3,6 +3,7 @@
 
 /** @cond */
 #include <numeric>
+#include <utility>
 
 #include "TString.h"
 #include "TFile.h"
@@ -33,13 +34,13 @@ public:
              int n_pads
              ):angle(a), n_pads(n_pads) {coeff = (n_pads == 0)?0.001:1./n_pads;}
   /// angle of a reference frame rotation
-  Float_t angle;
+  Double_t angle;
   /// Number of pads in a row
   int n_pads;
   /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
   Double_t coeff;
   /// Function of row and column that is constant for a given cluster
-  int GetConstant(int row, int col) const {
+  [[nodiscard]] int GetConstant(int row, int col) const {
     if (n_pads == 0)
       return col;
     else {
@@ -97,7 +98,7 @@ class AnalysisBase {
   void setOverwrite(const bool var) { _overwrite = var;}
   void setInvert(const bool var) {_invert = var;}
 
-  void setClusterisation(std::shared_ptr<Clustering> var) {_clustering = var;}
+  void setClusterisation(std::shared_ptr<Clustering> var) {_clustering = std::move(var);}
 
   /// Process a cluster and return only pads that are suggested to be robust
   /** E.g. function can return only 2 pads in a column.
@@ -129,7 +130,7 @@ class AnalysisBase {
   * For example for clustering with columns the rule column == const is constant.
   * For diagonals column - row = const and so on.
   */
-  TClusterPtrVec ClusterTrack(const THitPtrVec &tr) const;
+  [[nodiscard]] TClusterPtrVec ClusterTrack(const THitPtrVec &tr) const;
 
   /************************** Utilities functions *****************************/
 
@@ -143,7 +144,7 @@ class AnalysisBase {
   * those who passed the reconstruction and selection.
   */
   void SetEventList(const std::vector<Int_t>& var) {_eventList.clear(); _eventList = var;}
-  std::vector<Int_t> GetEventList() const {return _eventList;}
+  [[nodiscard]] std::vector<Int_t> GetEventList() const {return _eventList;}
 
   /// Draw the selected event
   std::unique_ptr<TCanvas> DrawSelection(
