@@ -171,6 +171,9 @@ input/output files: two columns separated with at least one space. Run the submi
 python3 submitter.py -f ../FileLists/gain.list
 ```
 
+By default, submiter set up the environment from LCG_100. If you use different release for the 
+compilation, consider specifying your own setup script.
+
 # Geometry
 The geometry information is stored in src/utils/Geom.hxx. 
 The coordinate system and the pad size are the following:
