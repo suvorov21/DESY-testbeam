@@ -33,97 +33,80 @@ public:
     linear
   };
 
-  TrackFitterBase(TrackShape shape,
-                  bool invert,
-                  int verbose,
-                  int it);
+  TrackFitterBase();
 
   /// set the shape of the track
   void SetTrackShape(TrackShape shape) {_shape = shape;};
 
+  void SetInversion(const bool var) {_invert = var;};
+  void SetVerbosity(const int& var) {_verbose = var;};
+
   /// General function for fitting the cluster
-  virtual Double_t FitCluster();
+  virtual std::pair<Double_t, Double_t> FitCluster(const THitPtrVec& col,
+                                                   const double& pos) = 0;
   /// General function for fitting the whole track
-  virtual std::shared_ptr<TF1> FitTrack();
+  [[nodiscard]] virtual std::shared_ptr<TF1> FitTrack(const TClusterPtrVec& clusters,
+                                                      const int& miss_id) = 0;
 
 protected:
   /// Arc function used for track fitting
-  TF1* _circle_function;
+  TF1* _circle_function{nullptr};
 
-  /// iteration of the fit
-  Int_t _iteration;
   /// Fitter verbosity
-  Int_t _verbose;
+  Int_t _verbose{0};
 
   /// GEOMETRY
   /// Either inverted geometry (rows/columns) should be used
-  bool _invert;
+  bool _invert{false};
 
-  TrackShape _shape;
-
-  const float default_error   = 0.001;
-  const float one_pad_error   = 0.002;
-
-  // const float sigma_pedestal = 9;
+  TrackShape _shape{TrackShape::parabola};
 };
 
 class TrackFitCern: public TrackFitterBase {
 public:
-
-  TrackFitCern(TrackShape shape,
-               bool invert,
-               int verbose,
-               int it,
-               TF1* PRF,
-               TGraphErrors* PRF_gr,
-               float fit_bound,
-               bool charge_uncertainty,
-               TF1* PRF_time_func,
-               TH1F* PRF_time_error,
-               Float_t angle
-               );
-
-  TrackFitCern() : TrackFitCern(TrackShape::arc, false, 0, 0,
-                                nullptr, nullptr, 0.0,
-                                false, nullptr,
-                                nullptr, 0.) {};
-
   /// Cluster fitter
-  Double_t FitCluster(const THitPtrVec& col,
-                     const double& pos = 0
-                     );
+  std::pair<Double_t, Double_t> FitCluster(const THitPtrVec& col,
+                                           const double& pos
+                                           ) override;
 
   /// Track fitter
   std::shared_ptr<TF1> FitTrack(const TClusterPtrVec& clusters,
-                                const int& miss_id = -1
-                                );
+                                const int& miss_id
+                                ) override;
 
   /// Set array of PRFs for complicated patterns
   void SetPRFarr(TF1* f[], int n);
 
   void SetComplicatedPatternPRF(bool v) {_complicated_pattern_PRF = v;}
   void SetIndividualPRF(bool v) {_individual_column_PRF = v;}
+  void SetPRF(const TF1* var) {_prf_function = var;}
+  void SetPRFErrors(const TGraphErrors* var) {_prf_graph = var;}
+  void SetPRFtimeFunc(const TF1* var) {_prf_time_func = var;}
+  void SetPRFtimeGError(const TH1F* var) {_prf_time_error = var;}
+  void SetFitBound(const Double_t& var) {_fit_bound = var;}
+  void SetChargeUncertainty(const bool var) {_charge_uncertainty = var;}
+  void SetAngle(const Double_t& var) {_angle = var;}
 
 protected:
   /// Pad Response Function analytical description
-  TF1* _prf_function{nullptr};
+  const TF1* _prf_function{nullptr};
 
   /// PRF uncertainty graph
-  TGraphErrors* _prf_graph{nullptr};
+  const TGraphErrors* _prf_graph{nullptr};
 
   /// Pad Response Function in time
-  TF1* _prf_time_func{nullptr};
+  const TF1* _prf_time_func{nullptr};
   /// histogram with errors for time PRF
-  TH1F* _prf_time_error{nullptr};
+  const TH1F* _prf_time_error{nullptr};
 
   /// bounds of the PRF that are reliable. Outside values are not used
-  float _fit_bound{0};
+  Double_t _fit_bound{0};
 
   /// Weather to put into account uncertainty on charge with sqrt(Q)
   bool _charge_uncertainty{false};
 
   /// angle of the cluster
-  Float_t _angle{0};
+  Double_t _angle{0};
 
   /// Array of PRFs for complicated patterns
   TF1** _prf_arr{nullptr};
@@ -136,12 +119,6 @@ protected:
 
   /// Whether to use individual PRFs for complicated patterns e.g. 2by1 3 by1
   bool _complicated_pattern_PRF{false};
-
-  /// Axis to convert track position into correction bin
-  TAxis* _ax{nullptr};
-
-  /// array of corrections should be put here
-  float _corr[36][50] = {{}};
 };
 
 #endif // SRC_BASE_TRACKFITTER_HXX

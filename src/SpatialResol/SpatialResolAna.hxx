@@ -129,6 +129,8 @@ class SpatialResolAna: public AnalysisBase {
   /// Cluster vars
   /// Position of the cluster
   Double_t _clust_pos[Nclusters]{0};
+  /// Error from the PRF method fit
+  Double_t _clust_pos_error[Nclusters]{0};
   /// X position of the cluster
   Double_t _x[Nclusters]{0};
   /// X position of the avareged cluster
