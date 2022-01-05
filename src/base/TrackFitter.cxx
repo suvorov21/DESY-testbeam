@@ -173,30 +173,6 @@ TGraphErrors track_gr;
     track_gr.Fit("pol1", opt);
     fit = (TF1*)track_gr.GetFunction("pol1")->Clone();
   } else if (_shape == TrackShape::arc) {
-    // Float_t q_up, q_down;
-    // q_up = q_down = 1.e9;
-    // _circle_function_dn->SetParameters(80., 0, 0.);
-    // track_gr.Fit("circle_dn", opt);
-    // fit = track_gr.GetFunction("circle_dn");
-    // if (fit)
-    //   q_down = fit->GetChisquare() / fit->GetNDF();
-
-    // _circle_function_up->SetParameters(80., 0, 0.);
-    // track_gr.Fit("circle_up", opt);
-    // fit = track_gr.GetFunction("circle_up");
-    // if (fit)
-    //   q_up = fit->GetChisquare() / fit->GetNDF();
-
-    // if (q_up > q_down)
-    //   func = "circle_dn";
-    // else
-    //   func = "circle_up";
-
-    // track_gr.Fit(func, "Q");
-    // if (!track_gr.GetFunction(func))
-    //   return NULL;
-    // fit = (TF1*)track_gr.GetFunction(func)->Clone();
-
     Double_t q_up, q_down;
     _circle_function->SetParameters(1./80., 0, 0.);
     track_gr.Fit("circle", opt);
