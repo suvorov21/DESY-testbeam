@@ -25,6 +25,19 @@ THitPtrVec fake::GetTrack() {
   return track;
 }
 
+TClusterPtrVec fake::GetClusterdTrack() {
+  TClusterPtrVec track;
+  for (auto col = 0; col < geom::nPadx; ++col) {
+    THitPtrVec hits = GetCenteredCluster();
+    TClusterPtr cluster = std::make_shared<TCluster>();
+    for (const auto& hit:hits)
+      cluster->AddHit(hit);
+
+    track.emplace_back(cluster);
+  }
+  return track;
+}
+
 THitPtrVec fake::GetCenteredCluster() {
   THitPtrVec cluster;
   std::array<THitPtr, 3> hits;

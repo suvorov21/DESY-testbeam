@@ -15,7 +15,8 @@ SpatialResolAna::SpatialResolAna():
   _correction(false),
   _tree(nullptr),
   _do_separate_pad_fit(false),
-  _charge_uncertainty(true) {
+  _charge_uncertainty(true),
+  _processAll(false) {
 //******************************************************************************
   _clParser.addOption("prev_file",
                       {"--prev"},
@@ -33,6 +34,11 @@ SpatialResolAna::SpatialResolAna():
                              {"-c", "--corr"},
                              "Whether to apply correction"
                             );
+
+  _clParser.addTriggerOption("all",
+                             {"--all"},
+                             "Whether to process all events in the file"
+                              );
 }
 
 
@@ -44,6 +50,7 @@ bool SpatialResolAna::ReadCLI(int argc, char **argv) {
   _prev_iter_name = _clParser.getOptionVal<TString>("prev_file", "", 0);
   _iteration = _clParser.getOptionVal<int>("iter", _iteration, 0);
   _correction = _clParser.isOptionTriggered("corr");
+  _processAll = _clParser.isOptionTriggered("all");
 
   return true;
 }
@@ -208,17 +215,19 @@ bool SpatialResolAna::Initialize() {
       }
     }
 
-    // read event list passed through reconstruction+selection at previous iteration
-    Int_t read_var;
-    auto event_tree = (TTree*)_prev_iter_file->Get("EventTree");
-    event_tree->SetBranchAddress("PassedEvents",    &read_var);
-    std::vector<Int_t> vec;
-    vec.clear();
-    for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-      event_tree->GetEntry(i);
-      vec.push_back(read_var);
+    if (!_processAll) {
+      // read event list passed through reconstruction+selection at previous iteration
+      Int_t read_var;
+      auto event_tree = (TTree *)_prev_iter_file->Get("EventTree");
+      event_tree->SetBranchAddress("PassedEvents", &read_var);
+      std::vector<Int_t> vec;
+      vec.clear();
+      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+        event_tree->GetEntry(i);
+        vec.push_back(read_var);
+      }
+      this->SetEventList(vec);
     }
-    this->SetEventList(vec);
 
   } // if iteration
 
@@ -257,19 +266,19 @@ bool SpatialResolAna::Initialize() {
                 );
   _tree->Branch("residual",
                 &_residual,
-                TString::Format("residual[%i]/F", Nclusters)
+                TString::Format("residual[%i]/D", Nclusters)
                 );
   _tree->Branch("residual_corr",
                 &_residual_corr,
-                TString::Format("residual_corr[%i]/F", Nclusters)
+                TString::Format("residual_corr[%i]/D", Nclusters)
                 );
   _tree->Branch("dx",
                 &_dx,
-                TString::Format("dx[%i][10]/F", Nclusters)
+                TString::Format("dx[%i][10]/D", Nclusters)
                 );
   _tree->Branch("qfrac",
                 &_qfrac,
-                TString::Format("qfrac[%i][10]/F", Nclusters)
+                TString::Format("qfrac[%i][10]/D", Nclusters)
                 );
   _tree->Branch("time",
                 &_time,
@@ -277,11 +286,15 @@ bool SpatialResolAna::Initialize() {
                 );
   _tree->Branch("clust_pos",
                 &_clust_pos,
-                TString::Format("clust_pos[%i]/F", Nclusters)
+                TString::Format("clust_pos[%i]/D", Nclusters)
+                );
+  _tree->Branch("clust_pos_err",
+                &_clust_pos_error,
+                TString::Format("clust_pos_err[%i]/D", Nclusters)
                 );
   _tree->Branch("track_pos",
                 &_track_pos,
-                TString::Format("track_pos[%i]/F", Nclusters)
+                TString::Format("track_pos[%i]/D", Nclusters)
                 );
   _tree->Branch("pad_charge",
                 &_pad_charge,
@@ -334,12 +347,6 @@ bool SpatialResolAna::Initialize() {
   auto dir_x_scan = _file_out->mkdir("x_scan");
   _output_vector.push_back(dir_x_scan);
 
-  for (auto i = 0; i < prf_error_bins-1; ++i) {
-    _uncertainty_prf_bins[i] = new TH1F(Form("error_prf_bin_%i", i),
-      "", resol_bin, resol_min, resol_max);
-    // _output_vector.push_back(_uncertainty_prf_bins[i]);
-  }
-
   _passed_events.clear();
   std::cout << "done" << std::endl;
   if (_verbose >= static_cast<int>(verbosity_base::v_event_number)) {
@@ -362,18 +369,19 @@ bool SpatialResolAna::Initialize() {
     shape = TrackFitterBase::TrackShape::parabola;
   }
 
-  _fitter = std::make_unique<TrackFitCern>(shape,
-                             _invert,
-                             _verbose,
-                             _iteration,
-                             _prf_function,
-                             _prf_graph,
-                             fit_bound_right,
-                             _charge_uncertainty,
-                             _prf_time_func,
-                             _prf_time_e,
-                             _clustering->angle
-                             );
+  _fitter = std::make_unique<TrackFitCern>();
+
+  _fitter->SetTrackShape(shape);
+  _fitter->SetInversion(_invert);
+  _fitter->SetVerbosity(_verbose);
+  _fitter->SetPRF(_prf_function);
+  _fitter->SetPRFErrors(_prf_graph);
+  _fitter->SetPRFtimeFunc(_prf_time_func);
+  _fitter->SetPRFtimeGError(_prf_time_e);
+  _fitter->SetFitBound(fit_bound_right);
+  _fitter->SetAngle(_clustering->angle);
+  _fitter->SetChargeUncertainty(_charge_uncertainty);
+
 
   if (_clustering->n_pads > 1 && _iteration) {
     _fitter->SetPRFarr(_prf_function_arr, _clustering->n_pads);
@@ -561,19 +569,17 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
   double CoC =  _clust_pos[id];
 
   if (_multiplicity[id] > 1 && _iteration > 0) {
-    _clust_pos[id] = _fitter->FitCluster(robust_pads,
-                                         _clust_pos[id]);
+     auto fit_result =_fitter->FitCluster(robust_pads,
+                                          _clust_pos[id]);
+    _clust_pos[id] = fit_result.first;
+    _clust_pos_error[id] = fit_result.second;
+    if (_verbose >= static_cast<int>(verbosity_SR::v_fit_details)) {
+      std::cout << "id:pos:err\t" << id << "\t" << fit_result.first << "\t" << fit_result.second << std::endl;
+    }
   }
 
   cluster->SetY(_clust_pos[id]);
   cluster->SetCharge(_charge[id]);
-
-  if (_verbose >= static_cast<int>(verbosity_SR::v_fit_details)) {
-    for (const auto& pad:*cluster) {
-      std::cout << pad->GetRow(_invert) <<  " : " << pad->GetCol(_invert) << "\t";
-    }
-    std::cout << std::endl;
-  }
 
   if (_verbose >= static_cast<int>(verbosity_SR::v_fit_details))
     std::cout << "X:CoC:Fit\t" << cluster->GetX() << "\t" << CoC << "\t" << cluster->GetY() << std::endl;
@@ -591,7 +597,7 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
 //******************************************************************************
 std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec& track) {
 //******************************************************************************
-  auto fit = _fitter->FitTrack(track);
+  auto fit = _fitter->FitTrack(track, -1);
   _track_fit_func = fit;
 
   if (!fit)
@@ -749,9 +755,9 @@ void SpatialResolAna::FillSR(const TClusterPtr& cluster,
 
   // fill SR
   _clust_pos[clusterId] = cluster->GetY();
-  _track_pos[clusterId] = num::cast<Double_t>(track_fit_y);
-  _residual[clusterId] = num::cast<Double_t>((_clust_pos[clusterId] - track_fit_y));
-  _residual_corr[clusterId] = num::cast<Double_t>((_clust_pos[clusterId] - track_fit_y1));
+  _track_pos[clusterId] = track_fit_y;
+  _residual[clusterId] = _clust_pos[clusterId] - track_fit_y;
+  _residual_corr[clusterId] = _clust_pos[clusterId] - track_fit_y1;
 }
 
 //******************************************************************************
@@ -815,6 +821,7 @@ void SpatialResolAna::Reset(int id) {
     _residual[colId]      = -999;
     _residual_corr[colId] = -999;
     _clust_pos[colId]     = 0;
+    _clust_pos_error[colId] = -999;
     _track_pos[colId]     = -999;
     _x[colId]             = -999;
     _x_av[colId]          = -999;
@@ -861,40 +868,6 @@ bool SpatialResolAna::WriteOutput() {
 
   std::cout << "done" << std::endl;
 
-  std::cout << "done" << std::endl;
-  std::cout << "Process histoes..........................";
-
-  if (_do_separate_pad_fit && _iteration) {
-    for (auto res : _uncertainty_prf_bins) {
-      Double_t mean = res->GetMean();
-      Double_t sigma = 0.5*GenericToolbox::getFWHM(res);
-
-      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
-
-      TF1* func = res->GetFunction("gaus");
-
-      if (!func) {
-        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
-        exit(1);
-      }
-
-      Double_t sigma_e;
-
-      sigma    = func->GetParameter(2);
-      sigma_e  = func->GetParError(2);
-
-      _uncertainty_vs_prf_gr->SetPoint(_uncertainty_vs_prf_gr->GetN(),
-                              _prf_error_axis->GetBinCenter(prf_bin+1),
-                              sigma);
-      _uncertainty_vs_prf_gr->SetPointError(_uncertainty_vs_prf_gr->GetN()-1,
-                              0.5*_prf_error_axis->GetBinWidth(prf_bin+1),
-                              sigma_e);
-
-    } // loop over prf uncertainty bins
-  } // if (_do_separate_fit)
-
-  std::cout << "done" << std::endl;
-
   if (_prf_graph->GetFunction("PRF_function")) {
     _prf_function = _prf_graph->GetFunction("PRF_function");
     std::cout << "      PRF(x) = " << _prf_function->GetFormula()->GetExpFormula() << "  with ";
@@ -907,7 +880,7 @@ bool SpatialResolAna::WriteOutput() {
     _tree->Project("h", "residual");
     sr_h.Fit("gaus", "Q");
     std::cout << "Spatial resolution\t" << sr_h.GetFunction("gaus")->GetParameter(2) * 1e6 << " um" << std::endl;
-    TH1F e_h("h_e", "", 1000, 0., 10000);
+    TH1F e_h("h_e", "", 200, 0., 10000);
     _tree->Project("h_e", "dEdx");
     e_h.Fit("gaus", "Q");
     auto resol = e_h.GetFunction("gaus")->GetParameter(2) / e_h.GetFunction("gaus")->GetParameter(1);
@@ -1077,7 +1050,7 @@ bool SpatialResolAna::Draw() {
   auto* gr_res_av = new TGraphErrors();
   auto scale = 1.e3;
   for (auto colIt = 0; colIt < 70; ++colIt) {
-    if (_clust_pos[colIt] == -999)
+    if (_clust_pos[colIt] < -900 || _x_av[colIt] < -900 || _track_pos[colIt] < -900)
       continue;
 
     gr->SetPoint(gr->GetN(), scale*_x_av[colIt], scale*_clust_pos[colIt]);

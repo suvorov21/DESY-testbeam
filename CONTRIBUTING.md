@@ -10,5 +10,9 @@ Please follow the simple code convention we have in the package so far:
 2. Comment your methods. The best way is to follow `///` Doxygen comment convention for the short comment and `/** */` for the long one
 3. Line length < 80 is preferable
 
+## Best practice:
+1. Use numeric cast from Geom.hxx `num::cast<float>(a)`
+to control the narrowing and signess. 
+
 ## Others
 The separate [testbeam-plotter](https://gitlab.com/t2k-beamtest/testbeam_plotters) package is prefered for macros upload

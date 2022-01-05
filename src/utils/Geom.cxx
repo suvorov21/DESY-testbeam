@@ -13,12 +13,12 @@ Double_t geom::GetYpos(int it_y, bool invert) {
     return geom::GetXraw(it_y);
 }
 
-Double_t geom::GetXposPad(const THitPtr& h, bool invert, Float_t angle) {
+Double_t geom::GetXposPad(const THitPtr& h, bool invert, Double_t angle) {
   return geom::GetXpos(h->GetCol(invert), invert) * TMath::Cos(angle) -
          geom::GetYpos(h->GetRow(invert), invert) * TMath::Sin(angle);
 }
 
-Double_t geom::GetYposPad(const THitPtr& h, bool invert, Float_t angle) {
+Double_t geom::GetYposPad(const THitPtr& h, bool invert, Double_t angle) {
   return   geom::GetXpos(h->GetCol(invert), invert) * TMath::Sin(angle) +
            geom::GetYpos(h->GetRow(invert), invert) * TMath::Cos(angle);
 }

@@ -24,11 +24,20 @@
 /** Number of pads, dimensions and time. */
 class geom {
 public:
-  static Double_t GetYposPad(const THitPtr& h, bool invert = false, Float_t angle = 0);
-  static Double_t GetXposPad(const THitPtr& h, bool invert = false, Float_t angle = 0);
+  /// extract Y position from pad
+  static Double_t GetYposPad(const THitPtr& h,
+                             bool invert = false,
+                             Double_t angle = 0);
 
+  /// extract X position from pad
+  static Double_t GetXposPad(const THitPtr& h,
+                             bool invert = false,
+                             Double_t angle = 0);
+
+  /// Get Y position of the column
   static Double_t GetYpos(int it_y, bool invert = false);
 
+  /// Get X position of the row
   static Double_t GetXpos(int it_x, bool invert = false);
 
   // time bins
@@ -39,6 +48,12 @@ public:
   static constexpr int nPadx = 36;
   static constexpr int nPady = 32;
 
+  // pad size
+  // (11.18+2*0.1/2 = 11.28) mm
+  static constexpr float dx = 0.01128; //[m]
+  // (10.09+2*0.1/2 = 10.19) mm
+  static constexpr float dy = 0.01019; //[m]
+
   /// return max index (!!) of a column
   static int GetNColumn(bool invert = false);
   /// return a max index (!!) of a row
@@ -46,15 +61,12 @@ public:
 
 private:
     geom() = default;
-    // pad size
-    // (11.18+2*0.1/2 = 11.28) mm
-    static constexpr float dx = 0.01128; //[m]
-    // (10.09+2*0.1/2 = 10.19) mm
-    static constexpr float dy = 0.01019; //[m]
 
     static const int pedestal = 250;
 
+    /// private method to access to raw X position array
     static constexpr Double_t GetXraw(int padXid);
+    /// private method to access to raw Y position array
     static constexpr Double_t GetYraw(int padYid);
 };
 

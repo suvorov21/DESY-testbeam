@@ -27,7 +27,7 @@ def main():
                      "/eos/experiment/neutplatform/t2knd280/MM2_data/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM2-data/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM_3/",
-                     # "/eos/user/s/ssuvorov/DESY_testbeam/cosmic_strict_v2/"
+                     "/eos/experiment/neutplatform/t2knd280/DESY-2021/ROOT/v1/"
                      ]
 
     outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
@@ -149,7 +149,7 @@ def main():
             file_out.write("#!/bin/bash\n")
             file_out.write("cd " + bin_dir + "\n")
             if submit:
-                file_out.write("source /opt/rh/devtoolset-9/enable\n")
+                file_out.write(". /cvmfs/sft.cern.ch/lcg/views/LCG_100/x86_64-centos7-clang11-opt/setup.sh\n")
             file_out.write(command + "\n")
 
             file_out.close()

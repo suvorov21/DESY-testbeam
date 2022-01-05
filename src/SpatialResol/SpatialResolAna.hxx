@@ -129,6 +129,8 @@ class SpatialResolAna: public AnalysisBase {
   /// Cluster vars
   /// Position of the cluster
   Double_t _clust_pos[Nclusters]{0};
+  /// Error from the PRF method fit
+  Double_t _clust_pos_error[Nclusters]{0};
   /// X position of the cluster
   Double_t _x[Nclusters]{0};
   /// X position of the avareged cluster
@@ -204,12 +206,14 @@ class SpatialResolAna: public AnalysisBase {
   /// Whether to assign uncertainty to charge
   bool _charge_uncertainty{false};
 
+  /// Whether to follow the selected events from previous iteration
+  bool _processAll{false};
+
   /// errors vs the PRF value
   // TODO consider removing
   static const int prf_error_bins = 10;
   Double_t prf_error_bins_arr[prf_error_bins] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.01};
   TAxis* _prf_error_axis = new TAxis(prf_error_bins-1, prf_error_bins_arr);
-  TH1F* _uncertainty_prf_bins[prf_error_bins-1]{nullptr};
   TGraphErrors* _uncertainty_vs_prf_gr{nullptr};
   TGraphErrors* _uncertainty_vs_prf_gr_prev{nullptr};
   TH1F*         _uncertainty_vs_prf_histo{nullptr};
