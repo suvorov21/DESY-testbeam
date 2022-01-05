@@ -15,7 +15,8 @@ SpatialResolAna::SpatialResolAna():
   _correction(false),
   _tree(nullptr),
   _do_separate_pad_fit(false),
-  _charge_uncertainty(true) {
+  _charge_uncertainty(true),
+  _processAll(false) {
 //******************************************************************************
   _clParser.addOption("prev_file",
                       {"--prev"},
@@ -33,6 +34,11 @@ SpatialResolAna::SpatialResolAna():
                              {"-c", "--corr"},
                              "Whether to apply correction"
                             );
+
+  _clParser.addTriggerOption("all",
+                             {"--all"},
+                             "Whether to process all events in the file"
+                              );
 }
 
 
@@ -44,6 +50,7 @@ bool SpatialResolAna::ReadCLI(int argc, char **argv) {
   _prev_iter_name = _clParser.getOptionVal<TString>("prev_file", "", 0);
   _iteration = _clParser.getOptionVal<int>("iter", _iteration, 0);
   _correction = _clParser.isOptionTriggered("corr");
+  _processAll = _clParser.isOptionTriggered("all");
 
   return true;
 }
@@ -208,17 +215,19 @@ bool SpatialResolAna::Initialize() {
       }
     }
 
-    // read event list passed through reconstruction+selection at previous iteration
-    Int_t read_var;
-    auto event_tree = (TTree*)_prev_iter_file->Get("EventTree");
-    event_tree->SetBranchAddress("PassedEvents",    &read_var);
-    std::vector<Int_t> vec;
-    vec.clear();
-    for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-      event_tree->GetEntry(i);
-      vec.push_back(read_var);
+    if (!_processAll) {
+      // read event list passed through reconstruction+selection at previous iteration
+      Int_t read_var;
+      auto event_tree = (TTree *)_prev_iter_file->Get("EventTree");
+      event_tree->SetBranchAddress("PassedEvents", &read_var);
+      std::vector<Int_t> vec;
+      vec.clear();
+      for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+        event_tree->GetEntry(i);
+        vec.push_back(read_var);
+      }
+      this->SetEventList(vec);
     }
-    this->SetEventList(vec);
 
   } // if iteration
 
@@ -337,12 +346,6 @@ bool SpatialResolAna::Initialize() {
 
   auto dir_x_scan = _file_out->mkdir("x_scan");
   _output_vector.push_back(dir_x_scan);
-
-  for (auto i = 0; i < prf_error_bins-1; ++i) {
-    _uncertainty_prf_bins[i] = new TH1F(Form("error_prf_bin_%i", i),
-      "", resol_bin, resol_min, resol_max);
-    // _output_vector.push_back(_uncertainty_prf_bins[i]);
-  }
 
   _passed_events.clear();
   std::cout << "done" << std::endl;
@@ -862,40 +865,6 @@ bool SpatialResolAna::WriteOutput() {
   for (auto i = 0; i < 3; ++i)
     _prf_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
 
-
-  std::cout << "done" << std::endl;
-
-  std::cout << "done" << std::endl;
-  std::cout << "Process histoes..........................";
-
-  if (_do_separate_pad_fit && _iteration) {
-    for (auto res : _uncertainty_prf_bins) {
-      Double_t mean = res->GetMean();
-      Double_t sigma = 0.5*GenericToolbox::getFWHM(res);
-
-      res->Fit("gaus", "Q", "", mean - 4*sigma, mean + 4*sigma);
-
-      TF1* func = res->GetFunction("gaus");
-
-      if (!func) {
-        std::cout << "WARNING. SpatialResolAna::WriteOutput(). Residual fit fail" << std::endl;
-        exit(1);
-      }
-
-      Double_t sigma_e;
-
-      sigma    = func->GetParameter(2);
-      sigma_e  = func->GetParError(2);
-
-      _uncertainty_vs_prf_gr->SetPoint(_uncertainty_vs_prf_gr->GetN(),
-                              _prf_error_axis->GetBinCenter(prf_bin+1),
-                              sigma);
-      _uncertainty_vs_prf_gr->SetPointError(_uncertainty_vs_prf_gr->GetN()-1,
-                              0.5*_prf_error_axis->GetBinWidth(prf_bin+1),
-                              sigma_e);
-
-    } // loop over prf uncertainty bins
-  } // if (_do_separate_fit)
 
   std::cout << "done" << std::endl;
 
