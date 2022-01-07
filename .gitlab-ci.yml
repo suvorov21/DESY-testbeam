@@ -164,7 +164,7 @@ sonar:
     - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
     - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
   script:
-    - cd build; find . -name '*.gcda' | xargs gcov; cd ../
+    - cd build; find . -name '*.gcda' | xargs gcov; cd ../; ls build/
     - sonar-scanner -Dsonar.organization=suvorov21 -Dsonar.projectKey=suvorov21_DESY-testbeam -Dsonar.sources=. -Dsonar.cfamily.build-wrapper-output=bw-output -Dsonar.host.url=https://sonarcloud.io -Dsonar.cfamily.gcov.reportsPath=build/
 
 # documentation, etc.
