@@ -153,6 +153,7 @@ coverage:
 sonar:
   stage: coverage
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
     - export SONAR_SCANNER_VERSION=4.6.2.2472
     - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
     - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
@@ -164,7 +165,7 @@ sonar:
     - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
     - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
   script:
-    - cd build; find . -name '*.gcda' | xargs gcov; cd ../; ls build/
+    - cd build; find . -name '*.gcda' | xargs gcov; cd ../;
     - sonar-scanner -Dsonar.organization=suvorov21 -Dsonar.projectKey=suvorov21_DESY-testbeam -Dsonar.sources=. -Dsonar.cfamily.build-wrapper-output=bw-output -Dsonar.host.url=https://sonarcloud.io -Dsonar.cfamily.gcov.reportsPath=build/
 
 # documentation, etc.
