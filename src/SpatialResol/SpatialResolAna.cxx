@@ -944,7 +944,7 @@ bool SpatialResolAna::ProfilePRF(const TH2F* PRF_h, TGraphErrors* gr) {
     double y = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1, 0, GenericToolbox::getFWHM(temp_h)/2.);
+    gr->SetPointError(gr->GetN()-1, 0, GenericToolbox::getHistogramFwhm(temp_h)/2.);
   } // end of PRF histo profiling
 
   return true;
@@ -977,8 +977,8 @@ bool SpatialResolAna::ProfilePRF_X(const TH2F* PRF_h, TGraphErrors* gr, TH1F* PR
     double x = temp_h->GetBinCenter(temp_h->GetMaximumBin());
 
     gr->SetPoint(gr->GetN(), x, y);
-    gr->SetPointError(gr->GetN()-1,  GenericToolbox::getFWHM(temp_h)/2., 0.);
-    PRF_time_e->Fill(y, GenericToolbox::getFWHM(temp_h)/2);
+    gr->SetPointError(gr->GetN()-1,  GenericToolbox::getHistogramFwhm(temp_h)/2., 0.);
+    PRF_time_e->Fill(y, GenericToolbox::getHistogramFwhm(temp_h)/2);
   } // end of PRF histo profiling
 
   return true;
