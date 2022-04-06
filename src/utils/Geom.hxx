@@ -73,12 +73,7 @@ private:
 namespace units {
     const float clight  =   299792458.;
     const float B       =   0.2;
-    /** below are analytical angles
-    * real angles should be corrected with the pad sizes
-    const float a45     =   0.78539816;
-    const float a2      =   1.1071487;
-    const float a3      =   1.2490458;
-    */
+
     const float a45     =   0.83612313;
     const float a2      =   1.1465425;
     const float a3      =   1.2783096;
@@ -87,13 +82,6 @@ namespace units {
     const float a2_inv  =   1.0652823;
     const float a3_inv  =   1.2173058;
     const float a32_inv =   0.93503353;
-
-    // OBSOLETE
-    // const float a2      =   1.0652823;
-    // const float a3      =   1.2173058;
-
-    // const float a2_inv  =   1.1465425;
-    // const float a3_inv  =   1.2783096;
 }
 
 namespace num {
