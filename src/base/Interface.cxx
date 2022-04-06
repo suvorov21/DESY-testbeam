@@ -86,7 +86,7 @@ template<int timeSize>
 std::shared_ptr<TRawEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
     // create TRawEvent from 3D array
     std::shared_ptr<TRawEvent> event = std::make_shared<TRawEvent>(i);
-
+    _chain->GetEntry(i);
     // Subtract the pedestal
     for (auto x = 0; x < geom::nPadx; ++x) {
         for (auto y = 0; y < geom::nPady; ++y) {
@@ -140,7 +140,8 @@ void interfaceRawEvent::Initialize() {
     _event = new TRawEvent();
 }
 
-std::shared_ptr<TRawEvent> interfaceRawEvent::getEvent(Int_t) {
+std::shared_ptr<TRawEvent> interfaceRawEvent::getEvent(Int_t i) {
+    _chain->GetEntry(i);
     return std::make_shared<TRawEvent>(_event);
 }
 
