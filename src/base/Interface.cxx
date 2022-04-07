@@ -80,6 +80,7 @@ Long64_t Interface::getEntries() {
 template<int timeSize>
 void interfaceRoot<timeSize>::Initialize() {
     Interface::chainInputFiles("tree");
+    _chain->SetBranchAddress("PadAmpl", _padAmpl);
 }
 
 template<int timeSize>
@@ -93,7 +94,7 @@ std::shared_ptr<TRawEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
             auto hit = std::make_shared<THit>(x, y);
             auto Qmax = -1;
             auto Tmax = -1;
-            for (auto t = 0; t < 510; ++t) {
+            for (auto t = 0; t < timeSize; ++t) {
                 int q = _padAmpl[x][y][t] - 250;
 
                 if (q < -249)
@@ -124,6 +125,7 @@ std::shared_ptr<TRawEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
                 hit->SetWidth(width);
                 hit->SetQ(Qmax);
                 hit->SetTime(Tmax);
+                event->AddHit(hit);
             } else {
                 hit.reset();
             }
