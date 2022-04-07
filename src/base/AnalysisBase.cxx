@@ -116,6 +116,7 @@ bool AnalysisBase::Initialize() {
     TString filename = Interface::getRootFile(_file_in_name);
     auto interfaceType = Interface::getFileType(filename);
     _interface = interfaceFactory::get(filename, interfaceType);
+    _interface->Initialize();
 
     std::cout << "Initializing analysis base...............";
 
@@ -133,6 +134,7 @@ bool AnalysisBase::Initialize() {
     gROOT->ForceStyle();
 
     Long64_t N_events = _interface->getEntries();
+    _eventList.reserve(N_events);
     for (auto i = 0; i < N_events; ++i)
         _eventList.push_back(i);
 
