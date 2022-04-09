@@ -140,6 +140,7 @@ template class interfaceRoot<511>;
 void interfaceRawEvent::Initialize() {
     Interface::chainInputFiles("event");
     _event = new TRawEvent();
+    _chain->SetBranchAddress("Event", &_event);
 }
 
 std::shared_ptr<TRawEvent> interfaceRawEvent::getEvent(Int_t i) {

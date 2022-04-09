@@ -60,7 +60,7 @@ class interfaceRoot : public Interface {
 
 class interfaceRawEvent : public Interface {
  private:
-    TRawEvent* _event;
+    TRawEvent* _event{nullptr};
  public:
     explicit interfaceRawEvent(TString var) : Interface(std::move(var)) {}
     void Initialize() override;
@@ -72,10 +72,12 @@ class interfaceRawEvent : public Interface {
     static std::unique_ptr<Interface> get(const TString &filename,
                                                 interfaceType type) {
         switch (type) {
-            case interfaceType::kArray510 :return std::make_unique<interfaceRoot<510>>(filename);
-            case interfaceType::kArray511:return std::make_unique<interfaceRoot<511>>(filename);
-                //        case interfaceType::kRawEvent:
-                //            return std::make_unique<interfaceRawEvent>(filename);
+            case interfaceType::kArray510 :
+                return std::make_unique<interfaceRoot<510>>(filename);
+            case interfaceType::kArray511:
+                return std::make_unique<interfaceRoot<511>>(filename);
+            case interfaceType::kRawEvent:
+                return std::make_unique<interfaceRawEvent>(filename);
             default: return nullptr;
         }
     }

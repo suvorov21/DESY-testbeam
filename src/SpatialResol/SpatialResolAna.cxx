@@ -5,6 +5,7 @@
 
 #include "SpatialResolAna.hxx"
 #include "line.hxx"
+#include "PadSelection.hxx"
 
 //******************************************************************************
 SpatialResolAna::SpatialResolAna():
@@ -402,7 +403,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   auto track_hits = event->GetUsedHits();
   if (track_hits.empty())
     return false;
-  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("TrackSel");
 
   // reset tree values
   Reset(num::cast<int>(event->GetID()));
@@ -417,26 +418,26 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
     std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
   // selection
-  bool sel = sel::CrossingTrackSelection(clusters,
-                                   _max_mult,
-                                   _max_mean_mult,
-                                   _cut_gap,
-                                   _max_phi,
-                                   _max_theta,
-                                   _broken_pads,
-                                   _invert,
-                                   _verbose
+  bool sel = TrackSel::CrossingTrackSelection(clusters,
+                                              _max_mult,
+                                              _max_mean_mult,
+                                              _cut_gap,
+                                              _max_phi,
+                                              _max_theta,
+                                              _broken_pads,
+                                              _invert,
+                                              _verbose
                                    );
-  _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
+  _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("TrackSel");
   if (!sel)
     return false;
 
   // TODO prevent multiple fitter call
-  std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
-  std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
+  std::vector<double> fit_v = TrackSel::GetFitParams(clusters, _invert);
+  std::vector<double> fit_xz = TrackSel::GetFitParamsXZ(clusters, _invert);
 
   _angle_xy = num::cast<Double_t>(fit_v[2]);
-  _angle_yz = num::cast<Double_t>(fit_xz[2] * sel::v_drift_est);
+  _angle_yz = num::cast<Double_t>(fit_xz[2] * TrackSel::v_drift_est);
 
   // if not a column clustering
   if (_clustering->n_pads > 0) {
@@ -454,7 +455,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (clusters.size() < uint(_min_clusters))
     return false;
   // truncation
-  auto robust_clusters = GetRobustClusters(clusters);
+  auto robust_clusters = PadSelection::GetRobustClusters(clusters);
 
   if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
@@ -520,7 +521,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       continue;
     // Fill PRF
     // TODO cache the result of GetRobustPadsInCluster?
-    auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
+    auto robust_pads = PadSelection::GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits(),
+                                                            _broken_pads);
     int padId = 0;
     for (const auto& pad:robust_pads)
       FillPRF(pad, padId, clusterId, fit);
@@ -546,7 +548,8 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
     return;
 
   // loop over rows
-  auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
+  auto robust_pads = PadSelection::GetRobustPadsInCluster(cluster->GetHits(),
+                                                                     _broken_pads);
   _multiplicity[id] = num::cast<int>(robust_pads.size());
 
   auto pad_id = -1;

@@ -100,19 +100,6 @@ class AnalysisBase {
 
     void setClusterisation(std::shared_ptr<Clustering> var) { _clustering = std::move(var); }
 
-    /// Process a cluster and return only pads that are suggested to be robust
-    /** E.g. function can return only 2 pads in a column.
-     * Another use case is to omit pads with wrong timestamps.
-     * Any user defined selection may be applied.
-     */
-    THitPtrVec GetRobustPadsInCluster(THitPtrVec col);
-    /// Return only robust clusters
-    /** E.g. apply a truncation - omit clusters with relatively large charge
-     * Or put a strong upper limit on cluster charge.
-     * Any condition can be specified.
-     */
-    static TClusterPtrVec GetRobustClusters(TClusterPtrVec &tr);
-
     std::shared_ptr<Clustering> CL_col{nullptr};
     std::shared_ptr<Clustering> CL_diag{nullptr};
     std::shared_ptr<Clustering> CL_2by1{nullptr};
@@ -189,15 +176,8 @@ class AnalysisBase {
     /// number of reconstructed events
     int _reconstructed{-999};
 
-    /// The current processing event
-    std::shared_ptr<TRawEvent> _event{nullptr};
-    bool _work_with_event_file{false};
-
     /// output file
     TFile *_file_out{nullptr};
-
-    /// choose the input array size, whether to use 510 or 511 time bins
-    bool _saclay_cosmics{false};
 
     /// output vector to put in the file
     std::vector<TObject *> _output_vector{};

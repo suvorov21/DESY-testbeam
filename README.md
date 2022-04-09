@@ -119,7 +119,7 @@ One can define its own class that will do a position fitting with any algorithm 
 ### Robust pads and columns to use
 In the analysis one can work only with THit and TCluster that are "robust". 
 E.g. clusters with larger charge can be truncated; only 2 pads in the cluster can be used and so on.
-Functions `AnalysisBase::GetRobustPadsInColumn()` and `AnalysisBase::GetRobustCols()`
+Functions `PadSelection::GetRobustPadsInColumn()` and `PadSelection::GetRobustCols()`
 may contain conditions to select certain clusters and pads. 
 By default, no additional conditions are applied.
 
