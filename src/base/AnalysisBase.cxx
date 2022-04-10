@@ -111,9 +111,12 @@ bool AnalysisBase::Initialize() {
     }
 
     TString filename = Interface::getRootFile(_file_in_name);
-    auto interfaceType = Interface::getFileType(filename);
-    _interface = interfaceFactory::get(filename, interfaceType);
-    _interface->Initialize();
+    _interface.reserve(readerThreads);
+    for (auto i = 0; i < readerThreads; ++i) {
+        auto interfaceType = Interface::getFileType(filename);
+        _interface.emplace_back(interfaceFactory::get(filename, interfaceType));
+        _interface.back()->Initialize();
+    }
 
     std::cout << "Initializing analysis base...............";
 
@@ -130,7 +133,7 @@ bool AnalysisBase::Initialize() {
     gROOT->SetStyle(_t2kstyle->GetName());
     gROOT->ForceStyle();
 
-    Long64_t N_events = _interface->getEntries();
+    Long64_t N_events = _interface[0]->getEntries();
     _eventList.reserve(N_events);
     for (auto i = 0; i < N_events; ++i)
         _eventList.push_back(i);
@@ -187,8 +190,29 @@ bool AnalysisBase::Loop() {
     if (N_events < 100)
         denominator = N_events;
 
+    std::atomic<int> read{_start_ID};
+    std::atomic<int> readAhead{0};
+    std::vector<std::thread> inputReader;
+    inputReader.reserve(readerThreads);
+    for (auto & interface : _interface) {
+        inputReader.emplace_back([&]() {
+            while (read < _end_ID) {
+                // do not read all events in a file to save RAM
+                if (readAhead > 50)
+                    continue;
+                int toRead = read++;
+                auto event = interface->getEvent(_eventList[toRead]);
+                std::lock_guard<std::mutex> lock(_mu);
+                _rawEventList.emplace_back(std::move(event));
+                ++readAhead;
+            }
+        });
+    }
+
     // Event loop
-    for (auto eventID = _start_ID; eventID < _end_ID; ++eventID) {
+    int eventID = _start_ID;
+    int prevDump = eventID - 1;
+    while (eventID < _end_ID) {
         if (_verbose >= static_cast<int>(verbosity_base::v_event_number)) {
             std::cout << "*************************************" << std::endl;
             std::cout << "Event " << eventID << std::endl;
@@ -196,13 +220,24 @@ bool AnalysisBase::Loop() {
         }
 
         // Dump progress in command line
-        if (_verbose == static_cast<int>(verbosity_base::v_progress) \
- && (eventID % (N_events / denominator)) == 0)
-            this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
+        if ((eventID % (N_events / denominator)) == 0 && _verbose == static_cast<int>(verbosity_base::v_progress)) {
+            if (prevDump != eventID) {
+                this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
+                prevDump = eventID;
+            }
+        }
 
         // start the timer
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
-        std::shared_ptr<TRawEvent> rawEvent = _interface->getEvent(_eventList[eventID]);
+
+        // wait for interface to read an event
+        if (_rawEventList.empty())
+            continue;
+
+        std::shared_ptr<TRawEvent> rawEvent = _rawEventList.front();
+        ++eventID;
+        --readAhead;
+        _rawEventList.erase(_rawEventList.begin());
 
         _read_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
 
@@ -236,6 +271,9 @@ bool AnalysisBase::Loop() {
         if (_store_event)
             ++_selected;
     } // end of event loop
+    for (auto i = 0; i < readerThreads; ++i) {
+        inputReader[i].join();
+    }
     // if progress bar is active --> go to the next line
     if (_verbose == static_cast<int>(verbosity_base::v_progress))
         std::cout << std::endl;

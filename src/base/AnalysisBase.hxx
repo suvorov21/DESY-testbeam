@@ -4,6 +4,7 @@
 /** @cond */
 #include <numeric>
 #include <utility>
+#include <list>
 
 #include "TString.h"
 #include "TFile.h"
@@ -154,7 +155,14 @@ class AnalysisBase {
     /// output file name
     TString _file_out_name{""};
 
-    std::unique_ptr<Interface> _interface;
+    /// Number of data readers thread
+    const int readerThreads = 3;
+    mutable std::mutex _mu;
+    /// vector of interfaces for the data reading
+    std::vector<std::unique_ptr<Interface>> _interface;
+
+    /// list of raw events to be filled in parallel
+    std::list<std::shared_ptr<TRawEvent>> _rawEventList;
 
     /// name of the parameter file
     TString _param_file_name{""};
