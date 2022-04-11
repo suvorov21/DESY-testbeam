@@ -2,6 +2,7 @@
 #include <memory>
 #include <cstdlib>
 #include <iomanip>
+#include <algorithm>
 
 #include "TROOT.h"
 
@@ -50,6 +51,7 @@ AnalysisBase::AnalysisBase() :
 
     _clParser.addOption("input_file", {"-i", "--input"}, "Input file name", 1);
     _clParser.addOption("output_file", {"-o", "--output"}, "Output file name", 1);
+    _clParser.addOption("nthreads", {"--nthread"}, "Number of reader threads [1-4]");
 
     _clParser.addOption("param_file", {"-p", "--param"}, "Parameter file name", 1);
     _clParser.addOption("verbosity", {"-v", "--verbose"}, "Verbosity level", 1);
@@ -73,6 +75,7 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
 
     setInputFile(_clParser.getOptionVal<TString>("input_file", "", 0));
     setOutputFile(_clParser.getOptionVal<TString>("output_file", "", 0));
+    _readerThreads = _clParser.getOptionVal<uint>("nthreads", 1, 0);
 
     setParamFile(_clParser.getOptionVal<TString>("param_file", "", 0));
     setVerbosity(_clParser.getOptionVal<int>("verbosity", _verbose, 0));
@@ -111,8 +114,8 @@ bool AnalysisBase::Initialize() {
     }
 
     TString filename = Interface::getRootFile(_file_in_name);
-    _interface.reserve(readerThreads);
-    for (auto i = 0; i < readerThreads; ++i) {
+    _interface.reserve(_readerThreads - 1);
+    for (auto i = 0; i < std::max(1U, _readerThreads - 1); ++i) {
         auto interfaceType = Interface::getFileType(filename);
         _interface.emplace_back(interfaceFactory::get(filename, interfaceType));
         _interface.back()->Initialize();
@@ -193,9 +196,9 @@ bool AnalysisBase::Loop() {
     std::atomic<int> read{_start_ID};
     std::atomic<int> readAhead{0};
     std::vector<std::thread> inputReader;
-    inputReader.reserve(readerThreads);
-    for (auto & interface : _interface) {
-        inputReader.emplace_back([&]() {
+    inputReader.reserve(_readerThreads - 1);
+    for (auto i = 0; i < _readerThreads - 1; ++i) {
+        inputReader.emplace_back([interface = std::move(_interface[i]), &read, &readAhead, this]() {
             while (read < _end_ID) {
                 // do not read all events in a file to save RAM
                 if (readAhead > 50)
@@ -229,6 +232,9 @@ bool AnalysisBase::Loop() {
 
         // start the timer
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
+
+        if (_readerThreads == 1)
+            _rawEventList.emplace_back(_interface[0]->getEvent(_eventList[eventID]));
 
         // wait for interface to read an event
         if (_rawEventList.empty())
@@ -271,7 +277,7 @@ bool AnalysisBase::Loop() {
         if (_store_event)
             ++_selected;
     } // end of event loop
-    for (auto i = 0; i < readerThreads; ++i) {
+    for (auto i = 0; i < _readerThreads - 1; ++i) {
         inputReader[i].join();
     }
     // if progress bar is active --> go to the next line

@@ -156,7 +156,7 @@ class AnalysisBase {
     TString _file_out_name{""};
 
     /// Number of data readers thread
-    const int readerThreads = 3;
+    uint _readerThreads{1};
     mutable std::mutex _mu;
     /// vector of interfaces for the data reading
     std::vector<std::unique_ptr<Interface>> _interface;
