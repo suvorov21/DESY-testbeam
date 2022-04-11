@@ -2,7 +2,6 @@
 #include <memory>
 #include <cstdlib>
 #include <iomanip>
-#include <algorithm>
 
 #include "TROOT.h"
 
@@ -37,13 +36,6 @@ AnalysisBase::AnalysisBase() :
     _to_store_wf(true),
     _app(nullptr) {
 //******************************************************************************
-    // clusterisation initialization
-    CL_col = std::make_shared<Clustering>(0., 0);
-    CL_diag = std::make_shared<Clustering>(units::a45, 1);
-    CL_2by1 = std::make_shared<Clustering>(units::a2, 2);
-    CL_3by1 = std::make_shared<Clustering>(units::a3, 3);
-    // CL_3by2 = new Clustering(units::a32, 2./3.);
-    _clustering = CL_col;
 
     // CLI reader
     _clParser.setIsUnixGnuMode(true);
@@ -100,12 +92,6 @@ bool AnalysisBase::Initialize() {
     if (!ReadParamFile()) {
         std::cerr << "ERROR! " << __func__ << "(). Parameter file is not read" << std::endl;
         exit(1);
-    }
-
-    if (_invert) {
-        CL_2by1->angle = units::a2_inv;
-        CL_3by1->angle = units::a3_inv;
-        // CL_3by2->angle = units::a32_inv;
     }
 
     if (_file_out_name == "") {
@@ -225,7 +211,9 @@ bool AnalysisBase::Loop() {
         // Dump progress in command line
         if ((eventID % (N_events / denominator)) == 0 && _verbose == static_cast<int>(verbosity_base::v_progress)) {
             if (prevDump != eventID) {
-                this->CL_progress_dump(eventID - _start_ID, _end_ID - _start_ID);
+                _clDump.CL_progress_dump(eventID - _start_ID,
+                                         _end_ID - _start_ID,
+                                         _selected);
                 prevDump = eventID;
             }
         }
@@ -365,59 +353,6 @@ std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
 }
 
 //******************************************************************************
-TClusterPtrVec AnalysisBase::ClusterTrack(const THitPtrVec &tr) const {
-//******************************************************************************
-    if (!_clustering) {
-        std::cerr << "ERROR! AnalysisBase::ClusterTrack(). Clustering is not defined" << std::endl;
-        exit(1);
-    }
-    TClusterPtrVec cluster_v;
-    for (const auto &pad : tr) {
-        auto col_id = pad->GetCol(_invert);
-        auto row_id = pad->GetRow(_invert);
-
-        // skip first and last row/column
-        if (row_id == 0 || row_id == geom::GetNRow(_invert) - 1 ||
-            col_id == 0 || col_id == geom::GetNColumn(_invert) - 1)
-            continue;
-
-        auto cons = _clustering->GetConstant(row_id, col_id);
-
-        // search if the cluster is already considered
-        TClusterPtrVec::iterator it;
-        for (it = cluster_v.begin(); it < cluster_v.end(); ++it) {
-            if (!(**it)[0]) {
-                continue;
-            }
-
-            auto cluster_col = (**it)[0]->GetCol(_invert);
-            auto cluster_row = (**it)[0]->GetRow(_invert);
-            if (_clustering->GetConstant(cluster_row, cluster_col) == cons) {
-                (*it)->AddHit(pad);
-                (*it)->AddCharge(pad->GetQ());
-                /** update X position */
-                auto x_pad = geom::GetXposPad(pad, _invert, _clustering->angle);
-                auto mult = (*it)->GetSize();
-                auto x_new = ((*it)->GetX() * ((Float_t) mult - 1) + x_pad) / num::cast<double>(mult);
-                (*it)->SetX((float_t) x_new);
-                /** */
-
-                break;
-            }
-        } // loop over track clusters
-        // add new cluster
-        if (it == cluster_v.end()) {
-            auto first_cluster = std::make_unique<TCluster>(pad);
-            first_cluster->SetX((float_t) geom::GetXposPad(pad, _invert, _clustering->angle));
-            first_cluster->SetCharge(pad->GetQ());
-            cluster_v.push_back(std::move(first_cluster));
-        }
-    } // over pads
-
-    return cluster_v;
-}
-
-//******************************************************************************
 //******************************************************************************
 // ***** Functions below are utils: params reading, progress dump **************
 //******************************************************************************
@@ -450,31 +385,29 @@ bool AnalysisBase::ReadParamFile() {
             auto name = line.substr(0, delimiterPos);
             auto value = line.substr(delimiterPos + 1);
 
-            if (name == "cluster") {
-                if (value == "column") {
-                    _clustering = CL_col;
-                    std::cout << "Column cluster is used" << std::endl;
-                } else if (value == "diag") {
-                    _clustering = CL_diag;
-                    std::cout << "Diagonal cluster is used" << std::endl;
-                } else if (value == "2by1") {
-                    _clustering = CL_2by1;
-                    std::cout << "2by1 cluster is used" << std::endl;
-                } else if (value == "3by1") {
-                    _clustering = CL_3by1;
-                    std::cout << "3by1 cluster is used" << std::endl;
-                    // } else if (value == "3by2") {
-                    //   _clustering = CL_3by2;
-                } else {
-                    std::cerr << "ERROR. Unknown clustering " << value << std::endl;
-                    return false;
-                }
-            } else if (name == "invert") {
+            _clustering = std::make_shared<Clustering>(clusterType::kRowColumn, false);
+            if (name == "invert") {
                 if (value == "1") {
                     _invert = true;
                     std::cout << "Inverted geometry used" << std::endl;
                 }
-            } else if (name == "prf_shape") {
+            } else if (name == "cluster") {
+                if (value == "column") {
+                    std::cout << "Column cluster is used" << std::endl;
+                } else if (value == "diag") {
+                    _clustering = std::make_shared<Clustering>(clusterType::kDiagonal, _invert);
+                    std::cout << "Diagonal cluster is used" << std::endl;
+                } else if (value == "2by1") {
+                    _clustering = std::make_shared<Clustering>(clusterType::k2by1, _invert);
+                    std::cout << "2by1 cluster is used" << std::endl;
+                } else if (value == "3by1") {
+                    _clustering = std::make_shared<Clustering>(clusterType::k3by1, _invert);
+                    std::cout << "3by1 cluster is used" << std::endl;
+                } else {
+                    std::cerr << "ERROR. Unknown clustering " << value << std::endl;
+                    return false;
+                }
+            } else  if (name == "prf_shape") {
                 if (value == "gaus_lorentz") {
                     _gaus_lorentz_PRF = true;
                     std::cout << "PRF is fit with Gaussian-Lorentzian" << std::endl;
@@ -547,8 +480,6 @@ bool AnalysisBase::ReadParamFile() {
                     auto coordinates = GenericToolbox::splitString(pad, ",");
                     if (coordinates.size() != 2) {
                         continue;
-//            std::cerr << pad << std::endl;
-//            throw std::logic_error("Wrong dead pad syntax");
                     }
                     _broken_pads.emplace_back(TString(coordinates[0]).Atoi(),
                                               TString(coordinates[1]).Atoi()
@@ -563,38 +494,4 @@ bool AnalysisBase::ReadParamFile() {
     }
     std::cout << "*****************************************" << std::endl;
     return true;
-}
-
-//******************************************************************************
-void AnalysisBase::CL_progress_dump(int eventID, int N_events) {
-//******************************************************************************
-    auto mem = GenericToolbox::getProcessMemoryUsage();
-    if (eventID)
-        _loop_start_ts += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("loop");
-    else
-        GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("loop");
-
-    int m, s;
-    if (eventID) {
-        long long EET = num::cast<int>(((N_events - eventID) * _loop_start_ts / eventID));
-        EET /= 1e6;
-        m = num::cast<int>(EET / 60);
-        s = num::cast<int>(EET % 60);
-    }
-
-    for (auto i = 0; i < 30; ++i)
-        if (i < 30. * eventID / N_events) std::cout << "#";
-        else std::cout << " ";
-    std::cout << "]   Nevents = " << N_events << "\t" << round(1. * eventID / N_events * 100) << "%";
-    std::cout << "\t Selected  " << _selected << " (" << round(1. * _selected / eventID * 100) << "%)";
-    std::cout << "\t Memory  " << std::setw(4) << mem / 1048576 << " " << "MB";
-    if (eventID) {
-        std::cout.precision(4);
-        std::cout << "\t Av speed " << std::setw(5) << num::cast<double>(_loop_start_ts) / 1e3 / eventID << " ms/event";
-        std::cout << "\t EET " << std::setw(2) << m << ":";
-        std::cout << std::setw(2) << std::setfill('0');
-        std::cout << s;
-        std::cout << std::setfill(' ');
-    }
-    std::cout << "      \r[" << std::flush;
 }

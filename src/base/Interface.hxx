@@ -1,8 +1,10 @@
+/** @cond */
 #include <utility>
 #include <memory>
 
 #include "TString.h"
 #include "TChain.h"
+/** @endcond */
 
 #include "TRawEvent.hxx"
 #include "Geom.hxx"

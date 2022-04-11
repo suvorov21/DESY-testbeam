@@ -25,30 +25,9 @@
 
 #include "ReconstructionBase.hxx"
 #include "Interface.hxx"
+#include "ClDump.hxx"
 
 class TCluster;
-
-/// Class that keeps rules for track clusterisation
-class Clustering {
- public:
-    Clustering(Float_t a,
-               int n_pads
-    ) : angle(a), n_pads(n_pads) { coeff = (n_pads == 0) ? 0.001 : 1. / n_pads; }
-    /// angle of a reference frame rotation
-    Double_t angle;
-    /// Number of pads in a row
-    int n_pads;
-    /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
-    Double_t coeff;
-    /// Function of row and column that is constant for a given cluster
-    [[nodiscard]] int GetConstant(int row, int col) const {
-        if (n_pads == 0)
-            return col;
-        else {
-            return floor(coeff * col - row);
-        }
-    }
-};
 
 /// Main analysis template
 /**
@@ -99,31 +78,7 @@ class AnalysisBase {
     void setOverwrite(const bool var) { _overwrite = var; }
     void setInvert(const bool var) { _invert = var; }
 
-    void setClusterisation(std::shared_ptr<Clustering> var) { _clustering = std::move(var); }
-
-    std::shared_ptr<Clustering> CL_col{nullptr};
-    std::shared_ptr<Clustering> CL_diag{nullptr};
-    std::shared_ptr<Clustering> CL_2by1{nullptr};
-    std::shared_ptr<Clustering> CL_3by1{nullptr};
-//  Clustering* CL_3by2;
-
-    /// An actual clustering procedure
-    std::shared_ptr<Clustering> _clustering;
-
-    /// Split track into clusters
-    /** Extract the vector of clusters from the whole track.
-    * the logic of clusterisation is given with the function of the Clustering object
-    * The function takes (row, column) and return a value
-    * that is constant for a given cluster.
-    * For example for clustering with columns the rule column == const is constant.
-    * For diagonals column - row = const and so on.
-    */
-    [[nodiscard]] TClusterPtrVec ClusterTrack(const THitPtrVec &tr) const;
-
     /************************** Utilities functions *****************************/
-
-    /// Dump progress in the command line
-    virtual void CL_progress_dump(int eventID, int Nevents);
 
     /// Set a vector of events that will be processed.
     /** Used in the analysis with few iterations. After the first iteration
@@ -194,6 +149,9 @@ class AnalysisBase {
     /**  You can use plenty in the analysis. At least one should be defines */
     std::unique_ptr<ReconstructionBase> _reconstruction{nullptr};
 
+    /// An actual clustering procedure
+    std::shared_ptr<Clustering> _clustering{nullptr};
+
     /// Selection parameters
     /// The maximum multiplicity of the track
     Int_t _max_mult{0};
@@ -257,10 +215,12 @@ class AnalysisBase {
     /// Whether to store the WFs
     bool _to_store_wf{false};
 
+    /// Dump the progress into CL
+    ClDump _clDump{};
+
     /// Time control system
     TApplication *_app{nullptr};
     /// time controller
-    long long _loop_start_ts{0};
     long long _read_time{0};
     long long _reco_time{0};
     long long _ana_time{0};

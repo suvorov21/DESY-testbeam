@@ -6,6 +6,12 @@
 #include <iostream>
 /** @endcond */
 
+class THit;
+/// shared pointer to THit
+using THitPtr = std::shared_ptr<THit>;
+/// vector of shared pointers to THit, e.g. event or cluster
+using THitPtrVec = std::vector<THitPtr>;
+
 //! Class for storing information about each reconstructed hit.
 
 //! Store row, column, charge, time and the whole waveform

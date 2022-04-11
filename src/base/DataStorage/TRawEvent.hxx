@@ -3,11 +3,6 @@
 
 #include "THit.hxx"
 
-/// shared pointer to THit
-using THitPtr = std::shared_ptr<THit>;
-/// vector of shared pointers to THit, e.g. event or cluster
-using THitPtrVec = std::vector<THitPtr>;
-
 //! Class that contains pointers to all the hits in the event
 
 //! This class is used for the I/O with a ROOT file
