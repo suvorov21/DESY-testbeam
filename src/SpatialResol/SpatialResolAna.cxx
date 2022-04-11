@@ -881,6 +881,9 @@ bool SpatialResolAna::WriteOutput() {
     TH1F sr_h("h", "", resol_bin, resol_min, resol_max);
     _tree->Project("h", "residual");
     sr_h.Fit("gaus", "Q");
+    if (!sr_h.GetFunction("gaus")) {
+      throw std::logic_error("residual fit fail");
+    }
     std::cout << "Spatial resolution\t" << sr_h.GetFunction("gaus")->GetParameter(2) * 1e6 << " um" << std::endl;
     TH1F e_h("h_e", "", 200, 0., 10000);
     _tree->Project("h_e", "dEdx");

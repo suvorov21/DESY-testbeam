@@ -388,6 +388,7 @@ bool AnalysisBase::ReadParamFile() {
             if (name == "invert") {
                 if (value == "1") {
                     _invert = true;
+                    _clustering->setInvert(_invert);
                     std::cout << "Inverted geometry used" << std::endl;
                 }
             } else if (name == "cluster") {
