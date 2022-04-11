@@ -24,7 +24,8 @@ std::shared_ptr<THit> TCluster::operator[](size_t index) {
     return _hits[index];
 }
 
-Clustering::Clustering(clusterType type, bool invert) : _invert(invert) {
+Clustering::Clustering(clusterType type, bool invert) :
+_invert(invert), _type(type) {
     switch (type) {
         case clusterType::kRowColumn:
             _angle = 0.;
@@ -95,4 +96,14 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
     } // over pads
 
     return cluster_v;
+}
+
+void Clustering::setInvert(bool invert) {
+    _invert = invert;
+    if (_type == clusterType::k3by1) {
+        _angle = invert ? units::a3_inv : units::a3;
+    }
+    if (_type == clusterType::k2by1) {
+        _angle = invert ? units::a2_inv : units::a2;
+    }
 }

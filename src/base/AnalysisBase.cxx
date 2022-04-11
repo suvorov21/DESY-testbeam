@@ -11,7 +11,7 @@
 
 //******************************************************************************
 AnalysisBase::AnalysisBase() :
-    _clustering(nullptr),
+    _clustering(std::make_unique<Clustering>(clusterType::kRowColumn, false)),
     _param_file_name(""),
     _start_ID(-1),
     _end_ID(-1),
@@ -385,7 +385,6 @@ bool AnalysisBase::ReadParamFile() {
             auto name = line.substr(0, delimiterPos);
             auto value = line.substr(delimiterPos + 1);
 
-            _clustering = std::make_shared<Clustering>(clusterType::kRowColumn, false);
             if (name == "invert") {
                 if (value == "1") {
                     _invert = true;
@@ -395,13 +394,13 @@ bool AnalysisBase::ReadParamFile() {
                 if (value == "column") {
                     std::cout << "Column cluster is used" << std::endl;
                 } else if (value == "diag") {
-                    _clustering = std::make_shared<Clustering>(clusterType::kDiagonal, _invert);
+                    _clustering = std::make_unique<Clustering>(clusterType::kDiagonal, _invert);
                     std::cout << "Diagonal cluster is used" << std::endl;
                 } else if (value == "2by1") {
-                    _clustering = std::make_shared<Clustering>(clusterType::k2by1, _invert);
+                    _clustering = std::make_unique<Clustering>(clusterType::k2by1, _invert);
                     std::cout << "2by1 cluster is used" << std::endl;
                 } else if (value == "3by1") {
-                    _clustering = std::make_shared<Clustering>(clusterType::k3by1, _invert);
+                    _clustering = std::make_unique<Clustering>(clusterType::k3by1, _invert);
                     std::cout << "3by1 cluster is used" << std::endl;
                 } else {
                     std::cerr << "ERROR. Unknown clustering " << value << std::endl;

@@ -75,8 +75,11 @@ class Clustering {
     bool _invert;
     /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
     Double_t _coeff;
+    /// Type of the clustering
+    clusterType _type;
+
  public:
-    Clustering(clusterType type = clusterType::kRowColumn, bool invert = false);
+    explicit Clustering(clusterType type = clusterType::kRowColumn, bool invert = false);
 
     // Split track into clusters
     /** Extract the vector of clusters from the whole track.
@@ -87,6 +90,8 @@ class Clustering {
     * For diagonals column - row = const and so on.
     */
     TClusterPtrVec ClusterTrack(const THitPtrVec &tr) const;
+
+    void setInvert(bool invert);
 
     int getNpads() const {return _n_pads;}
     Double_t getAngle() const {return _angle;}

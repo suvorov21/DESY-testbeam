@@ -150,7 +150,7 @@ class AnalysisBase {
     std::unique_ptr<ReconstructionBase> _reconstruction{nullptr};
 
     /// An actual clustering procedure
-    std::shared_ptr<Clustering> _clustering{nullptr};
+    std::unique_ptr<Clustering> _clustering;
 
     /// Selection parameters
     /// The maximum multiplicity of the track
