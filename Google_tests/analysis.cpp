@@ -60,15 +60,13 @@ TEST(InitialisationTest, baseProcessEvent) {
 }
 
 TEST(AnalysisTest, Clusterisation) {
-    auto ana = std::make_unique<AnalysisBase>();
+    Clustering cluster;
     auto track = fake::GetTrack();
-    auto clusters = ana->ClusterTrack(track);
+    auto clusters = cluster.ClusterTrack(track);
     EXPECT_EQ(clusters.size(), 34);
-    ana->setInvert(true);
-    clusters = ana->ClusterTrack(track);
+    cluster = Clustering(clusterType::kRowColumn, true);
+    clusters = cluster.ClusterTrack(track);
     EXPECT_EQ(clusters.size(), 3);
-    ana->setClusterisation(nullptr);
-    EXPECT_EXIT(ana->ClusterTrack(track), testing::ExitedWithCode(1), "ERROR");
 }
 
 //TEST(Graphics, drawEvent) {

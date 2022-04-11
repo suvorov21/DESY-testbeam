@@ -76,7 +76,7 @@ class Clustering {
     /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
     Double_t _coeff;
  public:
-    Clustering(clusterType type, bool invert);
+    Clustering(clusterType type = clusterType::kRowColumn, bool invert = false);
 
     // Split track into clusters
     /** Extract the vector of clusters from the whole track.
