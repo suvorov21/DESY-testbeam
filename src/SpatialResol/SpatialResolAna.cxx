@@ -129,19 +129,19 @@ bool SpatialResolAna::Initialize() {
       exit(1);
     }
 
-    if (_clustering->n_pads > 0 && _individual_column_PRF) {
+    if (_clustering->getNpads() > 0 && _individual_column_PRF) {
       std::cerr << "ERROR. Conflicting options" << std::endl;
       exit(1);
     }
 
     // Read PRF for complicated patterns
-    if (_clustering->n_pads > 1) {
+    if (_clustering->getNpads() > 1) {
       _prf_function_arr = new TF1*[3];
-      for (auto rest = 0; rest < std::min(_clustering->n_pads, 3); ++rest) {
+      for (auto rest = 0; rest < std::min(_clustering->getNpads(), 3); ++rest) {
         _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true, _gaus_lorentz_PRF);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-        TString s = TString::Itoa(_clustering->n_pads, 10);
+        TString s = TString::Itoa(_clustering->getNpads(), 10);
         TString r = TString::Itoa(rest, 10);
         tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
         auto gr_tmp = new TGraphErrors();
@@ -160,7 +160,7 @@ bool SpatialResolAna::Initialize() {
         _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre, _gaus_lorentz_PRF);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
-        TString s = TString::Itoa(_clustering->n_pads, 10);
+        TString s = TString::Itoa(_clustering->getNpads(), 10);
         TString r = TString::Itoa(colId, 10);
         tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
         auto gr_tmp = new TGraphErrors();
@@ -379,12 +379,12 @@ bool SpatialResolAna::Initialize() {
   _fitter->SetPRFtimeFunc(_prf_time_func);
   _fitter->SetPRFtimeGError(_prf_time_e);
   _fitter->SetFitBound(fit_bound_right);
-  _fitter->SetAngle(_clustering->angle);
+  _fitter->SetAngle(_clustering->getAngle());
   _fitter->SetChargeUncertainty(_charge_uncertainty);
 
 
-  if (_clustering->n_pads > 1 && _iteration) {
-    _fitter->SetPRFarr(_prf_function_arr, _clustering->n_pads);
+  if (_clustering->getNpads() > 1 && _iteration) {
+    _fitter->SetPRFarr(_prf_function_arr, _clustering->getNpads());
     _fitter->SetComplicatedPatternPRF(true);
   }
 
@@ -402,7 +402,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   auto track_hits = event->GetUsedHits();
   if (track_hits.empty())
     return false;
-  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
+  GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("TrackSel");
 
   // reset tree values
   Reset(num::cast<int>(event->GetID()));
@@ -411,35 +411,35 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
 // *******************  STEP 1 *************************************************
 
   TClusterPtrVec clusters;
-  clusters = ClusterTrack(track_hits);
+  clusters = _clustering->ClusterTrack(track_hits);
 
   if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "Clusterization done " << clusters.size() <<  std::endl;
 
   // selection
-  bool sel = sel::CrossingTrackSelection(clusters,
-                                   _max_mult,
-                                   _max_mean_mult,
-                                   _cut_gap,
-                                   _max_phi,
-                                   _max_theta,
-                                   _broken_pads,
-                                   _invert,
-                                   _verbose
+  bool sel = TrackSel::CrossingTrackSelection(clusters,
+                                              _max_mult,
+                                              _max_mean_mult,
+                                              _cut_gap,
+                                              _max_phi,
+                                              _max_theta,
+                                              _broken_pads,
+                                              _invert,
+                                              _verbose
                                    );
-  _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("sel");
+  _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("TrackSel");
   if (!sel)
     return false;
 
   // TODO prevent multiple fitter call
-  std::vector<double> fit_v = sel::GetFitParams(clusters, _invert);
-  std::vector<double> fit_xz = sel::GetFitParamsXZ(clusters, _invert);
+  std::vector<double> fit_v = TrackSel::GetFitParams(clusters, _invert);
+  std::vector<double> fit_xz = TrackSel::GetFitParamsXZ(clusters, _invert);
 
   _angle_xy = num::cast<Double_t>(fit_v[2]);
-  _angle_yz = num::cast<Double_t>(fit_xz[2] * sel::v_drift_est);
+  _angle_yz = num::cast<Double_t>(fit_xz[2] * TrackSel::v_drift_est);
 
   // if not a column clustering
-  if (_clustering->n_pads > 0) {
+  if (_clustering->getNpads() > 0) {
     if (clusters.size() < 5)
       return false;
     // clean first and last cluster
@@ -454,7 +454,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
   if (clusters.size() < uint(_min_clusters))
     return false;
   // truncation
-  auto robust_clusters = GetRobustClusters(clusters);
+  auto robust_clusters = PadSelection::GetRobustClusters(clusters);
 
   if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
     std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
@@ -520,7 +520,8 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent>& event) {
       continue;
     // Fill PRF
     // TODO cache the result of GetRobustPadsInCluster?
-    auto robust_pads = GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits());
+    auto robust_pads = PadSelection::GetRobustPadsInCluster(robust_clusters[clusterId]->GetHits(),
+                                                            _broken_pads);
     int padId = 0;
     for (const auto& pad:robust_pads)
       FillPRF(pad, padId, clusterId, fit);
@@ -546,7 +547,8 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr& cluster, uint id) {
     return;
 
   // loop over rows
-  auto robust_pads = GetRobustPadsInCluster(cluster->GetHits());
+  auto robust_pads = PadSelection::GetRobustPadsInCluster(cluster->GetHits(),
+                                                                     _broken_pads);
   _multiplicity[id] = num::cast<int>(robust_pads.size());
 
   auto pad_id = -1;
@@ -698,7 +700,7 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
 //******************************************************************************
   _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
                                                         _invert,
-                                                        _clustering->angle);
+                                                        _clustering->getAngle());
   _charge[clusterId] += pad->GetQ();
   _pad_charge[clusterId][padId] = pad->GetQ();
   _pad_time[clusterId][padId] = pad->GetTime();
@@ -773,10 +775,10 @@ void SpatialResolAna::FillPRF(const THitPtr& pad,
   auto q    = pad->GetQ();
   auto time = pad->GetTime();
 
-  double x = geom::GetXposPad(pad, _invert, _clustering->angle);
+  double x = geom::GetXposPad(pad, _invert, _clustering->getAngle());
   double center_pad_y = geom::GetYposPad(pad,
                                          _invert,
-                                         _clustering->angle
+                                         _clustering->getAngle()
   );
 
   double track_fit_y_pad    = fit->Eval(x);
@@ -879,6 +881,9 @@ bool SpatialResolAna::WriteOutput() {
     TH1F sr_h("h", "", resol_bin, resol_min, resol_max);
     _tree->Project("h", "residual");
     sr_h.Fit("gaus", "Q");
+    if (!sr_h.GetFunction("gaus")) {
+      throw std::logic_error("residual fit fail");
+    }
     std::cout << "Spatial resolution\t" << sr_h.GetFunction("gaus")->GetParameter(2) * 1e6 << " um" << std::endl;
     TH1F e_h("h_e", "", 200, 0., 10000);
     _tree->Project("h_e", "dEdx");

@@ -36,7 +36,7 @@ make
 
 Then the code can be run with e.g.
 ```bash
-./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b
+./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b --nthread 3
 ```
 The detailed description of the input flags is provided in [SpatialResol/README.md](src/SpatialResol/README.md).
 The expected output during the analysis is displayed below:
@@ -119,7 +119,7 @@ One can define its own class that will do a position fitting with any algorithm 
 ### Robust pads and columns to use
 In the analysis one can work only with THit and TCluster that are "robust". 
 E.g. clusters with larger charge can be truncated; only 2 pads in the cluster can be used and so on.
-Functions `AnalysisBase::GetRobustPadsInColumn()` and `AnalysisBase::GetRobustCols()`
+Functions `PadSelection::GetRobustPadsInColumn()` and `PadSelection::GetRobustCols()`
 may contain conditions to select certain clusters and pads. 
 By default, no additional conditions are applied.
 

@@ -6,95 +6,101 @@
 #include <iostream>
 /** @endcond */
 
+class THit;
+/// shared pointer to THit
+using THitPtr = std::shared_ptr<THit>;
+/// vector of shared pointers to THit, e.g. event or cluster
+using THitPtrVec = std::vector<THitPtr>;
+
 //! Class for storing information about each reconstructed hit.
 
 //! Store row, column, charge, time and the whole waveform
-class THit : public TObject{
+class THit : public TObject {
  public:
-  // ctor
-  THit(const int col, const int row,
-       const int time       = -1,
-       const int q          = -1,
-       const UInt_t fec     = -1,
-       const UInt_t asic    = -1,
-       const UInt_t channel = -1 ):
-       fRow(row), fColumn(col), fTime(time), fCharge(q), fFEC(fec), fASIC(asic), fChannel(channel)  {
-    fwhm      = -999;
-    fw       = -999;
+    // ctor
+    THit(const int col, const int row,
+         const int time = -1,
+         const int q = -1,
+         const UInt_t fec = -1,
+         const UInt_t asic = -1,
+         const UInt_t channel = -1) :
+        fRow(row), fColumn(col), fTime(time), fCharge(q), fFEC(fec), fASIC(asic), fChannel(channel) {
+        fwhm = -999;
+        fw = -999;
 
-    for (int & i : fwf)
-        i = 0;
-  }
-
-  // default ctor
-  THit() {
-    fRow  = -999;
-    fColumn  = -999;
-    fTime  = -999;
-    fCharge  = 0;
-
-    fFEC = -1;
-    fASIC = -1;
-    fChannel = -1;
-
-    for (int & i : fwf)
-        i = 0;
-
-    fwhm = -999;
-    fw = -999;
-  }
-
-  /// redefine charge and time of the hit with the maximum in given time range
-  void FindMaxInTime(const int& low, const int& high);
-
-  // setters
-  void SetRow(int row)    {fRow = row;}
-  void SetCol(int col)    {fColumn = col;}
-  void SetTime(int time)  {fTime = time;}
-  void SetQ(int Q)        {fCharge = Q;}
-  void SetADC(int i, int adc) {
-    if (i < 0 || i > 511) {
-      std::cout << "ADC index out of range!\t" << i << std::endl;
-      return;
+        for (int &i : fwf)
+            i = 0;
     }
-    fwf[i] = adc;
-  }
 
-  void SetWidth(int val) {fw = val;}
-  void SetFWHM(int val) {fwhm = val;}
+    // default ctor
+    THit() {
+        fRow = -999;
+        fColumn = -999;
+        fTime = -999;
+        fCharge = 0;
 
-  // getters
-  int GetRow(bool invert = false)    const;
-  int GetCol(bool invert = false)    const;
-  int GetTime()               const   {return fTime;}
-  int GetQ()                  const   {return fCharge;}
-  int GetADC(int i) const {
-    if (i >= 0 && i < 512)
-      return fwf[i];
-    std::cout << "ADC index out of range!\t" << i << std::endl;
-    return 0;
-  }
-  UInt_t GetFEC()             const   {return fFEC;}
-  UInt_t GetASIC()            const   {return fASIC;}
-  UInt_t GetChannel()         const   {return fChannel;}
+        fFEC = -1;
+        fASIC = -1;
+        fChannel = -1;
 
-  int GetWidth() const {return fw;}
-  int GetFWHM() const {return fwhm;}
+        for (int &i : fwf)
+            i = 0;
 
-  ClassDef (THit,1);
+        fwhm = -999;
+        fw = -999;
+    }
+
+    /// redefine charge and time of the hit with the maximum in given time range
+    void FindMaxInTime(const int &low, const int &high);
+
+    // setters
+    void SetRow(int row) { fRow = row; }
+    void SetCol(int col) { fColumn = col; }
+    void SetTime(int time) { fTime = time; }
+    void SetQ(int Q) { fCharge = Q; }
+    void SetADC(int i, int adc) {
+        if (i < 0 || i > 511) {
+            std::cout << "ADC index out of range!\t" << i << std::endl;
+            return;
+        }
+        fwf[i] = adc;
+    }
+
+    void SetWidth(int val) { fw = val; }
+    void SetFWHM(int val) { fwhm = val; }
+
+    // getters
+    int GetRow(bool invert = false) const;
+    int GetCol(bool invert = false) const;
+    int GetTime() const { return fTime; }
+    int GetQ() const { return fCharge; }
+    int GetADC(int i) const {
+        if (i >= 0 && i < 512)
+            return fwf[i];
+        std::cout << "ADC index out of range!\t" << i << std::endl;
+        return 0;
+    }
+    UInt_t GetFEC() const { return fFEC; }
+    UInt_t GetASIC() const { return fASIC; }
+    UInt_t GetChannel() const { return fChannel; }
+
+    int GetWidth() const { return fw; }
+    int GetFWHM() const { return fwhm; }
+
+ ClassDef (THit, 1);
 
  private:
-  int  fRow;
-  int  fColumn;
-  int  fTime;
-  int  fCharge;
-  int  fwf[511];
-  UInt_t fFEC;
-  UInt_t fASIC;
-  UInt_t fChannel;
+    int fRow;
+    int fColumn;
+    int fTime;
+    int fCharge;
+    int fwf[511];
+    UInt_t fFEC;
+    UInt_t fASIC;
+    UInt_t fChannel;
 
-  int fwhm;
-  int fw;
+    int fwhm;
+    int fw;
 
 };
 

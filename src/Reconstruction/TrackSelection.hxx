@@ -9,7 +9,7 @@
 #include "Geom.hxx"
 
 const int CHARGE_THR_FOR_GAP = 0;
-namespace sel
+namespace TrackSel
 {
   /// A default selection of a "nice" crossing track
   /** A cut is put on maximum multiplicity

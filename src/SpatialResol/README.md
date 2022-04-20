@@ -6,6 +6,7 @@
 SpatialResol.exe
 -i, --input  <f>    input file name or a list of files
 -o, --output  <f>    output file name
+--nthread   <int>   number of threads to use [1-5]
 
 -t, --iter <int>    specify the iteration number.
 --param, p <file>   files with parameters: selection., etc

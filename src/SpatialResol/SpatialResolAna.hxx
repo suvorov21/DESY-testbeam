@@ -4,7 +4,8 @@
 #include "AnalysisBase.hxx"
 //#include "CrossingReconstruction.hxx"
 #include "DBSCANReconstruction.hxx"
-#include "Selection.hxx"
+#include "TrackSelection.hxx"
+#include "PadSelection.hxx"
 #include "TrackFitter.hxx"
 
 constexpr int Nclusters = 70;

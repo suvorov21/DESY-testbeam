@@ -1,23 +1,23 @@
 #include "TF1.h"
 #include "TH2F.h"
 
-#include "Selection.hxx"
+#include "TrackSelection.hxx"
 
 //******************************************************************************
-bool sel::CrossingTrackSelection( const TClusterPtrVec &track,
-                                  const int  &max_mult,
-                                  const float  &max_mean_mult,
-                                  const bool &cut_gap,
-                                  const float &max_phi,
-                                  const float &max_theta,
-                                  const std::vector<std::pair<int, int>>& _broken_pads,
-                                  const bool &invert,
-                                  const int  &verbose) {
+bool TrackSel::CrossingTrackSelection(const TClusterPtrVec &track,
+                                      const int  &max_mult,
+                                      const float  &max_mean_mult,
+                                      const bool &cut_gap,
+                                      const float &max_phi,
+                                      const float &max_theta,
+                                      const std::vector<std::pair<int, int>>& _broken_pads,
+                                      const bool &invert,
+                                      const int  &verbose) {
 //******************************************************************************
   Float_t m_mean;
   Int_t m_max;
-  sel::GetMultiplicity(track, m_mean, m_max);
-  auto no_gap = sel::GetNoGap(track, _broken_pads, invert);
+  TrackSel::GetMultiplicity(track, m_mean, m_max);
+  auto no_gap = TrackSel::GetNoGap(track, _broken_pads, invert);
   if (verbose > 1) {
     std::cout << "SELECTION " << std::endl;
     std::cout << "Max mult\t" << m_max << " < " << max_mult << std::endl;
@@ -37,9 +37,9 @@ bool sel::CrossingTrackSelection( const TClusterPtrVec &track,
 }
 
 //******************************************************************************
-void sel::GetMultiplicity(const TClusterPtrVec &track,
-                          Float_t& m_mean,
-                          Int_t& m_max
+void TrackSel::GetMultiplicity(const TClusterPtrVec &track,
+                               Float_t& m_mean,
+                               Int_t& m_max
 ) {
 //******************************************************************************
   m_max = -1;
@@ -58,9 +58,9 @@ void sel::GetMultiplicity(const TClusterPtrVec &track,
 }
 
 //******************************************************************************
-bool sel::GetNoGap(const TClusterPtrVec &track,
-                   const std::vector<std::pair<int, int>>& _broken_pads,
-                   const bool &invert
+bool TrackSel::GetNoGap(const TClusterPtrVec &track,
+                        const std::vector<std::pair<int, int>>& _broken_pads,
+                        const bool &invert
                    ) {
 //******************************************************************************
   for (const auto & cluster:track) if (cluster->GetSize()) {
@@ -95,7 +95,7 @@ bool sel::GetNoGap(const TClusterPtrVec &track,
   return true;
 }
 
-bool sel::GetNoGapVector(const std::vector<int>& v) {
+bool TrackSel::GetNoGapVector(const std::vector<int>& v) {
   if (v.empty())
     return false;
   auto prev = v[0];
@@ -108,24 +108,24 @@ bool sel::GetNoGapVector(const std::vector<int>& v) {
 }
 
 //******************************************************************************
-double sel::GetLinearPhi(const TClusterPtrVec &track,
-                        bool invert) {
+double TrackSel::GetLinearPhi(const TClusterPtrVec &track,
+                              bool invert) {
 //******************************************************************************
-  std::vector <double> par = sel::GetFitParams(track, invert);
+  std::vector <double> par = TrackSel::GetFitParams(track, invert);
   return par[2];
 }
 
 //******************************************************************************
-double sel::GetLinearTheta(const TClusterPtrVec &track,
-                          bool invert) {
+double TrackSel::GetLinearTheta(const TClusterPtrVec &track,
+                                bool invert) {
 //******************************************************************************
-  std::vector <double> par = sel::GetFitParamsXZ(track, invert);
-  return par[2] * sel::v_drift_est;
+  std::vector <double> par = TrackSel::GetFitParamsXZ(track, invert);
+  return par[2] * TrackSel::v_drift_est;
 }
 
 //******************************************************************************
-std::vector <double> sel::GetFitParams(const TClusterPtrVec &track,
-                                       bool invert) {
+std::vector <double> TrackSel::GetFitParams(const TClusterPtrVec &track,
+                                            bool invert) {
 //******************************************************************************
   std::vector <double> params;
   params.reserve(3);
@@ -163,8 +163,8 @@ std::vector <double> sel::GetFitParams(const TClusterPtrVec &track,
 
 
 //******************************************************************************
-std::vector <double> sel::GetFitParamsXZ(const TClusterPtrVec &track,
-                                         bool invert) {
+std::vector <double> TrackSel::GetFitParamsXZ(const TClusterPtrVec &track,
+                                              bool invert) {
 //******************************************************************************
   std::vector <double> params;
   params.reserve(3);
