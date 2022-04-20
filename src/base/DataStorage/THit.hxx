@@ -27,9 +27,7 @@ class THit : public TObject {
         fRow(row), fColumn(col), fTime(time), fCharge(q), fFEC(fec), fASIC(asic), fChannel(channel) {
         fwhm = -999;
         fw = -999;
-
-        for (int &i : fwf)
-            i = 0;
+        fwf.clear();
     }
 
     // default ctor
@@ -43,8 +41,7 @@ class THit : public TObject {
         fASIC = -1;
         fChannel = -1;
 
-        for (int &i : fwf)
-            i = 0;
+        fwf.clear();
 
         fwhm = -999;
         fw = -999;
@@ -94,7 +91,8 @@ class THit : public TObject {
     int fColumn;
     int fTime;
     int fCharge;
-    int fwf[511];
+    std::vector<int> fwf;
+//    int fwf[511];
     UInt_t fFEC;
     UInt_t fASIC;
     UInt_t fChannel;
