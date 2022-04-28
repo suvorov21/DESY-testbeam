@@ -20,7 +20,7 @@ one wants to store and the logic how to fill it.
 
 ## Compilation
 For the compilation you need to pull dependencies and create the build folder.
-The requirements are C++17 compatible compiler. 
+The requirements are C++14 compatible compiler. 
 To work at LXPLUS the proper environment can be set up with 
 `. /cvmfs/sft.cern.ch/lcg/views/LCG_100/x86_64-centos7-clang11-opt/setup.sh` 
 ```bash

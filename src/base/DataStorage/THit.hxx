@@ -6,6 +6,9 @@
 #include <iostream>
 /** @endcond */
 
+#include "TRawHit.hxx"
+#include "Geom.hxx"
+
 class THit;
 /// shared pointer to THit
 using THitPtr = std::shared_ptr<THit>;
@@ -15,7 +18,8 @@ using THitPtrVec = std::vector<THitPtr>;
 //! Class for storing information about each reconstructed hit.
 
 //! Store row, column, charge, time and the whole waveform
-class THit : public TObject {
+//! Pedestals ARE subtracted in the waveforms
+class THit : public TRawHit {
  public:
     // ctor
     THit(const int col, const int row,
@@ -24,82 +28,60 @@ class THit : public TObject {
          const UInt_t fec = -1,
          const UInt_t asic = -1,
          const UInt_t channel = -1) :
-        fRow(row), fColumn(col), fTime(time), fCharge(q), fFEC(fec), fASIC(asic), fChannel(channel) {
+        fRow(row), fCol(col), fTimeMax(time), fQMax(q) {
         fwhm = -999;
         fw = -999;
-        fwf.clear();
+        ResetWF();
     }
 
     // default ctor
     THit() {
         fRow = -999;
-        fColumn = -999;
-        fTime = -999;
-        fCharge = 0;
-
-        fFEC = -1;
-        fASIC = -1;
-        fChannel = -1;
-
-        fwf.clear();
+        fCol = -999;
+        fTimeMax = -999;
+        fQMax = 0;
 
         fwhm = -999;
         fw = -999;
     }
 
+    explicit THit(const TRawHit* rhs);
+
     /// redefine charge and time of the hit with the maximum in given time range
     void FindMaxInTime(const int &low, const int &high);
 
     // setters
-    void SetRow(int row) { fRow = row; }
-    void SetCol(int col) { fColumn = col; }
-    void SetTime(int time) { fTime = time; }
-    void SetQ(int Q) { fCharge = Q; }
-    void SetADC(int i, int adc) {
-        if (i < 0 || i > 511) {
-            std::cout << "ADC index out of range!\t" << i << std::endl;
-            return;
-        }
-        fwf[i] = adc;
-    }
+    void SetRow(short row) { fRow = row; }
+    void SetCol(short col) { fCol = col; }
+    void SetTimeMax(short time) { fTimeMax = time; }
+    void SetQMax(short Q) { fQMax = Q; }
 
-    void SetWidth(int val) { fw = val; }
-    void SetFWHM(int val) { fwhm = val; }
+    void SetWidth(short val) { fw = val; }
+    void SetFWHM(short val) { fwhm = val; }
 
     // getters
-    int GetRow(bool invert = false) const;
-    int GetCol(bool invert = false) const;
-    int GetTime() const { return fTime; }
-    int GetQ() const { return fCharge; }
-    int GetADC(int i) const {
-        if (i >= 0 && i < 512)
-            return fwf[i];
-        std::cout << "ADC index out of range!\t" << i << std::endl;
-        return 0;
-    }
-    UInt_t GetFEC() const { return fFEC; }
-    UInt_t GetASIC() const { return fASIC; }
-    UInt_t GetChannel() const { return fChannel; }
+    short GetRow(bool invert = false) const;
+    short GetCol(bool invert = false) const;
+    short GetTimeMax() const { return fTimeMax; }
+    short GetQMax() const { return fQMax; }
 
-    int GetWidth() const { return fw; }
-    int GetFWHM() const { return fwhm; }
+    short GetWidth() const { return fw; }
+    short GetFWHM() const { return fwhm; }
 
- ClassDef (THit, 1);
+// ClassDef (THit, 1);
 
  private:
-    int fRow;
-    int fColumn;
-    int fTime;
-    int fCharge;
-    std::vector<int> fwf;
-//    int fwf[511];
-    UInt_t fFEC;
-    UInt_t fASIC;
-    UInt_t fChannel;
+    /// position within MM
+    short fRow;
+    short fCol;
 
-    int fwhm;
-    int fw;
+    /// Time and charge of the maximum
+    short fQMax;
+    short fTimeMax;
 
+    /// WF metrics
+    short fwhm;
+    short fw;
 };
 
 #endif

@@ -6,7 +6,7 @@
 #include "TChain.h"
 /** @endcond */
 
-#include "TRawEvent.hxx"
+#include "TEvent.hxx"
 #include "Geom.hxx"
 
 //
@@ -52,7 +52,7 @@ class Interface {
 template<int timeSize = 511>
 class interfaceRoot : public Interface {
     /// array of WFs
-    Int_t _padAmpl[geom::nPadx][geom::nPady][timeSize]{-260};
+    Int_t _padAmpl[Geom::nPadx][Geom::nPady][timeSize]{-260};
  public:
     explicit interfaceRoot(TString var) : Interface(std::move(var)) {}
     ~interfaceRoot() override = default;

@@ -5,16 +5,15 @@
 #include "PadSelection.hxx"
 #include "Geom.hxx"
 
-
 //******************************************************************************
 THitPtrVec PadSelection::GetRobustPadsInCluster(THitPtrVec col,
-                                                const std::vector<std::pair<int, int>>& broken_pads) {
+                                                const std::vector<std::pair<int, int>> &broken_pads) {
 //******************************************************************************
     std::vector<std::shared_ptr<THit>> result;
     // sort in charge decreasing order
     sort(col.begin(), col.end(), [](const std::shared_ptr<THit> &hit1,
                                     const std::shared_ptr<THit> &hit2) {
-      return hit1->GetQ() > hit2->GetQ();
+      return hit1->GetQMax() > hit2->GetQMax();
     });
 
     // leading pad
@@ -27,14 +26,14 @@ THitPtrVec PadSelection::GetRobustPadsInCluster(THitPtrVec col,
     }
 
     for (const auto &pad : col) {
-        auto q = pad->GetQ();
+        auto q = pad->GetQMax();
         if (!q)
             continue;
 
         /** cross-talk candidate */
         // if (i > 0 &&
         //     pad->GetTime() - col[0]->GetTime() < 4 &&
-        //     1.*q / col[0]->GetQ() < 0.08)
+        //     1.*q / col[0]->GetQMax() < 0.08)
         //   continue;
         /** */
 
@@ -113,7 +112,7 @@ TClusterPtrVec PadSelection::GetRobustClusters(TClusterPtrVec &tr) {
     // for (auto col:tr) {
     //   auto total_q = accumulate(col.begin(), col.end(), 0,
     //                       [](const int& x, const THit* hit)
-    //                       {return x + hit->GetQ();}
+    //                       {return x + hit->GetQMax();}
     //                       );
     //   if (total_q < q_cut)
     //     result.push_back(col);

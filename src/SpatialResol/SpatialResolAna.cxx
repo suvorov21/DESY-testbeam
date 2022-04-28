@@ -156,7 +156,7 @@ bool SpatialResolAna::Initialize() {
     if (_individual_column_PRF) {
 
       _prf_function_arr = new TF1*[36];
-      for (auto colId = 0; colId < geom::GetNColumn(_invert); ++colId) {
+      for (auto colId = 0; colId < Geom::GetNColumn(_invert); ++colId) {
         _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre, _gaus_lorentz_PRF);
 
         TH2F* tmp = new TH2F("PRF_histo_tmp","", prf_bin, prf_min, prf_max, 150,0.,1.5);
@@ -665,19 +665,19 @@ void SpatialResolAna::TreatCrossTalk(const THitPtr& pad,
                                      int& pad_id) {
 //******************************************************************************
   auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
-  auto qfrac = 1. * pad->GetQ() / robust_pads[0]->GetQ();
+  auto qfrac = 1. * pad->GetQMax() / robust_pads[0]->GetQMax();
   // cross talk selection
   if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
-    pad->SetQ(0);
+    pad->SetQMax(0);
     pad->FindMaxInTime(pad->GetTime() + 4, 510);
-    if (pad->GetQ() == 0)
+    if (pad->GetQMax() == 0)
       DeletePadFromCluster(robust_pads, pad_id);
   } // cross-talk suppression
 
   if (_cross_talk_treat == cherry_pick) {
-    pad->SetQ(0);
+    pad->SetQMax(0);
     pad->FindMaxInTime(pad->GetTime() - 4, pad->GetTime() + 4);
-    if (pad->GetQ() == 0)
+    if (pad->GetQMax() == 0)
       DeletePadFromCluster(robust_pads, pad_id);
   } // cross-talk cherry-picking
 }
@@ -698,11 +698,11 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
                                     const uint &clusterId,
                                     const int& padId) {
 //******************************************************************************
-  _clust_pos[clusterId] += pad->GetQ() * geom::GetYposPad(pad,
+  _clust_pos[clusterId] += pad->GetQMax() * Geom::GetYposPad(pad,
                                                         _invert,
                                                         _clustering->getAngle());
-  _charge[clusterId] += pad->GetQ();
-  _pad_charge[clusterId][padId] = pad->GetQ();
+  _charge[clusterId] += pad->GetQMax();
+  _pad_charge[clusterId][padId] = pad->GetQMax();
   _pad_time[clusterId][padId] = pad->GetTime();
   _pad_x[clusterId][padId] = pad->GetCol(_invert);
   _pad_y[clusterId][padId] = pad->GetRow(_invert);
@@ -710,7 +710,7 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
   _wf_fwhm[clusterId][padId] = pad->GetFWHM();
 
   if (_to_store_wf) {
-    for (int tz = 0; tz < geom::Nsamples; ++tz) {
+    for (int tz = 0; tz < Geom::Nsamples; ++tz) {
       _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
     }
   }
@@ -772,11 +772,11 @@ void SpatialResolAna::FillPRF(const THitPtr& pad,
   if (!pad || padId > 9)
     return;
 
-  auto q    = pad->GetQ();
+  auto q    = pad->GetQMax();
   auto time = pad->GetTime();
 
-  double x = geom::GetXposPad(pad, _invert, _clustering->getAngle());
-  double center_pad_y = geom::GetYposPad(pad,
+  double x = Geom::GetXposPad(pad, _invert, _clustering->getAngle());
+  double center_pad_y = Geom::GetYposPad(pad,
                                          _invert,
                                          _clustering->getAngle()
   );

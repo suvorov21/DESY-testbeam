@@ -192,7 +192,9 @@ bool AnalysisBase::Loop() {
                 int toRead = read++;
                 auto event = interface->getEvent(_eventList[toRead]);
                 std::lock_guard<std::mutex> lock(_mu);
-                _rawEventList.emplace_back(std::move(event));
+                //
+                auto tEvent = std::make_shared<TEvent>(*event);
+                _TEventList.emplace_back(std::move(tEvent));
                 ++readAhead;
             }
         });
@@ -221,17 +223,21 @@ bool AnalysisBase::Loop() {
         // start the timer
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
 
-        if (_readerThreads == 1)
-            _rawEventList.emplace_back(_interface[0]->getEvent(_eventList[eventID]));
+        // in case of one thread, read the interface
+        if (_readerThreads == 1) {
+            auto event = _interface[0]->getEvent(_eventList[eventID]);
+            auto tEvent = std::make_shared<TEvent>(*event);
+            _TEventList.emplace_back(tEvent);
+        }
 
         // wait for interface to read an event
-        if (_rawEventList.empty())
+        if (_TEventList.empty())
             continue;
 
-        std::shared_ptr<TRawEvent> rawEvent = _rawEventList.front();
+        auto tEvent = _TEventList.front();
         ++eventID;
         --readAhead;
-        _rawEventList.erase(_rawEventList.begin());
+        _TEventList.erase(_TEventList.begin());
 
         _read_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("read");
 
@@ -240,8 +246,7 @@ bool AnalysisBase::Loop() {
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
 
         // copy event to a child class to be filled with reconstruction
-        std::shared_ptr<TEvent> reco_event = std::make_shared<TEvent>(*rawEvent);
-        bool sel = _reconstruction->SelectEvent(reco_event);
+        bool sel = _reconstruction->SelectEvent(tEvent);
         _reco_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
         if (!sel) {
             continue;
@@ -252,14 +257,14 @@ bool AnalysisBase::Loop() {
         // do basic plotting
         auto c = std::make_unique<TCanvas>();
         if (!_batch) {
-            c = DrawSelection(rawEvent, reco_event);
-            c->SetTitle(Form("Event %i", rawEvent->GetID()));
+            c = DrawSelection(tEvent);
+            c->SetTitle(Form("Event %i", tEvent->GetID()));
             c->Draw();
             c->WaitPrimitive();
         }
 
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("ana");
-        ProcessEvent(reco_event);
+        ProcessEvent(tEvent);
         _ana_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("ana");
 
         if (_store_event)
@@ -311,27 +316,26 @@ bool AnalysisBase::WriteOutput() {
 
 //******************************************************************************
 std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
-    const std::shared_ptr<TRawEvent> &raw_event,
     const std::shared_ptr<TEvent> &reco_event
 ) {
 //******************************************************************************
     gStyle->SetCanvasColor(0);
     gStyle->SetMarkerStyle(21);
     gStyle->SetMarkerSize(1.05);
-    TH2F MM("MM", "", geom::nPadx, 0, geom::nPadx, geom::nPady, 0, geom::nPady);
-    TH2F MMsel("MMsel", "", geom::nPadx, 0, geom::nPadx, geom::nPady, 0, geom::nPady);
+    TH2F MM("MM", "", Geom::nPadx, 0, Geom::nPadx, Geom::nPady, 0, Geom::nPady);
+    TH2F MMsel("MMsel", "", Geom::nPadx, 0, Geom::nPadx, Geom::nPady, 0, Geom::nPady);
     TNtuple event3D("event3D", "event3D", "x:y:z:c");
 
     // all hits
-    for (const auto &h : raw_event->GetHits()) {
-        MM.Fill(h->GetCol(), h->GetRow(), h->GetQ());
+    for (const auto &h : reco_event->GetAllHits()) {
+        MM.Fill(h->GetCol(), h->GetRow(), h->GetQMax());
     }
 
     // TrackSel hits
     for (const auto &h : reco_event->GetUsedHits()) {
-        if (!h->GetQ()) continue;
-        event3D.Fill((Float_t) h->GetTime(), (Float_t) h->GetRow(), (Float_t) h->GetCol(), (Float_t) h->GetQ());
-        MMsel.Fill(h->GetCol(), h->GetRow(), h->GetQ());
+        if (!h->GetQMax()) continue;
+        event3D.Fill((Float_t) h->GetTime(), (Float_t) h->GetRow(), (Float_t) h->GetCol(), (Float_t) h->GetQMax());
+        MMsel.Fill(h->GetCol(), h->GetRow(), h->GetQMax());
     }
 
     auto canv = std::make_unique<TCanvas>("canv", "canv", 0., 0., 1400., 600.);
@@ -344,8 +348,8 @@ std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
     canv->cd(3);
     event3D.Draw("x:y:z:c", "", "box2");
     auto htemp = (TH3F *) gPad->GetPrimitive("htemp");
-    htemp->GetXaxis()->SetLimits(0, geom::nPadx);
-    htemp->GetYaxis()->SetLimits(0, geom::nPady);
+    htemp->GetXaxis()->SetLimits(0, Geom::nPadx);
+    htemp->GetYaxis()->SetLimits(0, Geom::nPady);
     htemp->GetZaxis()->SetLimits(0, 500);
     htemp->SetTitle("");
     canv->Update();
@@ -389,7 +393,7 @@ bool AnalysisBase::ReadParamFile() {
                 if (value == "1") {
                     _invert = true;
                     _clustering->setInvert(_invert);
-                    std::cout << "Inverted geometry used" << std::endl;
+                    std::cout << "Inverted Geometry used" << std::endl;
                 }
             } else if (name == "cluster") {
                 if (value == "column") {

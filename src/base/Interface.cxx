@@ -89,46 +89,22 @@ std::shared_ptr<TRawEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
     std::shared_ptr<TRawEvent> event = std::make_shared<TRawEvent>(i);
     _chain->GetEntry(i);
     // Subtract the pedestal
-    for (auto x = 0; x < geom::nPadx; ++x) {
-        for (auto y = 0; y < geom::nPady; ++y) {
-            auto hit = std::make_shared<THit>(x, y);
-            auto Qmax = -1;
-            auto Tmax = -1;
+    for (auto x = 0; x < Geom::nPadx; ++x) {
+        for (auto y = 0; y < Geom::nPady; ++y) {
+            auto elec = Geom::get().GetPadToEle(x, y);
+            auto hit = new TRawHit(0, elec.first, elec.second);
+            hit->ResetWF();
+            int max = -260;
             for (auto t = 0; t < timeSize; ++t) {
-                int q = _padAmpl[x][y][t] - 250;
-
-                if (q < -249)
-                    continue;
-
-                hit->SetADC(t, q);
-                if (q > Qmax) {
-                    Qmax = q;
-                    Tmax = t;
-                }
-                //
-                /** REWEIGHT OF THE PAD*/
-                // if (x == 5 && y == 16)
-                //   _padAmpl[x][y][t] *= 0.95;
-                /** */
-            } // over time
-            if (Qmax > 0) {
-                // compute FWHM
-                int fwhm = 0;
-                int width = 0;
-                for (auto t = 0; t < geom::Nsamples; ++t) {
-                    if (hit->GetADC(t) > Qmax / 2)
-                        fwhm += 1;
-                    if (hit->GetADC(t) > 0)
-                        width += 1;
-                }
-                hit->SetFWHM(fwhm);
-                hit->SetWidth(width);
-                hit->SetQ(Qmax);
-                hit->SetTime(Tmax);
+                hit->SetADCunit(t, _padAmpl[x][y][t]);
+                if (_padAmpl[x][y][t] > max)
+                    max = _padAmpl[x][y][t];
+            } // time
+            hit->ShrinkWF();
+            if (max > 0)
                 event->AddHit(hit);
-            } else {
-                hit.reset();
-            }
+            else
+                delete hit;
         } // over Y
     } // over X
     return event;

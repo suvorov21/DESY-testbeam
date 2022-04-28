@@ -8,21 +8,22 @@
 #include "Geom.hxx"
 
 TEST(GeomThrowTest, OferflowX) {
-  EXPECT_THROW(geom::GetXpos(geom::GetNColumn() + 1),
+  EXPECT_THROW(Geom::GetXpos(Geom::GetNColumn() + 1),
               std::logic_error
                );
 }
 
 TEST(GeomThrowTest, OferflowY) {
-  EXPECT_THROW(geom::GetYpos(geom::GetNColumn() + 1),
+  EXPECT_THROW(Geom::GetYpos(Geom::GetNColumn() + 1),
                std::logic_error
                );
 }
 
 TEST(CtorTests, hitCtor) {
   auto hit = std::make_unique<THit>();
-  hit->SetADC(1, 10);
-  hit->SetADC(1000, 10);
+  hit->ResetWF();
+  hit->SetADCunit(1, 10);
+  hit->SetADCunit(1000, 10);
 
   ASSERT_EQ(hit->GetADC(1), 10);
   ASSERT_EQ(hit->GetADC(1000), 0);

@@ -15,7 +15,7 @@ namespace PadSelection {
  * Any user defined selection may be applied.
  */
 THitPtrVec GetRobustPadsInCluster(THitPtrVec col,
-                                  const std::vector<std::pair<int, int>>& broken_pads = {});
+                                  const std::vector<std::pair<int, int>> &broken_pads = {});
 /// Return only robust clusters
 /** E.g. apply a truncation - omit clusters with relatively large charge
  * Or put a strong upper limit on cluster charge.

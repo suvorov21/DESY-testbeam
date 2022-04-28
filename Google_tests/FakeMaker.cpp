@@ -16,7 +16,7 @@ std::shared_ptr<TEvent> fake::GetEvent() {
 
 THitPtrVec fake::GetTrack() {
   THitPtrVec track;
-  for (auto col = 0; col < geom::nPadx; ++col) {
+  for (auto col = 0; col < Geom::nPadx; ++col) {
     for (auto row = 15; row < 18; ++row) {
       auto hit = std::make_shared<THit>(col, row, 100, 200);
       track.push_back(hit);
@@ -27,7 +27,7 @@ THitPtrVec fake::GetTrack() {
 
 TClusterPtrVec fake::GetClusterdTrack() {
   TClusterPtrVec track;
-  for (auto col = 0; col < geom::nPadx; ++col) {
+  for (auto col = 0; col < Geom::nPadx; ++col) {
     THitPtrVec hits = GetCenteredCluster();
     TClusterPtr cluster = std::make_shared<TCluster>();
     for (const auto& hit:hits)
