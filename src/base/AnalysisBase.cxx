@@ -223,8 +223,7 @@ bool AnalysisBase::Loop() {
 
         // in case of one thread, read the interface
         if (_readerThreads == 1) {
-            auto event = _interface[0]->getEvent(_eventList[eventID]);
-            _TEventList.emplace_back(event);
+            _TEventList.emplace_back(_interface[0]->getEvent(_eventList[eventID]));
         }
 
         // wait for interface to read an event

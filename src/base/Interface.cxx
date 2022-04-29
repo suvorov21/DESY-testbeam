@@ -92,21 +92,20 @@ std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
     for (short x = 0; x < Geom::nPadx; ++x) {
         for (short y = 0; y < Geom::nPady; ++y) {
             auto elec = Geom::get().GetPadToEle(x, y);
-            auto hit = std::make_shared<THit>(x, y);
-            hit->SetCol(x);
-            hit->SetRow(y);
-            hit->SetChip(elec.first);
-            hit->SetChannel(elec.second);
-            hit->ResetWF();
             short Qmax = -1;
             short Tmax = -1;
+            // array is created (and destructed) per WF
+            // if the pad has a meaningful signal the array will be cast to vector later
+            // creating/destructing a vector at this step leads to significant
+            // performance loss
+            std::array<short, timeSize> wf{};
             for (short t = 0; t < timeSize; ++t) {
                 auto q =   num::cast<short>(_padAmpl[x][y][t] - 250);
 
                 if (q < -249)
                     continue;
 
-                hit->SetADCunit(t, q);
+                wf[t] = q;
                 if (q > Qmax) {
                     Qmax = q;
                     Tmax = t;
@@ -120,12 +119,15 @@ std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
             short fwhm = 0;
             short width = 0;
             for (auto t = 0; t < timeSize; ++t) {
-                if (hit->GetADC(t) > Qmax / 2)
+                if (wf[t] > Qmax / 2)
                     fwhm += 1;
-                if (hit->GetADC(t) > 0)
+                if (wf[t] > 0)
                     width += 1;
             }
+            auto hit = std::make_shared<THit>(x, y,
+                                              0, elec.first, elec.second);
             hit->SetFWHM(fwhm);
+            hit->SetADCvector(std::vector<short>(wf.begin(), wf.end()));
             hit->SetWidth(width);
             hit->SetQMax(Qmax);
             hit->SetTimeMax(Tmax);

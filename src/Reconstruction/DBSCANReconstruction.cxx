@@ -14,7 +14,7 @@ bool DBSCANReconstruction::Initialize(int verbose) {
 double DBSCANReconstruction::MeasureDistance(const Node &a, const Node &b) {
     double distance2 = pow(a.hit->GetRow() - b.hit->GetRow(), 2) +
         pow(a.hit->GetCol() - b.hit->GetCol(), 2) +
-        pow((a.hit->GetTime() - b.hit->GetTime()) / 30, 2); // distance squared.
+        pow((a.hit->GetTimeMax() - b.hit->GetTimeMax()) / 30, 2); // distance squared.
     return pow(distance2, 0.5);
 }
 

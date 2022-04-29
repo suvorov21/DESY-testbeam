@@ -664,19 +664,19 @@ void SpatialResolAna::TreatCrossTalk(const THitPtr& pad,
                                      THitPtrVec& robust_pads,
                                      int& pad_id) {
 //******************************************************************************
-  auto dt = abs(pad->GetTime() - robust_pads[0]->GetTime());
+  auto dt = abs(pad->GetTimeMax() - robust_pads[0]->GetTimeMax());
   auto qfrac = 1. * pad->GetQMax() / robust_pads[0]->GetQMax();
   // cross talk selection
   if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
     pad->SetQMax(0);
-    pad->FindMaxInTime(pad->GetTime() + 4, 510);
+    pad->FindMaxInTime(pad->GetTimeMax() + 4, 510);
     if (pad->GetQMax() == 0)
       DeletePadFromCluster(robust_pads, pad_id);
   } // cross-talk suppression
 
   if (_cross_talk_treat == cherry_pick) {
     pad->SetQMax(0);
-    pad->FindMaxInTime(pad->GetTime() - 4, pad->GetTime() + 4);
+    pad->FindMaxInTime(pad->GetTimeMax() - 4, pad->GetTimeMax() + 4);
     if (pad->GetQMax() == 0)
       DeletePadFromCluster(robust_pads, pad_id);
   } // cross-talk cherry-picking
@@ -703,7 +703,7 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
                                                         _clustering->getAngle());
   _charge[clusterId] += pad->GetQMax();
   _pad_charge[clusterId][padId] = pad->GetQMax();
-  _pad_time[clusterId][padId] = pad->GetTime();
+  _pad_time[clusterId][padId] = pad->GetTimeMax();
   _pad_x[clusterId][padId] = pad->GetCol(_invert);
   _pad_y[clusterId][padId] = pad->GetRow(_invert);
   _wf_width[clusterId][padId] = pad->GetWidth();
@@ -773,7 +773,7 @@ void SpatialResolAna::FillPRF(const THitPtr& pad,
     return;
 
   auto q    = pad->GetQMax();
-  auto time = pad->GetTime();
+  auto time = pad->GetTimeMax();
 
   double x = Geom::GetXposPad(pad, _invert, _clustering->getAngle());
   double center_pad_y = Geom::GetYposPad(pad,

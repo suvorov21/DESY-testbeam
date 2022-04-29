@@ -22,16 +22,13 @@ using THitPtrVec = std::vector<THitPtr>;
 class THit : public TRawHit {
  public:
     // ctor
-    THit(const int col, const int row,
-         const int time = -1,
-         const int q = -1,
-         const UInt_t fec = -1,
-         const UInt_t asic = -1,
-         const UInt_t channel = -1) :
+    THit(const short col, const short row,
+         const short card = 0, const short chip = 0, const short channel = 0,
+         const short time = -1,
+         const short q = -1) : TRawHit(card, chip, channel),
         fRow(row), fCol(col), fTimeMax(time), fQMax(q) {
         fwhm = -999;
         fw = -999;
-        ResetWF();
     }
 
     // default ctor
