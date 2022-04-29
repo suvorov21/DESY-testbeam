@@ -84,27 +84,53 @@ void interfaceRoot<timeSize>::Initialize() {
 }
 
 template<int timeSize>
-std::shared_ptr<TRawEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
+std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
     // create TRawEvent from 3D array
-    std::shared_ptr<TRawEvent> event = std::make_shared<TRawEvent>(i);
+    std::shared_ptr<TEvent> event = std::make_shared<TEvent>(i);
     _chain->GetEntry(i);
     // Subtract the pedestal
-    for (auto x = 0; x < Geom::nPadx; ++x) {
-        for (auto y = 0; y < Geom::nPady; ++y) {
+    for (short x = 0; x < Geom::nPadx; ++x) {
+        for (short y = 0; y < Geom::nPady; ++y) {
             auto elec = Geom::get().GetPadToEle(x, y);
-            auto hit = new TRawHit(0, elec.first, elec.second);
+            auto hit = std::make_shared<THit>(x, y);
+            hit->SetCol(x);
+            hit->SetRow(y);
+            hit->SetChip(elec.first);
+            hit->SetChannel(elec.second);
             hit->ResetWF();
-            int max = -260;
-            for (auto t = 0; t < timeSize; ++t) {
-                hit->SetADCunit(t, _padAmpl[x][y][t]);
-                if (_padAmpl[x][y][t] > max)
-                    max = _padAmpl[x][y][t];
+            short Qmax = -1;
+            short Tmax = -1;
+            for (short t = 0; t < timeSize; ++t) {
+                auto q =   num::cast<short>(_padAmpl[x][y][t] - 250);
+
+                if (q < -249)
+                    continue;
+
+                hit->SetADCunit(t, q);
+                if (q > Qmax) {
+                    Qmax = q;
+                    Tmax = t;
+                }
             } // time
+
+            if (Qmax < 0)
+                continue;
+
+            // compute FWHM
+            short fwhm = 0;
+            short width = 0;
+            for (auto t = 0; t < timeSize; ++t) {
+                if (hit->GetADC(t) > Qmax / 2)
+                    fwhm += 1;
+                if (hit->GetADC(t) > 0)
+                    width += 1;
+            }
+            hit->SetFWHM(fwhm);
+            hit->SetWidth(width);
+            hit->SetQMax(Qmax);
+            hit->SetTimeMax(Tmax);
             hit->ShrinkWF();
-            if (max > 0)
-                event->AddHit(hit);
-            else
-                delete hit;
+            event->AddHitPtr(hit);
         } // over Y
     } // over X
     return event;
@@ -119,8 +145,8 @@ void interfaceRawEvent::Initialize() {
     _chain->SetBranchAddress("Event", &_event);
 }
 
-std::shared_ptr<TRawEvent> interfaceRawEvent::getEvent(Int_t i) {
+std::shared_ptr<TEvent> interfaceRawEvent::getEvent(Int_t i) {
     _chain->GetEntry(i);
-    return std::make_shared<TRawEvent>(_event);
+    return std::make_shared<TEvent>(*_event);
 }
 

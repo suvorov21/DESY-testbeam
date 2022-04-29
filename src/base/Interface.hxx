@@ -45,7 +45,7 @@ class Interface {
     Long64_t getEntries();
 
     virtual void Initialize() = 0;
-    virtual std::shared_ptr<TRawEvent> getEvent(Int_t) = 0;
+    virtual std::shared_ptr<TEvent> getEvent(Int_t) = 0;
 
 };
 
@@ -57,7 +57,7 @@ class interfaceRoot : public Interface {
     explicit interfaceRoot(TString var) : Interface(std::move(var)) {}
     ~interfaceRoot() override = default;
     void Initialize() override;
-    std::shared_ptr<TRawEvent> getEvent(Int_t) override;
+    std::shared_ptr<TEvent> getEvent(Int_t) override;
 };
 
 class interfaceRawEvent : public Interface {
@@ -66,7 +66,7 @@ class interfaceRawEvent : public Interface {
  public:
     explicit interfaceRawEvent(TString var) : Interface(std::move(var)) {}
     void Initialize() override;
-    std::shared_ptr<TRawEvent> getEvent(Int_t) override;
+    std::shared_ptr<TEvent> getEvent(Int_t) override;
 };
 
 /// Factory function that builds an interface

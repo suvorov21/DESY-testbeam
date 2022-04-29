@@ -25,6 +25,7 @@ class TEvent : public TRawEvent {
     // setters
     void SetUsedHits(const THitPtrVec &inhits) { fUsedHits = inhits; }
     void SetUnusedHits(const THitPtrVec &inhits) { fUnusedHits = inhits; }
+    void AddHitPtr(const THitPtr& inhit ) {fHitsPtrs.emplace_back(inhit);}
 
     void AddUsedHit(const THitPtr &hit) { fUsedHits.push_back(hit); }
     void AddUnusedHit(const THitPtr &hit) { fUnusedHits.push_back(hit); }

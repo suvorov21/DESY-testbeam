@@ -49,15 +49,15 @@ class Geom {
     static Double_t GetXpos(int it_x, bool invert = false);
 
     // time bins
-    static constexpr int Nsamples = 511;
-    static constexpr int Nsamples_saclay = 510;
+    static constexpr short Nsamples = 511;
+    static constexpr short Nsamples_saclay = 510;
 
     // number of pads
-    static constexpr int nPadx = 36;
-    static constexpr int nPady = 32;
+    static constexpr short nPadx = 36;
+    static constexpr short nPady = 32;
 
-    static constexpr int nChip = 16;
-    static constexpr int nChannel = 79;
+    static constexpr short nChip = 16;
+    static constexpr short nChannel = 79;
 
     // pad size
     // (11.18+2*0.1/2 = 11.28) mm

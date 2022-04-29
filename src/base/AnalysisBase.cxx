@@ -192,9 +192,7 @@ bool AnalysisBase::Loop() {
                 int toRead = read++;
                 auto event = interface->getEvent(_eventList[toRead]);
                 std::lock_guard<std::mutex> lock(_mu);
-                //
-                auto tEvent = std::make_shared<TEvent>(*event);
-                _TEventList.emplace_back(std::move(tEvent));
+                _TEventList.emplace_back(std::move(event));
                 ++readAhead;
             }
         });
@@ -226,8 +224,7 @@ bool AnalysisBase::Loop() {
         // in case of one thread, read the interface
         if (_readerThreads == 1) {
             auto event = _interface[0]->getEvent(_eventList[eventID]);
-            auto tEvent = std::make_shared<TEvent>(*event);
-            _TEventList.emplace_back(tEvent);
+            _TEventList.emplace_back(event);
         }
 
         // wait for interface to read an event
