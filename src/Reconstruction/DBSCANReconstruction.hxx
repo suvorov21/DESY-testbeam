@@ -13,11 +13,11 @@
 
 const int MIN_DIST  = 2;
 const int MIN_NODES = 1;
-const int MAX_NODES = 200;
+const int MAX_NODES = 300;
 const int MAX_NODES_TOT = 300;
 
 struct Node{
-    THit* hit;
+    THitPtr hit;
     int  c = -999;  // cluster ID
     int id = -999;  // node ID
 };
@@ -32,32 +32,31 @@ struct DB_Cluster{
 class DBSCANReconstruction: public ReconstructionBase {
  public:
   DBSCANReconstruction();
-  virtual ~DBSCANReconstruction() {;}
 
-  virtual bool Initialize(int verbose);
+  bool Initialize(int verbose) override;
   /// Main function of the reconstruction
-  virtual bool SelectEvent(TEvent* event);
+  bool SelectEvent(const std::shared_ptr<TEvent>& event) override;
   /// Fill THits with maximum amplitude and time. Create Nodes
-  std::vector<Node> FillNodes(TEvent* event);
+  std::vector<Node> FillNodes(const std::shared_ptr<TEvent>& event);
   /// Merge nodes Nodes clusters
-  std::vector<Node> FindClusters(std::vector<Node> raw_nodes);
+  std::vector<Node> FindClusters(std::vector<Node>& raw_nodes);
 
 
   // virtual std::vector<int> FillWFs(const TEvent* event, Node n);
-  virtual double MeasureDistance(Node a, Node b);
+  virtual double MeasureDistance(const Node& a, const Node& b);
 
   /// Search for large enough clusters
-  virtual std::vector<DB_Cluster> FindClustersLargerThan(std::vector<Node> nodes,
+  virtual std::vector<DB_Cluster> FindClustersLargerThan(const std::vector<Node>& nodes,
                                                          int minNodes
                                                          );
-  /// Assotiate nodes with clusters
-  virtual std::vector <Node> UpdateNodes(std::vector <DB_Cluster> clusters,
-                                         std::vector <Node> nodes);
-  virtual void DrawNodes(std::vector<Node> nodes);
+  /// Associate nodes with clusters
+  virtual std::vector <Node> UpdateNodes(const std::vector <DB_Cluster> & clusters,
+                                         std::vector <Node> & nodes);
+
   /// Store the output in TEven format
-  virtual bool FillOutput(TEvent* event,
-                          std::vector<Node> nodes,
-                          std::vector<DB_Cluster> clusters);
+  virtual bool FillOutput(const std::shared_ptr<TEvent>& event,
+                          const std::vector<Node>& nodes,
+                          const std::vector<DB_Cluster>& clusters);
 
  private:
 

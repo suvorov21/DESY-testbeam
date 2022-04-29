@@ -1,1 +1,0 @@
-set -Ux SOFTDIR (cd (dirname (status -f)); and pwd)

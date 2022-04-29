@@ -3,6 +3,8 @@
 
 /** @cond */
 #include <numeric>
+#include <utility>
+#include <list>
 
 #include "TString.h"
 #include "TFile.h"
@@ -18,35 +20,14 @@
 #include "TGraphErrors.h"
 
 #include "SetT2KStyle.hxx"
+#include "CmdLineParser.h"
 /** @endcond */
 
 #include "ReconstructionBase.hxx"
-
+#include "Interface.hxx"
+#include "ClDump.hxx"
 
 class TCluster;
-
-/// Class that keeps rules for track clusterisation
-class Clustering {
-public:
-  Clustering(Float_t a,
-             int n_pads
-             ):angle(a), n_pads(n_pads) {coeff = (n_pads == 0)?0.001:1./n_pads;}
-  virtual ~Clustering(){;};
-  /// angle of a reference frame rotation
-  Float_t angle;
-  /// Number of pads in a row
-  int n_pads;
-  /// Slope coefficient. 0 corresponds to columns/rows. 1 to diagonals and so on
-  Float_t coeff;
-  /// Function of row and column that is constant for a given cluster
-  int GetConstant(int row, int col) {
-    if (n_pads == 0)
-      return col;
-    else {
-      return (floor(coeff * col - row));
-    }
-  }
-};
 
 /// Main analysis template
 /**
@@ -56,217 +37,197 @@ public:
 */
 class AnalysisBase {
  public:
-  AnalysisBase(int argc, char** argv);
-  virtual ~AnalysisBase() {;}
+    AnalysisBase();
 
-  /// Initialise histoes, input files, selections
-  virtual bool Initialize();
-  /// Loop over TChain entries. Can use pre-defined event list
-  /** Normally for the first iteration loop over all events is performed.
-  * For the following iterations only events that passed reconstruction
-  * and selection are used.
-  */
-  virtual bool Loop(std::vector<Int_t> EventList);
-  /// Process the reconstruction output
-  /**
-  * Function should be defined in the derived analysis. It is responsible
-  * for applying the selection for the successfully reconstructed tracks,
-  * performing the analysis itself, fill jistograms and TTree branches.
-  */
-  virtual bool ProcessEvent(const TEvent* event);
-  /// Write the output file (histos, trees)
-  virtual bool WriteOutput();
+    /// Read CL arguments
+    virtual bool ReadCLI(int argc, char **argv);
 
-  /// Read parameter file
-  bool ReadParamFile();
+    /// Initialise histoes, input files, selections
+    virtual bool Initialize();
 
-  /// Process a cluster and return only pads that are suggested to be robust
-  /** E.g. function can return only 2 pads in a column.
-   * Another use case is to ommit pads with wrong timestamps.
-   * Any user defined selection may be applied.
-   */
-  std::vector<THit*> GetRobustPadsInCluster(std::vector<THit*> col);
-  /// Return only robust clusters
-  /** E.g. apply a trunccation - ommit clusters with relatively large charge
-   * Or put a strong upper limit on cluster charge.
-   * Any condition can be specified.
-   */
-  std::vector<TCluster*> GetRobustClusters(std::vector<TCluster*> tr);
+    /// Loop over TChain entries. Can use pre-defined event list
+    /** Normally for the first iteration loop over all events is performed.
+    * For the following iterations only events that passed reconstruction
+    * and selection are used.
+    */
+    virtual bool Loop();
+    /// Process the reconstruction output
+    /**
+    * Function should be defined in the derived analysis. It is responsible
+    * for applying the selection for the successfully reconstructed tracks,
+    * performing the analysis itself, fill Histograms and TTree branches.
+    * @param event The event that is returned by pattern recognition
+    */
+    virtual bool ProcessEvent(const std::shared_ptr<TEvent> &event);
 
-  // TODO consider a better implementation. No need to create all instances
-  Clustering* CL_col;
-  Clustering* CL_diag;
-  Clustering* CL_2by1;
-  Clustering* CL_3by1;
-  Clustering* CL_3by2;
+    /// Write the output file (histos, trees)
+    virtual bool WriteOutput();
 
-  /// An actual clustering precedure
-  Clustering* _clustering;
+    /// Read parameter file
+    bool ReadParamFile();
 
-  /// Split track into clusters
-  /** Extract the vector of clusters from the whole track.
-  * the logic of clusterisation is given with the function of the Clustering object
-  * The function takes (row, column) and return a value
-  * that is constant for a given cluster.
-  * For example for clustering with columns the rule column == const is constant.
-  * For diagonals column - row = connst and so on.
-  */
-  std::vector<TCluster*> ClusterTrack(const std::vector<THit*> &tr);
+    // setters
+    void setInputFile(const TString &var) { _file_in_name = var; }
+    void setOutputFile(const TString &var) { _file_out_name = var; }
+    void setParamFile(const TString &var) { _param_file_name = var; }
+    void setVerbosity(const int &var) { _verbose = var; }
+    void setStartID(const int &var) { _start_ID = var; }
+    void setEndID(const int &var) { _end_ID = var; }
+    void setBatchMode(const bool var) { _batch = var; }
+    void setDebugMode(const bool var) { _test_mode = var; }
+    void setOverwrite(const bool var) { _overwrite = var; }
+    void setInvert(const bool var) { _invert = var; }
 
+    /************************** Utilities functions *****************************/
 
-  /************************** Utilities functions *****************************/
+    /// Set a vector of events that will be processed.
+    /** Used in the analysis with few iterations. After the first iteration
+    * the list of files that passed the selection is established and
+    * there is no need to go through all events again, but only through
+    * those who passed the reconstruction and selection.
+    */
+    void SetEventList(const std::vector<Int_t> &var) {
+        _eventList.clear();
+        _eventList = var;
+    }
+    [[nodiscard]] std::vector<Int_t> GetEventList() const { return _eventList; }
 
-  /// Print usage
-  void help(const std::string& name);
+    /// Draw the selected event
+    std::unique_ptr<TCanvas> DrawSelection(
+        const std::shared_ptr<TRawEvent> &raw_event,
+        const std::shared_ptr<TEvent> &reco_event
+    );
 
-  /// Dump progress in the command line
-  virtual void CL_progress_dump(int eventID, int Nevents);
-
-  /// Dump RAM usage in CL
-  void process_mem_usage(double& vm_usage, double& resident_set);
-
-  /// Set a vector of events that will be processed.
-  /** Used in the analysis with few iterations. After the first iteration
-  * the list of files that passde the selection is established and
-  * there is no need to go through all events again, but only through
-  * those who passed the resonstruction and selection.
-  */
-  void SetEventList(const std::vector<Int_t>& var) {_EventList.clear(); _EventList = var;}
-  std::vector<Int_t> GetEventList() const {return _EventList;}
-
-  /// Draw the selected event
-  virtual void DrawSelection(const TEvent *event);
-
-  AnalysisBase(const AnalysisBase& ana){(void)ana;
-    std::cerr << "Copy constructor is depricated" << std::endl; exit(1);}
-  bool operator==(const AnalysisBase* ana){(void)ana;
-    std::cerr << "Comparison is depricated" << std::endl; exit(1);}
-
-  bool ChainInputFiles(TString tree_name);
-
-  /// verbosity levels
-  enum verbosity_base {
-    v_progress = 1,
-    v_event_number,
-    v_base_last
-  };
+    /// verbosity levels
+    enum class verbosity_base {
+        v_progress = 1,
+        v_event_number
+    };
 
  protected:
-  /// input file name
-  TString _file_in_name;
-  /// output file name
-  TString _file_out_name;
+    /// input file name
+    TString _file_in_name{""};
+    /// output file name
+    TString _file_out_name{""};
 
-  /// name of the parameter file
-  TString _param_file_name;
+    /// Number of data readers thread
+    uint _readerThreads{1};
+    mutable std::mutex _mu;
+    /// vector of interfaces for the data reading
+    std::vector<std::unique_ptr<Interface>> _interface;
 
-  /// vector of event IDs that will be analysed
-  std::vector<Int_t> _EventList;
-  /// Whether to store particular event
-  bool    _store_event;
-  /// Event to start the loop
-  int     _start_ID;
-  /// Last event to analyse
-  int     _end_ID;
-  /// number of selected events
-  int     _selected;
+    /// list of raw events to be filled in parallel
+    std::list<std::shared_ptr<TRawEvent>> _rawEventList;
 
-  /// The current processing event
-  TRawEvent* _event;
-  bool    _work_with_event_file;
+    /// name of the parameter file
+    TString _param_file_name{""};
 
-  /// input file
-  /* May be a single ROOT file or a list of files*/
-  TFile* _file_in;
-  /// output file
-  TFile* _file_out;
+    /// CLI parser
+    CmdLineParser _clParser;
 
-  /// chain with inpout files
-  TChain* _chain;
+    /// vector of event IDs that will be analysed
+    std::vector<Int_t> _eventList{};
+    /// Whether to store particular event
+    bool _store_event{false};
+    /// Event to start the loop
+    int _start_ID{-999};
+    /// Last event to analyse
+    int _end_ID{-999};
+    /// number of selected events
+    int _selected{-999};
 
-  /// Name of the file from previous iteration
-  TString _Prev_iter_name;
-  /// iteration number. Starting from 0
-  Int_t   _iteration;
+    /// number of reconstructed events
+    int _reconstructed{-999};
 
-  /// Whether to apply correction of spatial resolution (take geometrical mean)
-  bool _correction;
+    /// output file
+    TFile *_file_out{nullptr};
 
-  /// choose the input array size, whether to use 510 or 511 time bins
-  bool _saclay_cosmics;
-  Int_t _padAmpl[geom::nPadx][geom::nPady][geom::Nsamples];
-  Int_t _padAmpl_saclay[geom::nPadx][geom::nPady][geom::Nsamples_saclay];
+    /// output vector to put in the file
+    std::vector<TObject *> _output_vector{};
 
-  /// output vector to put in the file
-  std::vector<TObject*> _output_vector;
+    /// Reconstruction used in the analysis.
+    /**  You can use plenty in the analysis. At least one should be defines */
+    std::unique_ptr<ReconstructionBase> _reconstruction{nullptr};
 
-  /// Reconstruction used in the analysis.
-  /**  You can use plenty in the analysis. At least one should be defines */
-  ReconstructionBase* _reconstruction;
+    /// An actual clustering procedure
+    std::unique_ptr<Clustering> _clustering;
 
-  /// Selection parameters
-  /// The maximum multiplicity of the track
-  Int_t _max_mult;
+    /// Selection parameters
+    /// The maximum multiplicity of the track
+    Int_t _max_mult{0};
 
-  /// Whether to cut tracks with gap in the cluster
-  /** E.g. one missed pad in the middle of the column or in the
-  * middle of the diagonal
-  */
-  bool _cut_gap;
+    /// The maximum mean multiplicity for track
+    Float_t _max_mean_mult{0};
 
-  /// Minimum number of clusters in the track
-  Int_t _min_clusters;
+    /// Whether to cut tracks with gap in the cluster
+    /** E.g. one missed pad in the middle of the column or in the
+    * middle of the diagonal
+    */
+    bool _cut_gap{false};
 
-  /// Maximum angle (abs(tan)) in the MM plane
-  Float_t _max_phi;
+    /// Vector of broken pads to be excluded from the analysis
+    std::vector<std::pair<int, int>> _broken_pads{};
 
-  /// Maximum angle (abs(tan)) w.r.t. MM plane
-  Float_t _max_theta;
+    /// Minimum number of clusters in the track
+    Int_t _min_clusters{0};
 
-  /// Hot to treat cross-talk
-  enum cross_talk {
-    def = 0,
-    suppress,
-    cherry_pick
-  };
+    /// Maximum angle (abs(tan)) in the MM plane
+    Float_t _max_phi{0};
 
-  cross_talk _cross_talk_treat;
+    /// Maximum angle (abs(tan)) w.r.t. MM plane
+    Float_t _max_theta{0};
 
-  /// T2K plotting style
-  TStyle* _t2kstyle;
+    /// Hot to treat cross-talk
+    enum cross_talk {
+        def = 0,
+        suppress,
+        cherry_pick
+    };
 
-  /// DEBUG vars
-  Int_t _verbose;
-  bool _batch;
-  bool _test_mode;
-  bool _overwrite;
+    cross_talk _cross_talk_treat{def};
 
-  /// Whether to invert track analysis logic
-  /** E.g. analyse cosmic tracks. Rows and columns will be replaced */
-  bool _invert;
+    /// T2K plotting style
+    TStyle *_t2kstyle{nullptr};
 
-  /// Whether to use Gaussian lorentzian PRf fit over polynomial
-  bool _gaus_lorentz_PRF;
+    /// DEBUG vars
+    Int_t _verbose{0};
+    bool _batch{false};
+    bool _test_mode{false};
+    bool _overwrite{false};
 
-  /// Wheather to use individual PRF
-  bool _individual_column_PRF;
+    /// Whether to invert track analysis logic
+    /** E.g. analyse cosmic tracks. Rows and columns will be replaced */
+    bool _invert{false};
 
-  /// Wheather to make PRF center position a free parameter
-  bool _PRF_free_centre;
+    /// Whether to use Gaussian lorentzian PRf fit over polynomial
+    bool _gaus_lorentz_PRF{false};
 
-  /// Whether to use arc function for track fitting
-  bool _do_linear_fit;
-  bool _do_para_fit;
+    /// Whether to use individual PRF
+    bool _individual_column_PRF{false};
 
-  /// Wether to store the WFs
-  bool _to_store_wf;
+    /// Whether to make PRF center position a free parameter
+    bool _prf_free_centre{false};
 
-  /// Time control system
-  TApplication* _app;
-  TStopwatch* _sw_event;
+    /// Whether to use arc function for track fitting
+    bool _do_linear_fit{false};
+    bool _do_para_fit{false};
 
-  TStopwatch* _sw_partial[6];
+    /// Whether to store the WFs
+    bool _to_store_wf{false};
+
+    /// Dump the progress into CL
+    ClDump _clDump{};
+
+    /// Time control system
+    TApplication *_app{nullptr};
+    /// time controller
+    long long _read_time{0};
+    long long _reco_time{0};
+    long long _ana_time{0};
+    long long _column_time{0};
+    long long _fitters_time{0};
+    long long _filling_time{0};
+    long long _sel_time{0};
 };
-
 
 #endif  // SRC_BASE_ANALYSISBASE_HXX_

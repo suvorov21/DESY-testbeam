@@ -1,105 +1,178 @@
-image: rootproject/root:6.22.00-centos7
+image: bars21/dev_hep_root:6.24.06gcc9cpp17
 
 stages:
   # build with
   - build
-  # test run with basic analysis
+  # unittests
   - test
+  # test run with expected output from basic analysis
+  - validation
+  # analyze test + validation coverage
+  - coverage
   # doxygen
   - docs
   - deploy
 
+# build stage
 compile_gcc:
   stage: build
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - git submodule update --init --recursive
+    - curl --create-dirs -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+    - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
+    - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
   script:
     - mkdir build; cd build
     - gcc -v > ../gcc.log
-    - cmake3 ../src
-    - make 2>&1 | tee -a ../gcc.log
+    - cmake3 -DCMAKE_COVERAGE=ON ../
+    - build-wrapper-linux-x86-64 --out-dir ../bw-output make clean all -j4 2>&1 | tee -a ../gcc.log
   artifacts:
     paths:
-      - ./build/SpatialResol.exe
-      - ./build/dEdx.exe
+      - build
       - gcc.log
+      - bw-output
 
 build_tests:
   stage: build
   before_script:
     - cd test/
+    - . $COMMON_INSTALL_PREFIX/setup.sh
   script:
     - make all
   artifacts:
     paths:
       - test/SR_test.exe
       - test/dEdx_test.exe
-
-# run tests using the binary built before
-SpatialResol_raw_test:
+#tests
+Google_test:
   stage: test
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+  script:
+    - ./build/Google_tests/Google_Tests_run
+  artifacts:
+    paths:
+      - build
+
+# validation
+SR_horizon:
+  stage: validation
+  before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
     - mv download input.root
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
     - ./test/SR_test.exe Spatial_test_iter0.root 400;
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
     - ./test/dEdx_test.exe Spatial_test_iter1.root
+  artifacts:
+    paths:
+      - build
 
-Spatial_resol_slope_diagonal:
-  stage: test
+SR_diagonal:
+  stage: validation
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
     - mv download input.root
-    - sed -i '29s@.*@cluster = diag@' params/default.ini
-    - sed -i '51s@.*@cluster_min  = 52@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/diag.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/diag.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
+  artifacts:
+    paths:
+      - build
 
-Spatial_resol_slope_column:
-  stage: test
+SR_slope_column:
+  stage: validation
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
     - mv download input.root
-    - sed -i '40s@.*@max_mult = 7@' params/default.ini
-    - sed -i '34s@.*@invert  = 1@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 650;
+  artifacts:
+    paths:
+      - build
 
-Spatial_resol_slope_3by1:
-  stage: test
+SR_3by1:
+  stage: validation
   before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
     - mv download input.root
-    - sed -i '29s@.*@cluster = 3by1@' params/default.ini
-    - sed -i '40s@.*@max_mult = 6@' params/default.ini
-    - sed -i '51s@.*@cluster_min  = 31@' params/default.ini
-    - export SOFTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
   script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 10000
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 10000
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/3by1.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/3by1.ini
     - ./test/SR_test.exe Spatial_test_iter1.root 600;
+  artifacts:
+    paths:
+      - build
 
+SR_inverted:
+  stage: validation
+  before_script:
+    - yum -y install wget
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
+    - mv download input.root
+  script:
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
+    - ./test/SR_test.exe Spatial_test_iter1.root 300;
+  artifacts:
+    paths:
+      - build
+
+# coverage & docs
+coverage:
+  stage: coverage
+  before_script:
+    - python3 -m pip install gcovr
+    - git submodule update --init --recursive
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+  script:
+    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --exclude='src/Reconstruction/CrossingReconstruction.*' --html-details --html=coverage.html > coverage.xml
+    - wget --no-check-certificate https://coverage.codacy.com/get.sh
+    - . get.sh report -r coverage.xml
+  artifacts:
+    paths:
+      - coverage*
+    reports:
+      cobertura: coverage.xml
+
+sonar:
+  stage: coverage
+  before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - export SONAR_SCANNER_VERSION=4.6.2.2472
+    - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
+    - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+    - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+    - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+    - export SONAR_SCANNER_OPTS="-server"
+
+    - curl --create-dirs -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+    - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
+    - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
+  script:
+    - cd build; find . -name '*.gcda' | xargs gcov; cd ../;
+    - sonar-scanner -Dsonar.organization=suvorov21 -Dsonar.projectKey=suvorov21_DESY-testbeam -Dsonar.sources=. -Dsonar.cfamily.build-wrapper-output=bw-output -Dsonar.host.url=https://sonarcloud.io -Dsonar.cfamily.gcov.reportsPath=build/ -Dsonar.coverage.exclusions=script/*,src/Reconstruction/CrossingReconstruction.cxx,src/utils/SetT2KStyle.hxx
 
 # documentation, etc.
 docs:
   image: rightmesh/ubuntu-doxygen:5.0
   stage: docs
   # when: manual
-  before_script:
-    - sed -i '38s@.*@![Tool structure](d5/da3/_spatial_resol_ana_8hxx__incl.png)@g' README.md
   script:
     - doxygen Doxyfile
   artifacts:
@@ -113,6 +186,7 @@ pages:
   script:
     - mkdir .public
     - cp -r doc/html/* .public/
+    - mkdir .public/doc; cp doc/*.png .public/doc/
     - mv .public public
   artifacts:
     paths:

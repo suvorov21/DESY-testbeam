@@ -14,20 +14,20 @@ def main():
     n_iter = 5
     doiter = True
 
-    generate_TEvent = True
+    generate_TEvent = False
     submit = False
     launch = True
 
     bin_dir   = "/afs/cern.ch/work/s/ssuvorov/public/T2K_testbeam/DESY_TestBeam/build_911/"
     bin_name  = "SpatialResol.exe"
-    bin_flag  = "-b -r"
+    bin_flag  = "-b"
 
     input_prefix  = ["/eos/experiment/neutplatform/t2knd280/DESY_TPC/ROOT/v1/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM_2/",
                      "/eos/experiment/neutplatform/t2knd280/MM2_data/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM2-data/",
                      "/eos/experiment/neutplatform/t2knd280/ERAM_3/",
-                     # "/eos/user/s/ssuvorov/DESY_testbeam/cosmic_strict_v2/"
+                     "/eos/experiment/neutplatform/t2knd280/DESY-2021/ROOT/v1/"
                      ]
 
     outpt_prefix  = "/eos/user/s/ssuvorov/DESY_testbeam/"
@@ -149,16 +149,14 @@ def main():
             file_out.write("#!/bin/bash\n")
             file_out.write("cd " + bin_dir + "\n")
             if submit:
-                file_out.write("source /cvmfs/sft.cern.ch/lcg/contrib/gcc/7.3.0binutils/x86_64-centos7-gcc7-opt/setup.sh\n")
-                file_out.write("source /afs/cern.ch/work/s/ssuvorov/public/ROOT/root-6.18.00-build_gcc73/bin/thisroot.sh\n")
-                file_out.write("source ../setup.sh\n")
+                file_out.write(". /cvmfs/sft.cern.ch/lcg/views/LCG_100/x86_64-centos7-clang11-opt/setup.sh\n")
             file_out.write(command + "\n")
 
             file_out.close()
 
             launcher.write("chmod 765 ./" + str(i) + ".sh\n")
             launcher.write("./" + str(i) + ".sh\n")
-            launcher.write("email " + "\"Job done\" " + "\"ot_file\"\n")
+            # launcher.write("email " + "\"Job done\" " + "\"ot_file\"\n")
             i+=1
 
         launcher.close()

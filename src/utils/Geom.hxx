@@ -7,7 +7,7 @@
 #include "TMath.h"
 /** @endcond */
 
-#include "THit.hxx"
+#include "TRawEvent.hxx"
 
 //           31 ___________
 //             |           |
@@ -22,58 +22,58 @@
 
 /// Geometry definition
 /** Number of pads, dimensions and time. */
-namespace geom
-{
-    // number of pads
-    static const int nPadx = 36;
-    static const int nPady = 32;
-    // pad size
-    // (11.18+2*0.1/2 = 11.28) mm
-    static const float dx = 0.01128; //[m]
-    // (10.09+2*0.1/2 = 10.19) mm
-    static const float dy = 0.01019; //[m]
+class geom {
+public:
+  /// extract Y position from pad
+  static Double_t GetYposPad(const THitPtr& h,
+                             bool invert = false,
+                             Double_t angle = 0);
+
+  /// extract X position from pad
+  static Double_t GetXposPad(const THitPtr& h,
+                             bool invert = false,
+                             Double_t angle = 0);
+
+  /// Get Y position of the column
+  static Double_t GetYpos(int it_y, bool invert = false);
+
+  /// Get X position of the row
+  static Double_t GetXpos(int it_x, bool invert = false);
+
+  // time bins
+  static constexpr int Nsamples = 511;
+  static constexpr int Nsamples_saclay = 510;
+
+  // number of pads
+  static constexpr int nPadx = 36;
+  static constexpr int nPady = 32;
+
+  // pad size
+  // (11.18+2*0.1/2 = 11.28) mm
+  static constexpr float dx = 0.01128; //[m]
+  // (10.09+2*0.1/2 = 10.19) mm
+  static constexpr float dy = 0.01019; //[m]
+
+  /// return max index (!!) of a column
+  static int GetNColumn(bool invert = false);
+  /// return a max index (!!) of a row
+  static int GetNRow(bool invert = false);
+
+private:
+    geom() = default;
 
     static const int pedestal = 250;
 
-    static const float x_pos[nPadx] = {-0.1974, -0.18612, -0.17484, -0.16356,
-        -0.15228, -0.141, -0.12972, -0.11844, -0.10716, -0.09588, -0.0846,
-        -0.07332, -0.06204, -0.05076, -0.03948, -0.0282, -0.01692, -0.00564,
-        0.00564, 0.01692, 0.0282, 0.03948, 0.05076, 0.06204, 0.07332, 0.0846,
-        0.09588, 0.10716, 0.11844, 0.12972, 0.141, 0.15228, 0.16356, 0.17484,
-        0.18612, 0.1974};
-
-    static const float y_pos[nPady] = {-0.157945, -0.147755, -0.137565,
-        -0.127375, -0.117185, -0.106995, -0.096805, -0.086615, -0.076425,
-        -0.066235, -0.056045, -0.045855, -0.035665, -0.025475, -0.015285,
-        -0.005095, 0.005095, 0.015285, 0.025475, 0.035665, 0.045855, 0.056045,
-        0.066235, 0.076425, 0.086615, 0.096805, 0.106995, 0.117185, 0.127375,
-        0.137565, 0.147755, 0.157945};
-
-    static const int Nsamples = 511;
-    static const int Nsamples_saclay = 510;
-
-    float GetYposPad(const THit* h, bool invert = false, Float_t angle = 0);
-    float GetXposPad(const THit* h, bool invert = false, Float_t angle = 0);
-
-    float GetYpos(int it_y, bool invert = false);
-
-    float GetXpos(int it_x, bool invert = false);
-
-    /// return max index (!!) of a column
-    int GetNColumn(bool invert = false);
-    /// return a max index (!!) of a row
-    int GetNRow(bool invert = false);
-}
+    /// private method to access to raw X position array
+    static constexpr Double_t GetXraw(int padXid);
+    /// private method to access to raw Y position array
+    static constexpr Double_t GetYraw(int padYid);
+};
 
 namespace units {
     const float clight  =   299792458.;
     const float B       =   0.2;
-    /** below are analytical angles
-    * real angles should be corrected with the pad sizes
-    const float a45     =   0.78539816;
-    const float a2      =   1.1071487;
-    const float a3      =   1.2490458;
-    */
+
     const float a45     =   0.83612313;
     const float a2      =   1.1465425;
     const float a3      =   1.2783096;
@@ -82,13 +82,22 @@ namespace units {
     const float a2_inv  =   1.0652823;
     const float a3_inv  =   1.2173058;
     const float a32_inv =   0.93503353;
+}
 
-    // OBSOLETE
-    // const float a2      =   1.0652823;
-    // const float a3      =   1.2173058;
+namespace num {
+    /// safe cast for numerical values
+    template <class T, class TT>
+    T cast(TT tt) {
+      T t = static_cast<T>(tt);
+      if (static_cast<TT>(t) != tt)
+        throw std::bad_cast();
 
-    // const float a2_inv  =   1.1465425;
-    // const float a3_inv  =   1.2783096;
+      if ((std::is_signed<T>::value ^ std::is_signed<TT>::value) &&  \
+          (t < T(0) || tt < TT(0)))
+        throw std::bad_cast();
+
+      return t;
+    }
 }
 
 #endif

@@ -1,0 +1,25 @@
+R2019_06_16-16_42_38-0    phi_412_10
+#R2019_06_16-17_30_30-0    phi_412_20    --param ../params/row_column_slope.ini
+#R2019_06_16-17_48_41-0    phi_412_30    --param ../params/row_column_slope.ini
+#R2019_06_16-18_35_51-0    phi_412_40    --param ../params/row_column_slope.ini
+#R2019_06_16-18_49_09-0    phi_412_50    --param ../params/invert_slope.ini
+#R2019_06_16-19_02_36-0    phi_412_60    --param ../params/invert_slope.ini
+#R2019_06_16-19_15_35-0    phi_412_70    --param ../params/invert_slope.ini
+#R2019_06_16-19_45_58-0    phi_412_45
+R2019_06_16-19_28_45-0    phi_412_80    --param ../params/invert.ini
+#R2019_06_14-22_29_30-0    phi_412_0
+R2019_06_15-20_34_11-0    phi_412_90    --param ../params/invert.ini
+
+#R2019_06_16-17_30_30-0    phi_412_20_d  --param ../params/diag.ini
+#R2019_06_16-17_48_41-0    phi_412_30_d  --param ../params/diag.ini
+R2019_06_16-18_35_51-0    phi_412_40_d  --param ../params/diag.ini
+R2019_06_16-18_49_09-0    phi_412_50_d  --param ../params/diag.ini
+#R2019_06_16-19_02_36-0    phi_412_60_d  --param ../params/diag.ini
+#R2019_06_16-19_15_35-0    phi_412_70_d  --param ../params/diag.ini
+R2019_06_16-19_45_58-0    phi_412_45_d  --param ../params/diag.ini
+
+R2019_06_16-19_02_36-0    phi_412_60_c  --param ../params/2by1.ini
+R2019_06_16-19_15_35-0    phi_412_70_c  --param ../params/3by1.ini
+R2019_06_16-17_30_30-0    phi_412_20_c  --param ../params/3by1_invert.ini
+R2019_06_16-17_48_41-0    phi_412_30_c  --param ../params/2by1_invert.ini
+#R2019_06_16-19_02_36-0    phi_412_60_c2  --param ../params/3by2.ini
