@@ -71,10 +71,6 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) {
     if (_verbose > 2)
         std::cout << "Found " << module.size() << " hits" << std::endl;
 
-    // FIXME put this in the selection
-    if (module.size() > MAX_NODES_TOT)
-        return nodes;
-
     // fill the maximum amplitude and time
     for (const auto &hit : module) {
         if (hit->GetQMax() > 0) {

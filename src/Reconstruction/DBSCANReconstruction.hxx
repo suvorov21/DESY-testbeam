@@ -14,8 +14,6 @@
 const int MIN_DIST = 2;
 const int MIN_NODES = 1;
 const int MIN_NODES_PER_PATT = 15;
-const int MAX_NODES = 300;
-const int MAX_NODES_TOT = 300;
 
 struct Node {
     THitPtr hit;

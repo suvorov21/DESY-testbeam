@@ -330,10 +330,13 @@ std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
     }
 
     // TrackSel hits
-    for (const auto &h : reco_event->GetUsedHits()) {
-        if (!h->GetQMax()) continue;
-        event3D.Fill((Float_t) h->GetTime(), (Float_t) h->GetRow(), (Float_t) h->GetCol(), (Float_t) h->GetQMax());
-        MMsel.Fill(h->GetCol(), h->GetRow(), h->GetQMax());
+    // FIXME loop over patterns
+    for (const auto &pattern : reco_event->GetAllHits()) {
+        for (const auto &h : pattern.second) {
+            if (!h->GetQMax()) continue;
+            event3D.Fill((Float_t) h->GetTime(), (Float_t) h->GetRow(), (Float_t) h->GetCol(), (Float_t) h->GetQMax());
+            MMsel.Fill(h->GetCol(), h->GetRow(), h->GetQMax());
+        }
     }
 
     auto canv = std::make_unique<TCanvas>("canv", "canv", 0., 0., 1400., 600.);
