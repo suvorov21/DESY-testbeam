@@ -3,14 +3,12 @@
 
 /** @cond */
 #include <unordered_map>
-#include <array>
 /** @cond */
 
 #include "TRawEvent.hxx"
 #include "THit.hxx"
 
 using TPatternVec = std::vector<THitPtrVec>;
-using broken_pads_t = std::vector<std::array<int, 3>>;
 
 //! Class that contains the output from the reconstruction
 

@@ -80,8 +80,8 @@ bool TrackSel::GetNoGap(const TClusterPtrVec &track) {
                         if (pad->GetCard() == broken[0] && \
                             abs(pad->GetCol() - broken[1]) < 2 && \
                             abs(pad->GetRow() - broken[2]) < 2) {
-                            row.push_back(broken.second);
-                            col.push_back(broken.first);
+                            row.push_back(broken[2]);
+                            col.push_back(broken[1]);
                         }
                     }
                     row.push_back(pad->GetRow());

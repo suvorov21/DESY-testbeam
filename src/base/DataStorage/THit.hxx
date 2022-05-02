@@ -4,6 +4,7 @@
 /** @cond */
 #include "TROOT.h"
 #include <iostream>
+#include <array>
 /** @endcond */
 
 #include "TRawHit.hxx"
@@ -13,6 +14,9 @@ class THit;
 using THitPtr = std::shared_ptr<THit>;
 /// vector of shared pointers to THit, e.g. event or cluster
 using THitPtrVec = std::vector<THitPtr>;
+
+/// broken pads are arrays of [module, col, row]
+using broken_pads_t = std::vector<std::array<int, 3>>;
 
 //! Class for storing information about each reconstructed hit.
 
