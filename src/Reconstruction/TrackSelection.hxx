@@ -28,7 +28,7 @@ class TrackSel {
     /// maximum theta angle
     Double_t max_theta_{0};
     /// Array of broken pads
-    std::vector<std::pair<int, int>> broken_pads_;
+    broken_pads_t broken_pads_;
     /// whether the track is inverted
     bool invert_{false};
     /// Verbosity level
@@ -40,7 +40,7 @@ class TrackSel {
              const bool cut_gap,
              const Double_t max_phi,
              const Double_t max_theta,
-             const std::vector<std::pair<int, int>> &_broken_pads,
+             broken_pads_t &_broken_pads,
              const bool invert,
              const int verbose) : invert_(invert),
                                   max_mult_(max_mult),

@@ -7,7 +7,7 @@
 
 //******************************************************************************
 THitPtrVec PadSelection::GetRobustPadsInCluster(THitPtrVec col,
-                                                const std::vector<std::pair<int, int>> &broken_pads) {
+                                                const broken_pads_t &broken_pads) {
 //******************************************************************************
     std::vector<std::shared_ptr<THit>> result;
     // sort in charge decreasing order
@@ -17,11 +17,14 @@ THitPtrVec PadSelection::GetRobustPadsInCluster(THitPtrVec col,
     });
 
     // leading pad
+    auto module = col[0]->GetCard();
     auto col_id = col[0]->GetCol();
     auto row_id = col[0]->GetRow();
     // excluded from analysis the whole cluster if leading pad is near the broken pad
     for (const auto &broken : broken_pads) {
-        if (abs(col_id - broken.first) < 2 && abs(row_id - broken.second) < 2)
+        if (module == broken[0] && \
+            abs(col_id - broken[1]) < 2 && \
+            abs(row_id - broken[2]) < 2)
             return result;
     }
 

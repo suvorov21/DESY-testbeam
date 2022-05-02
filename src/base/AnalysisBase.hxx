@@ -165,7 +165,7 @@ class AnalysisBase {
     bool _cut_gap{false};
 
     /// Vector of broken pads to be excluded from the analysis
-    std::vector<std::pair<int, int>> _broken_pads{};
+    broken_pads_t _broken_pads{};
 
     /// Minimum number of clusters in the track
     Int_t _min_clusters{0};

@@ -486,10 +486,13 @@ bool AnalysisBase::ReadParamFile() {
                     if (coordinates.size() != 2) {
                         continue;
                     }
-                    _broken_pads.emplace_back(TString(coordinates[0]).Atoi(),
-                                              TString(coordinates[1]).Atoi()
+                    _broken_pads.push_back({TString(coordinates[0]).Atoi(),
+                                            TString(coordinates[1]).Atoi(),
+                                            TString(coordinates[2]).Atoi()}
                     );
-                    std::cout << _broken_pads.back().first << ", " << _broken_pads.back().second << "; ";
+                    std::cout << "module " << _broken_pads.back()[0]
+                              << "row: " << _broken_pads.back()[1]
+                              << "column " << _broken_pads.back()[2] << "; ";
                 }
                 std::cout << std::endl;
             }

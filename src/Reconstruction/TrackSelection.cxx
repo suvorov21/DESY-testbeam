@@ -77,7 +77,9 @@ bool TrackSel::GetNoGap(const TClusterPtrVec &track) {
                     // broken pad fix --> always include the broken one
                     // if the adjacent pad is there --> broken pad will not cause a gap
                     for (const auto &broken : broken_pads_) {
-                        if (abs(pad->GetCol() - broken.first) < 2 && abs(pad->GetRow() - broken.second) < 2) {
+                        if (pad->GetCard() == broken[0] && \
+                            abs(pad->GetCol() - broken[1]) < 2 && \
+                            abs(pad->GetRow() - broken[2]) < 2) {
                             row.push_back(broken.second);
                             col.push_back(broken.first);
                         }
