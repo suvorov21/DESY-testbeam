@@ -1,37 +1,43 @@
 #include "TF1.h"
 #include "TH2F.h"
+#include "TGraph.h"
 
 #include "TrackSelection.hxx"
 
+// 25 MHz --> 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin
+// 50 Mhz --> ... --> 0.14 cm / bin
+const float TrackSel::v_drift_est = 0.28;
+
+void TrackSel::Reset() {
+    phi_ = 999;
+    theta_ = 999;
+}
+
 //******************************************************************************
-bool TrackSel::CrossingTrackSelection(const TClusterPtrVec &track,
-                                      const int &max_mult,
-                                      const float &max_mean_mult,
-                                      const bool &cut_gap,
-                                      const float &max_phi,
-                                      const float &max_theta,
-                                      const std::vector<std::pair<int, int>> &_broken_pads,
-                                      const bool &invert,
-                                      const int &verbose) {
+bool TrackSel::CrossingTrackSelection(const TClusterPtrVec &track) {
 //******************************************************************************
     Float_t m_mean;
     Int_t m_max;
-    TrackSel::GetMultiplicity(track, m_mean, m_max);
-    auto no_gap = TrackSel::GetNoGap(track, _broken_pads, invert);
-    if (verbose > 1) {
-        std::cout << "SELECTION " << std::endl;
-        std::cout << "Max mult\t" << m_max << " < " << max_mult << std::endl;
-        std::cout << "Mean mult\t" << m_mean << " < " << max_mean_mult << std::endl;
-        std::cout << "No gap\t" << no_gap << std::endl;
-        std::cout << "Linear Phi\t" << GetLinearPhi(track, invert) << std::endl;
-        std::cout << "Linear theta\t" << GetLinearTheta(track, invert) << std::endl;
-    }
-    if (m_max > max_mult) return false;
-    if (m_mean > max_mean_mult) return false;
-    if (!no_gap && cut_gap) return false;
+    GetMultiplicity(track, m_mean, m_max);
+    auto no_gap = GetNoGap(track);
 
-    if (max_phi > 0 && abs(GetLinearPhi(track, invert)) > max_phi) return false;
-    if (max_theta > 0 && abs(GetLinearTheta(track, invert)) > max_theta) return false;
+    FitXY(track);
+    FitXZ(track);
+
+    if (verbose_ > 1) {
+        std::cout << "SELECTION " << std::endl;
+        std::cout << "Max mult\t" << m_max << " < " << max_mult_ << std::endl;
+        std::cout << "Mean mult\t" << m_mean << " < " << max_mean_mult_ << std::endl;
+        std::cout << "No gap\t" << no_gap << std::endl;
+        std::cout << "Linear Phi\t" << phi_ << std::endl;
+        std::cout << "Linear theta\t" << theta_ << std::endl;
+    }
+    if (m_max > max_mult_) return false;
+    if (m_mean > max_mean_mult_) return false;
+    if (!no_gap && cut_gap_) return false;
+
+    if (max_phi_ > 0 && abs(phi_) > max_phi_) return false;
+    if (max_theta_ > 0 && abs(theta_) > max_theta_) return false;
 
     return true;
 }
@@ -58,10 +64,7 @@ void TrackSel::GetMultiplicity(const TClusterPtrVec &track,
 }
 
 //******************************************************************************
-bool TrackSel::GetNoGap(const TClusterPtrVec &track,
-                        const std::vector<std::pair<int, int>> &_broken_pads,
-                        const bool &invert
-) {
+bool TrackSel::GetNoGap(const TClusterPtrVec &track) {
 //******************************************************************************
     for (const auto &cluster : track)
         if (cluster->GetSize()) {
@@ -73,7 +76,7 @@ bool TrackSel::GetNoGap(const TClusterPtrVec &track,
                         continue;
                     // broken pad fix --> always include the broken one
                     // if the adjacent pad is there --> broken pad will not cause a gap
-                    for (const auto &broken : _broken_pads) {
+                    for (const auto &broken : broken_pads_) {
                         if (abs(pad->GetCol() - broken.first) < 2 && abs(pad->GetRow() - broken.second) < 2) {
                             row.push_back(broken.second);
                             col.push_back(broken.first);
@@ -110,106 +113,53 @@ bool TrackSel::GetNoGapVector(const std::vector<int> &v) {
 }
 
 //******************************************************************************
-double TrackSel::GetLinearPhi(const TClusterPtrVec &track,
-                              bool invert) {
+void TrackSel::FitXY(const TClusterPtrVec &track) {
 //******************************************************************************
-    std::vector<double> par = TrackSel::GetFitParams(track, invert);
-    return par[2];
-}
-
-//******************************************************************************
-double TrackSel::GetLinearTheta(const TClusterPtrVec &track,
-                                bool invert) {
-//******************************************************************************
-    std::vector<double> par = TrackSel::GetFitParamsXZ(track, invert);
-    return par[2] * TrackSel::v_drift_est;
-}
-
-//******************************************************************************
-std::vector<double> TrackSel::GetFitParams(const TClusterPtrVec &track,
-                                           bool invert) {
-//******************************************************************************
-    std::vector<double> params;
-    params.reserve(3);
-    for (auto i = 0; i < 3; ++i) params.push_back(-999.);
-
-    TH2F *MM = new TH2F("MM", "MM",
-                        Geom::nPadx, 0, Geom::nPadx,
-                        Geom::nPadx, 0, Geom::nPadx
-    );
-
-    for (auto &cluster : track)
-        for (const auto &pad : *cluster)
-            if (pad->GetQMax()) {
-                if (!invert)
-                    MM->Fill(pad->GetCol(), pad->GetRow(), pad->GetQMax());
-                else
-                    MM->Fill(pad->GetRow(), pad->GetCol(), pad->GetQMax());
+    TGraph gr;
+    for (const auto& cluster : track) {
+        auto qMax = -1;
+        double x{0}, y{0};
+        for (const auto& hit : *cluster) {
+            if (hit->GetQMax() > qMax) {
+                qMax = hit->GetQMax();
+                x = Geom::GetXposPad(hit, invert_);
+                y = Geom::GetYposPad(hit, invert_);
             }
-
-    MM->Fit("pol1", "Q");
-    TF1 *fit = MM->GetFunction("pol1");
-
-    if (fit) {
-        double quality = fit->GetChisquare() / fit->GetNDF();
-        double b = fit->GetParameter(0);
-        double k = fit->GetParameter(1);
-        params[0] = quality;
-        params[1] = b;
-        params[2] = k;
-    }
-
-    delete MM;
-    return params;
-}
-
-//******************************************************************************
-std::vector<double> TrackSel::GetFitParamsXZ(const TClusterPtrVec &track,
-                                             bool invert) {
-//******************************************************************************
-    std::vector<double> params;
-    params.reserve(3);
-    for (auto i = 0; i < 3; ++i) params.push_back(-999);
-
-    TH2F *MM = new TH2F("MM", "MM",
-                        Geom::nPadx, 0, Geom::nPadx,
-                        Geom::Nsamples, 0, Geom::Nsamples
-    );
-    for (auto &cluster : track) {
-        auto q_lead = 0;
-        auto x_lead = 0;
-        auto y_lead = 0;
-        auto z_lead = 0;
-        for (const auto &pad : *cluster)
-            if (pad->GetQMax()) {
-                if (pad->GetQMax() > q_lead) {
-                    q_lead = pad->GetQMax();
-                    x_lead = pad->GetCol();
-                    y_lead = pad->GetRow();
-                    z_lead = pad->GetTime();
-                }
-            }
-
-        if (q_lead) {
-            if (!invert)
-                MM->Fill(x_lead, z_lead);
-            else
-                MM->Fill(y_lead, z_lead);
+            gr.SetPoint(gr.GetN(), x, y);
         }
     }
+    gr.Fit(fit_->GetName(), "Q");
+    auto fitFunc = gr.GetFunction(fit_->GetName());
 
-    MM->Fit("pol1", "Q");
-    TF1 *fit = MM->GetFunction("pol1");
+    if (!fitFunc)
+        return;
 
-    if (fit) {
-        auto quality = fit->GetChisquare() / fit->GetNDF();
-        double b = fit->GetParameter(0);
-        double k = fit->GetParameter(1);
-        params[0] = quality;
-        params[1] = b;
-        params[2] = k;
+    double xStart = gr.GetX()[0];
+    phi_ = TMath::Sin(TMath::ATan(fitFunc->Derivative(xStart)));
+}
+
+//******************************************************************************
+void TrackSel::FitXZ(const TClusterPtrVec &track) {
+//******************************************************************************
+    TGraph gr;
+    for (const auto& cluster : track) {
+        auto qMax = -1;
+        double x{0}, z{0};
+        for (const auto& hit : *cluster) {
+            if (hit->GetQMax() > qMax) {
+                qMax = hit->GetQMax();
+                x = Geom::GetXposPad(hit, invert_);
+                z = hit->GetTimeMax();
+            }
+            gr.SetPoint(gr.GetN(), x, z);
+        }
     }
+    gr.Fit(fit_->GetName(), "Q");
+    auto fitFunc = gr.GetFunction(fit_->GetName());
 
-    delete MM;
-    return params;
+    if (!fitFunc)
+        return;
+
+    double xStart = gr.GetX()[0];
+    theta_ = TMath::Sin(TMath::ATan(fitFunc->Derivative(xStart))) * TrackSel::v_drift_est;
 }

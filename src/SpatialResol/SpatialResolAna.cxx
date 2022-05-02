@@ -363,6 +363,15 @@ bool SpatialResolAna::Initialize() {
     _reconstruction = std::make_unique<DBSCANReconstruction>();
     _reconstruction->Initialize(_verbose);
 
+    _selection = std::make_unique<TrackSel>(_max_mult,
+                                            _max_mean_mult,
+                                            _cut_gap,
+                                            _max_phi,
+                                            _max_theta,
+                                            _broken_pads,
+                                            _invert,
+                                            _verbose);
+
     // Initialise track fitter
     TrackFitterBase::TrackShape shape = TrackFitterBase::TrackShape::arc;
     if (_do_linear_fit) {
@@ -424,26 +433,18 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
             std::cout << "Clusterization done " << clusters.size() << std::endl;
 
         // selection
-        bool sel = TrackSel::CrossingTrackSelection(clusters,
-                                                    _max_mult,
-                                                    _max_mean_mult,
-                                                    _cut_gap,
-                                                    _max_phi,
-                                                    _max_theta,
-                                                    _broken_pads,
-                                                    _invert,
-                                                    _verbose
-        );
+        // Make a raw track fit using leading pads only
+        bool sel = _selection->CrossingTrackSelection(clusters);
         _sel_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("TrackSel");
+
+        if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
+            std::cout << "Selection done: " << sel << std::endl;
+
         if (!sel)
             return false;
 
-        // TODO prevent multiple fitter call
-        std::vector<double> fit_v = TrackSel::GetFitParams(clusters, _invert);
-        std::vector<double> fit_xz = TrackSel::GetFitParamsXZ(clusters, _invert);
-
-        _angle_xy = num::cast<Double_t>(fit_v[2]);
-        _angle_yz = num::cast<Double_t>(fit_xz[2] * TrackSel::v_drift_est);
+        _angle_xy = _selection->GetPhi();
+        _angle_yz = _selection->GetTheta();
 
         // if not a column clustering
         if (_clustering->getNpads() > 0) {

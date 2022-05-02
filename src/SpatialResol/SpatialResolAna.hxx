@@ -97,6 +97,9 @@ class SpatialResolAna : public AnalysisBase {
     /// Whether to apply correction of spatial resolution (take geometrical mean)
     bool _correction{false};
 
+    /// selection that will be used
+    std::unique_ptr<TrackSel> _selection;
+
     /// output tree
     TTree *_tree{nullptr};
     /// Oputput tree vars
