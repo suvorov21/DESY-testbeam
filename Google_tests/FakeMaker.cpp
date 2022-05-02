@@ -53,7 +53,7 @@ THitPtrVec fake::GetSideCLuster() {
   std::array<THitPtr, 3> hits;
   hits[0] = std::make_shared<THit>(10, 10, 0, 0, 0, 120, 600);
   hits[1] = std::make_shared<THit>(10, 11, 0, 0, 0, 120, 600);
-  hits[2] = std::make_shared<THit>(10, 9, 0, 0, 0, 200, 700);
+  hits[2] = std::make_shared<THit>(10, 9, 0, 0, 0, 200, 100);
   std::copy(hits.begin(), hits.end(), std::back_inserter(cluster));
   return cluster;
 }

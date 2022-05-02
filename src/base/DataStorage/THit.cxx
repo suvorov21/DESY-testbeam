@@ -1,15 +1,16 @@
 #include "THit.hxx"
+#include "Geom.hxx"
 
 THit::THit(const TRawHit* rhs) : TRawHit(rhs) {
     fQMax = 0;
     const auto& wf = GetADCvector();
-    for (auto t = 0; t < wf.size(); ++t) {
+    for (short t = 0; t < num::cast<short>(wf.size()); ++t) {
         // subtract pedestals
-        auto Q = wf[t] - Geom::pedestal;
-        SetADCunit(num::cast<short>(GetTime() + t),num::cast<short>(Q));
+        short Q = wf[t] - Geom::pedestal;
+        SetADCunit(GetTime() + t,Q);
         if (Q > fQMax) {
-            fQMax = num::cast<short>(Q);
-            fTimeMax = num::cast<short>(GetTime() + t);
+            fQMax = Q;
+            fTimeMax = GetTime() + t;
         }
     }
 

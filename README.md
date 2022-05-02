@@ -2,15 +2,15 @@
 [![Codacy](https://app.codacy.com/project/badge/Grade/f0558fa6988e43d28f0d0915b2d77883)](https://www.codacy.com/gl/t2k-beamtest/desy_testbeam/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=t2k-beamtest/desy_testbeam&amp;utm_campaign=Badge_Grade)
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/f0558fa6988e43d28f0d0915b2d77883)](https://www.codacy.com/gl/t2k-beamtest/desy_testbeam/dashboard?utm_source=gitlab.com&utm_medium=referral&utm_content=t2k-beamtest/desy_testbeam&utm_campaign=Badge_Coverage)
 
-# DESY TPC beam test analysis package
+# T2K TPC beam test analysis package
 
 ![](doc/desy.png)
 
-The package for the DESY beam test data analysis. 
+The package for the T2K High Angle TPC beam test data analysis. 
 Code doxygen documentation is available at [pages](https://t2k-beamtest.gitlab.io/desy_testbeam).
 
 # HighLevel tool
-For the DESY beam test analysis the HighLevel tool was created. 
+For the beam test analysis the HighLevel tool was created. 
 The new flexible tool should allow us to create clear analysis algorithms.
 
 The main idea is to separate the routine procedures 
@@ -20,7 +20,7 @@ one wants to store and the logic how to fill it.
 
 ## Compilation
 For the compilation you need to pull dependencies and create the build folder.
-The requirements are C++14 compatible compiler. 
+The requirements are C++14 compatible compiler and ROOT package
 To work at LXPLUS the proper environment can be set up with 
 `. /cvmfs/sft.cern.ch/lcg/views/LCG_100/x86_64-centos7-clang11-opt/setup.sh` 
 ```bash
@@ -36,7 +36,8 @@ make
 
 Then the code can be run with e.g.
 ```bash
-./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b --nthread 3
+./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter0.root -t0 -b 
+./SpatialResol.exe -i input_path/input_file.root -o output_path/output_file_iter1.root -t1 -b 
 ```
 The detailed description of the input flags is provided in [SpatialResol/README.md](src/SpatialResol/README.md).
 The expected output during the analysis is displayed below:
@@ -57,21 +58,21 @@ The work flow can be briefly defined with the following chain:
 3. AnalysisBase takes care about loop over events with AnalysisBase::Loop(). 
 The range can be specified with `--start` and `--end` flags.
 
-4. For each event the pattern recognition (reconstruction) is called. 
+4. For each event the pattern recognition (reconstruction) is called
+(more info [Reconstruction/README.md](src/Reconstruction/README.md)). 
 The waveform treatment is done at this step. 
 The reconstruction output is a `TEvent` object that contains a collection of `THit`. 
-The default one is DBSCANReconstruction that returns one track per event. 
-The maximum number of pads per track is set to 200 pads that is sufficient 
-to select only single tracks, but may be a subject of change for other analysis.
+The default one is DBSCANReconstruction.
 
-5. Successfully reconstructed track goes to `ProcessEvent()` function of your analysis.
+5. Successfully reconstructed track is passed to `ProcessEvent()` function of your analysis.
 
 6. The Selection can be called inside your analysis to put a cut on angle/number of clusters, etc. 
-Some selection utils are located at `Reconstruction/Selection.cxx`
+Some selection utils are located at `Reconstruction/Selection.cxx` 
+(more info [Reconstruction/README.md](src/Reconstruction/README.md)).
 
-7. The further logic of your analysis is applied. The desired vars and histoes are filled
+8. The further logic of your analysis is applied. The desired vars and histoes are filled
 
-8. AnalysisBase::WriteOutput() takes care of storing your results in the output.
+9. AnalysisBase::WriteOutput() takes care of storing your results in the output.
 
 Please find the SpatialResolAna analysis logic description in a 
 [dedicated readme file](src/SpatialResol/README.md). 
@@ -82,22 +83,29 @@ The steps are commented in the source code as well.
 SpatialResolAna.cxx is supposed to be the main analysis that we are working with. 
 It does track position reconstruction and the charge reconstruction. 
 One can check if all the necessary information is stored in the output TTree. 
-If yes, the analysis can be done with a macroses. 
+If yes, the analysis can be done with a macroses over the analysis output file. 
 If no, please, look through the main user cases below.
 
 ### Parameter file
 The parameter file is used to define the fitters, selection, etc. 
 The default one is `param/default.ini`. Any other parameter file could be used, 
-with flag `--param other_file.ini` during analysis execution.
+with flag `--param other_file.ini` during analysis execution. 
+That's how the selection ana analysis can be tuned to partiicular use case.
 
 ### Store new variables in the output
 New variables can be easily implemented in the header file and then added 
 in the Initialization function of any analysis. 
 If you want to store an TObject (e.g. histo, tree, canvas) add one to `output_vector` 
-and it will be written into the output file automatically.
+and it will be written into the output file automatically. Example:
+
+```cpp
+_prf_histo = new TH2F("PRF_histo", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
+_output_vector.push_back(_prf_histo);
+```
 
 ### Cluster definition
-The cluster definition is done inside `AnalysisBase.cxx`. 
+The cluster is a part of the track that is used for the position reconstruction.
+The login of the cluster creation is defined inside `TCluster.cxx`. 
 At the moment four options are considered. See [arXiv:2106.12634](http://arxiv.org/abs/2106.12634)
 for details:
 1. Column/row clustering
@@ -122,9 +130,6 @@ E.g. clusters with larger charge can be truncated; only 2 pads in the cluster ca
 Functions `PadSelection::GetRobustPadsInColumn()` and `PadSelection::GetRobustCols()`
 may contain conditions to select certain clusters and pads. 
 By default, no additional conditions are applied.
-
-### Contributing to project
-Please check `CONTRIBUTING.md` file with simple suggestions and advices about contribution procedure.
 
 ## The road map to start a completely new analysis
 You can start a completely new analysis that has nothing in common with the existing ones
@@ -189,6 +194,14 @@ Micromegas:
    0 |______________|         |__| 10.19 mm
      0               35        11.28 mm
              x
+             
+             
+      MM numeration:
+    ___  ___  ___  ___
+    |0|  |1|  |2|  |3|
+    ---  ---  ---  ---
+    |4|  |5|  |6|  |7|
+    ---  ---  ---  ---
 ```
 
 The time information is stored as a 510 bins array or 511 bins array. 

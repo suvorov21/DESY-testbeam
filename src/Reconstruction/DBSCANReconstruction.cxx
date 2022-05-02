@@ -61,21 +61,22 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> &nodes) {
         }
     }
     if (_verbose > 2)
-        std::cout << "Found " << nodes.size() << " nodes" << std::endl;
+        std::cout << "Found " << nodes.size() << " nodes in " << clusterID << " clusters" << std::endl;
     return nodes;
 }
 
-std::vector<Node> DBSCANReconstruction::FillNodes(const std::shared_ptr<TEvent> &event) {
+std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) {
     std::vector<Node> nodes;
 
     if (_verbose > 2)
-        std::cout << "Found " << event->GetHits().size() << " hits" << std::endl;
+        std::cout << "Found " << module.size() << " hits" << std::endl;
 
-    if (event->GetHits().size() > MAX_NODES_TOT)
+    // FIXME put this in the selection
+    if (module.size() > MAX_NODES_TOT)
         return nodes;
 
     // fill the maximum amplitude and time
-    for (const auto &hit : event->GetAllHits()) {
+    for (const auto &hit : module) {
         if (hit->GetQMax() > 0) {
             Node node;
             node.hit = hit;
@@ -87,95 +88,40 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const std::shared_ptr<TEvent> 
     return nodes;
 }
 
-std::vector<DB_Cluster> DBSCANReconstruction::FindClustersLargerThan(const std::vector<Node> &nodes, int minNodes) {
-    std::vector<DB_Cluster> clusters;
-    auto it_max = std::max_element(nodes.begin(), nodes.end(),
-                                   [](const Node &n1, const Node &n2) { return n1.hit->GetQMax() < n2.hit->GetQMax(); });
-    int numClusters = (it_max == nodes.end()) ? -1 : (*it_max).c;
-    int acceptedClusters = 0;
-    for (int i = 0; i <= numClusters; i++) {
-        DB_Cluster cluster;
-        cluster.id = acceptedClusters;
-        for (const auto &n : nodes)
-            if (n.c == i) {
-                // TODO make it a vector
-                cluster.nodes[cluster.size] = n.id;
-                cluster.size++;
-            }
-        if (cluster.size >= minNodes && cluster.size <= MAX_NODES) {
-            acceptedClusters++;
-            clusters.push_back(cluster);
-        }
-    }
-    if (_verbose > 2) {
-        std::cout << "Found larger " << clusters.size() << " nodes";
-        for (auto &cluster : clusters)
-            std::cout << "\t" << cluster.size;
-        std::cout << std::endl;
-    }
-    return clusters;
-}
-
-std::vector<Node> DBSCANReconstruction::UpdateNodes(const std::vector<DB_Cluster> &clusters,
-                                                    std::vector<Node> &nodes) {
-    std::vector<Node> updated_nodes;
-    for (auto n : nodes) {
-        n.c = -1;
-        updated_nodes.push_back(n);
-    }
-    for (const auto &c : clusters) {
-        for (int i = 0; i < c.size; i++) {
-            nodes[c.nodes[i]].c = c.id;
-            updated_nodes.push_back(nodes[c.nodes[i]]);
-        }
-    }
-    if (_verbose > 2)
-        std::cout << "Updated " << updated_nodes.size() << " nodes" << std::endl;
-    return updated_nodes;
-}
-
-bool DBSCANReconstruction::FillOutput(const std::shared_ptr<TEvent> &event,
-                                      const std::vector<Node> &nodes,
-                                      const std::vector<DB_Cluster> &clusters
-) {
-    if (nodes.empty()) return false;
-    std::vector<std::shared_ptr<THit>> unusedHits;
-    std::vector<int> usedHits;
-    usedHits.resize(nodes.size(), 0);
-    // store selected hits
-    for (uint trkID = 0; trkID < clusters.size(); trkID++) {
-        if (nodes.empty())
+bool DBSCANReconstruction::ReconstructEvent(const std::shared_ptr<TEvent> &event) {
+    auto hitsMap = event->GetAllHits();
+    // pattern recognition per modules
+    for (auto const& module : hitsMap) {
+        auto raw_nodes = FillNodes(module.second);
+        if (raw_nodes.empty())
             continue;
-        for (uint i = 0; i < nodes.size(); i++) {
-            Node n = nodes[i];
-            if (n.c == (int) trkID) {
-                usedHits[i] = 1;
-                event->AddUsedHit(n.hit);
+        std::vector<Node> nodes = FindClusters(raw_nodes);
+
+        // loop over reconstructed clusters
+        std::unordered_map<int, THitPtrVec> patterns{};
+        for (const auto& node : nodes) {
+            if (node.c >= 0)
+                patterns[node.c].emplace_back(node.hit);
+        }
+
+        for (auto const& pattern : patterns) {
+            if (pattern.second.size() > MIN_NODES_PER_PATT) {
+                event->AddPattern(pattern.second);
             }
         }
-    }
+    } // over modules
 
-    // stored unselected hits
-    for (uint i = 0; i < nodes.size(); i++) {
-        if (!usedHits[i]) event->AddUnusedHit(nodes[i].hit);
-    }
+    MatchModules(event);
 
     return true;
 }
 
-bool DBSCANReconstruction::SelectEvent(const std::shared_ptr<TEvent> &event) {
-    auto raw_nodes = FillNodes(event);
-    if (raw_nodes.empty())
-        return false;
-    std::vector<Node> nodes = FindClusters(raw_nodes);
-    std::vector<DB_Cluster> clusters = FindClustersLargerThan(nodes, 15);
-    std::vector<Node> new_nodes = UpdateNodes(clusters, nodes);
+void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
+    // FIXME
+    // dummy algo
+    // works for one module only
+    for (const auto& pattern : event->GetAllPatterns()) {
+        event->AddTrack(pattern.second);
+    }
 
-    //if(nodes.size()) DrawNodes(new_nodes);
-    if (!nodes.empty())
-        if (clusters.size() == 1)
-            return FillOutput(event,
-                              new_nodes,
-                              clusters);
-    return false;
 }

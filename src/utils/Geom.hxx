@@ -20,9 +20,13 @@
 //             0            35       1.128 cm
 //                 x
 //
-
-class THit;
-using THitPtr = std::shared_ptr<THit>;
+//
+//          MM numeration:
+//          ___  ___  ___  ___
+//          |0|  |1|  |2|  |3|
+//          ---  ---  ---  ---
+//          |4|  |5|  |6|  |7|
+//          ---  ---  ---  ---
 
 /// Geometry definition
 /** Number of pads, dimensions and time. */
@@ -42,15 +46,8 @@ class Geom {
                                bool invert = false,
                                Double_t angle = 0);
 
-    /// Get Y position of the column
-    static Double_t GetYpos(int it_y, bool invert = false);
-
-    /// Get X position of the row
-    static Double_t GetXpos(int it_x, bool invert = false);
-
     // time bins
     static constexpr short Nsamples = 511;
-    static constexpr short Nsamples_saclay = 510;
 
     // number of pads
     static constexpr short nPadx = 36;
@@ -65,6 +62,10 @@ class Geom {
     // (10.09+2*0.1/2 = 10.19) mm
     static constexpr float dy = 0.01019; //[m]
 
+    // Given the space between two ERAM modules is 1 mm and each Module is 34cm*42cm
+    static constexpr float xModuleOffset = 421;
+    static constexpr float yModuleOffset = 341;
+
     /// Pedestals values
     static const short pedestal = 250;
 
@@ -78,6 +79,16 @@ class Geom {
 
  private:
     Geom();
+
+    // Get X position of the THit
+    static Double_t GetXpos(const THitPtr &h, bool invert);
+    /// Get Y position of the THit
+    static Double_t GetYpos(const THitPtr &h, bool invert);
+
+    /// Get Y position of the column
+    static Double_t GetYpos(int it_y, bool invert = false);
+    /// Get X position of the row
+    static Double_t GetXpos(int it_x, bool invert = false);
 
     /// private method to access to raw X position array
     static constexpr Double_t GetXraw(int padXid);

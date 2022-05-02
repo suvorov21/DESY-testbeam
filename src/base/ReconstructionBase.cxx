@@ -6,7 +6,7 @@ bool ReconstructionBase::Initialize(int verbose) {
     return true;
 }
 
-bool ReconstructionBase::SelectEvent(const std::shared_ptr<TEvent> &event) {
+bool ReconstructionBase::ReconstructEvent(const std::shared_ptr<TEvent> &event) {
     (void) event;
 
     return true;

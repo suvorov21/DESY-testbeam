@@ -1,5 +1,8 @@
 # Spatial resolution analysis
 
+Spatial resolution analysis is done with iterative process. 
+The detailed description can be found at [arXiv:2106.12634](http://arxiv.org/abs/2106.12634).
+
 # Usage
 
 ```

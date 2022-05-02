@@ -28,14 +28,16 @@ TEST(FitterTest, exepEmptyPRF) {
   EXPECT_THROW(fitter->FitCluster(col, 0.), std::logic_error);
 }
 
-TEST_F(Fitter, ClusterFit) {
+TEST_F(Fitter, ClusterFitCenter) {
   auto center = fake::GetCenteredCluster();
   auto result = fitter->FitCluster(center, Geom::GetYposPad(center[0]) + 0.003);
   EXPECT_NEAR(result.first, Geom::GetYposPad(center[0]), 0.001);
+}
 
-  center = fake::GetSideCLuster();
-  result = fitter->FitCluster(center, Geom::GetYposPad(center[0]));
-  EXPECT_NEAR(result.first, Geom::GetYposPad(center[0]) + Geom::dy/2, 0.001);
+TEST_F(Fitter, ClusterFitSide) {
+  auto side = fake::GetSideCLuster();
+  auto result = fitter->FitCluster(side, Geom::GetYposPad(side[0]));
+  EXPECT_NEAR(result.first, Geom::GetYposPad(side[0]) + Geom::dy/2, 0.001);
 }
 
 TEST_F(Fitter, TrackFit) {

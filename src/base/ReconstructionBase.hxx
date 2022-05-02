@@ -20,7 +20,7 @@ class ReconstructionBase {
     ReconstructionBase() : _verbose(0) {}
 
     virtual bool Initialize(int verbose);
-    virtual bool SelectEvent(const std::shared_ptr<TEvent> &event);
+    virtual bool ReconstructEvent(const std::shared_ptr<TEvent> &event);
 
  protected:
     int _verbose;

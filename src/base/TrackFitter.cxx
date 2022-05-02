@@ -2,7 +2,6 @@
 #include "Fit/Fitter.h"
 
 #include "TrackFitter.hxx"
-#include "Geom.hxx"
 
 //******************************************************************************
 TrackFitterBase::TrackFitterBase() {

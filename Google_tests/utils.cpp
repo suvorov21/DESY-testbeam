@@ -8,13 +8,15 @@
 #include "Geom.hxx"
 
 TEST(GeomThrowTest, OferflowX) {
-  EXPECT_THROW(Geom::GetXpos(Geom::GetNColumn() + 1),
+  THitPtr hit = std::make_shared<THit>(Geom::GetNColumn() + 1, 0);
+  EXPECT_THROW(Geom::GetXposPad(hit),
               std::logic_error
                );
 }
 
 TEST(GeomThrowTest, OferflowY) {
-  EXPECT_THROW(Geom::GetYpos(Geom::GetNColumn() + 1),
+  THitPtr hit = std::make_shared<THit>(0, Geom::GetNRow() + 1);
+  EXPECT_THROW(Geom::GetYposPad(hit),
                std::logic_error
                );
 }

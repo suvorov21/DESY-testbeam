@@ -242,7 +242,7 @@ bool AnalysisBase::Loop() {
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
 
         // copy event to a child class to be filled with reconstruction
-        bool sel = _reconstruction->SelectEvent(tEvent);
+        bool sel = _reconstruction->ReconstructEvent(tEvent);
         _reco_time += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("reco");
         if (!sel) {
             continue;
@@ -323,8 +323,10 @@ std::unique_ptr<TCanvas> AnalysisBase::DrawSelection(
     TNtuple event3D("event3D", "event3D", "x:y:z:c");
 
     // all hits
-    for (const auto &h : reco_event->GetAllHits()) {
-        MM.Fill(h->GetCol(), h->GetRow(), h->GetQMax());
+    for (const auto &module : reco_event->GetAllHits()) {
+        for (const auto& h : module.second) {
+            MM.Fill(h->GetCol(), h->GetRow(), h->GetQMax());
+        }
     }
 
     // TrackSel hits

@@ -56,7 +56,7 @@ TEST(InitialisationTest, baseProcessEvent) {
     EXPECT_THROW(ana->ProcessEvent(event), std::logic_error);
     auto reconstruction = new ReconstructionBase();
     reconstruction->Initialize(0);
-    EXPECT_EQ(reconstruction->SelectEvent(event), true);
+    EXPECT_EQ(reconstruction->ReconstructEvent(event), true);
 }
 
 TEST(AnalysisTest, Clusterisation) {

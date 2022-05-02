@@ -7,7 +7,6 @@
 /** @endcond */
 
 #include "TRawHit.hxx"
-#include "Geom.hxx"
 
 class THit;
 /// shared pointer to THit
