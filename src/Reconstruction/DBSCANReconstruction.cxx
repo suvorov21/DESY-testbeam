@@ -121,7 +121,9 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
     // dummy algo
     // works for one module only
     for (const auto& pattern : event->GetAllPatterns()) {
-        event->AddTrack(pattern.second);
+        for (const auto& patternInMM : pattern.second) {
+            event->AddTrack({patternInMM});
+        }
     }
 
 }

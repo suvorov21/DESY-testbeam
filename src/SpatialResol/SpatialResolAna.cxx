@@ -410,14 +410,11 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
         // reset tree values
         Reset(num::cast<int>(event->GetID()));
         if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
-            std::cout << "Track patterns: " << track.size() << std::endl;
-
-        // FIXME TMP CUT
-        if (track.size() > 1)
-            continue;
+            std::cout << "Track crosses #modules: " << track.size() << std::endl;
 
         TClusterPtrVec clusters;
 
+        // cluster track module by module
         for (const auto& pattern : track) {
             auto clusterModule = _clustering->ClusterTrack(pattern);
             clusters.insert(clusters.end(), clusterModule.begin(), clusterModule.end());
@@ -610,10 +607,10 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr &cluster, uint id) {
 std::shared_ptr<TF1> SpatialResolAna::ProcessTrack(const TClusterPtrVec &track) {
 //******************************************************************************
     auto fit = _fitter->FitTrack(track, -1);
-    _track_fit_func = fit;
-
     if (!fit)
         return nullptr;
+
+    _track_fit_func = fit;
 
     _quality = fit->GetChisquare() / fit->GetNDF();
 
