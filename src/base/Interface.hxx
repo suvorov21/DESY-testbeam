@@ -49,7 +49,7 @@ class Interface {
 
 };
 
-template<int timeSize = 511>
+template<short timeSize = 511>
 class interfaceRoot : public Interface {
     /// array of WFs
     Int_t _padAmpl[Geom::nPadx][Geom::nPady][timeSize]{-260};

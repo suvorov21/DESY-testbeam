@@ -29,7 +29,7 @@ std::unordered_map<short, TPatternVec> TEvent::GetAllPatterns() {
     return fPatterns;
 }
 
-TPatternVec TEvent::GetPattern(const short module) {
+TPatternVec TEvent::GetPatternsInModule(const short module) {
     if (fPatterns.find(module) == fPatterns.end()) {
         // empty vector
         return {};

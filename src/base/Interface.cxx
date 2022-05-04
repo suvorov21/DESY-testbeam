@@ -77,13 +77,13 @@ Long64_t Interface::getEntries() {
     return 0;
 }
 
-template<int timeSize>
+template<short timeSize>
 void interfaceRoot<timeSize>::Initialize() {
     Interface::chainInputFiles("tree");
     _chain->SetBranchAddress("PadAmpl", _padAmpl);
 }
 
-template<int timeSize>
+template<short timeSize>
 std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
     // create TRawEvent from 3D array
     std::shared_ptr<TEvent> event = std::make_shared<TEvent>(i);

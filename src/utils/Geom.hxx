@@ -53,6 +53,7 @@ class Geom {
     static constexpr short nPadx = 36;
     static constexpr short nPady = 32;
 
+    static constexpr short nModules = 8;
     static constexpr short nChip = 16;
     static constexpr short nChannel = 79;
 

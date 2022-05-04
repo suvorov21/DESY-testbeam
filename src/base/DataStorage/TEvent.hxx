@@ -8,7 +8,9 @@
 #include "TRawEvent.hxx"
 #include "THit.hxx"
 
-using TPatternVec = std::vector<THitPtrVec>;
+using TPattern = std::vector<THitPtr>;
+using TPatternVec = std::vector<TPattern>;
+using TTrack = TPatternVec;
 
 //! Class that contains the output from the reconstruction
 
@@ -37,7 +39,7 @@ class TEvent : public TRawEvent {
     std::unordered_map<short, THitPtrVec> GetAllHits();
     THitPtrVec GetHitsInModule(short module);
 
-    TPatternVec GetPattern(short module);
+    TPatternVec GetPatternsInModule(short module);
     std::unordered_map<short, TPatternVec> GetAllPatterns();
 
     std::vector<TPatternVec> GetTracks() {return fTracks;}
@@ -55,12 +57,15 @@ class TEvent : public TRawEvent {
     std::unordered_map<short, THitPtrVec> fHitsPtrs{};
 
     /// Recognised patterns per module
+    /// WARNING this is relevant only before DBSCAN reconstruction
+    /// Afterwards the patterns are merged into tracks.
+    /// Consider using tracks instead
     std::unordered_map<short, TPatternVec> fPatterns{};
 
     /// Patterns matched into tracks, divided into modules
     /// So the scheme is: fTracks[patternId][module][hitId]
     /// Such a structure allows independent analysis per module
-    std::vector<TPatternVec> fTracks{};
+    std::vector<TTrack> fTracks{};
 };
 
 #endif

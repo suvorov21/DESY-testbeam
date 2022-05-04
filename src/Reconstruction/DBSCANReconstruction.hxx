@@ -3,6 +3,8 @@
 #define SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 
 #include "ReconstructionBase.hxx"
+
+#include "TF1.h"
 //! Reconstruction for passing through tracks
 
 //! Explain it
@@ -11,9 +13,11 @@
 //!
 //!
 
+/// distance between nodes to be associated
 const int MIN_DIST = 2;
 const int MIN_NODES = 1;
-const int MIN_NODES_PER_PATT = 15;
+/// minimum number of hits for a pattern to be saved
+const int MIN_HITS_PER_PATT = 15;
 
 struct Node {
     THitPtr hit;
@@ -33,12 +37,22 @@ class DBSCANReconstruction : public ReconstructionBase {
     /// Merge nodes Nodes clusters
     std::vector<Node> FindClusters(std::vector<Node> &raw_nodes);
 
-    // virtual std::vector<int> FillWFs(const TEvent* event, Node n);
+    /// Measure distance between two nodes
     virtual double MeasureDistance(const Node &a, const Node &b);
 
+    /// Match patterns in different modules
     void MatchModules(const std::shared_ptr<TEvent> &event);
 
+    /// if trajectories can be fit together
+    bool fitTogether(const TPattern&, const TPattern&);
+
+    /// get adjacent modules
+    std::vector<short> getNeighboursMM(ushort i);
+
  private:
+    short chargeThresholdFit_{400};
+    std::unique_ptr<TF1> trackFitFunction_;
+    int fitQthreshold_{400};
 
 };
 

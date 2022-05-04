@@ -148,6 +148,8 @@ class SpatialResolAna : public AnalysisBase {
     Int_t _charge[Nclusters]{0};
     /// multiplicity of the cluster
     Int_t _multiplicity[Nclusters]{0};
+    /// MM module number
+    Int_t _module[Nclusters];
 
     /// Track analytical fit function for plotting
     std::shared_ptr<TF1> _track_fit_func{nullptr};

@@ -298,6 +298,10 @@ bool SpatialResolAna::Initialize() {
                   &_track_pos,
                   TString::Format("track_pos[%i]/D", Nclusters)
     );
+    _tree->Branch("module",
+                  &_module,
+                  TString::Format("module[%i]/I", Nclusters)
+    );
     _tree->Branch("pad_charge",
                   &_pad_charge,
                   TString::Format("_pad_charge[%i][10]/I", Nclusters)
@@ -753,6 +757,8 @@ void SpatialResolAna::FillSR(const TClusterPtr &cluster,
                              const std::array<std::shared_ptr<TF1>, Nclusters> &fit1
 ) {
 //******************************************************************************
+
+    _module[clusterId] = (*cluster)[0]->GetCard();
     _x_av[clusterId] = cluster->GetX();
     double track_fit_y = fit->Eval(_x_av[clusterId]);
     double track_fit_y1 = fit1[clusterId]->Eval(_x_av[clusterId]);
@@ -827,6 +833,7 @@ void SpatialResolAna::Reset(int id) {
     _sin_alpha = -999.;
     _offset = -999.;
     _rob_clusters = -999;
+    _dEdx = -999;
 
     for (auto colId = 0; colId < Nclusters; ++colId) {
         _multiplicity[colId] = -999;
@@ -838,7 +845,7 @@ void SpatialResolAna::Reset(int id) {
         _track_pos[colId] = -999;
         _x[colId] = -999;
         _x_av[colId] = -999;
-        _dEdx = -999;
+        _module[colId] = -999;
 
         for (auto padId = 0; padId < 10; ++padId) {
             _dx[colId][padId] = -999;

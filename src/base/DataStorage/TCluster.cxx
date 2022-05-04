@@ -73,7 +73,9 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
 
             auto cluster_col = (**it)[0]->GetCol(_invert);
             auto cluster_row = (**it)[0]->GetRow(_invert);
-            if (GetConstant(cluster_row, cluster_col) == cons) {
+            auto module = (**it)[0]->GetCard();
+            // clustering is done ONLY within a module
+            if (GetConstant(cluster_row, cluster_col) == cons && pad->GetCard() == module) {
                 (*it)->AddHit(pad);
                 (*it)->AddCharge(pad->GetQMax());
                 /** update X position */
