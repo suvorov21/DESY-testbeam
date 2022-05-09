@@ -47,7 +47,7 @@ class DBSCANReconstruction : public ReconstructionBase {
     bool fitTogether(const TPattern&, const TPattern&);
 
     /// get adjacent modules
-    std::vector<short> getNeighboursMM(ushort i);
+    static std::vector<short> getNeighboursMM(ushort i);
 
  private:
     short chargeThresholdFit_{400};

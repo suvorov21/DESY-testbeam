@@ -59,13 +59,13 @@ class Geom {
 
     // pad size
     // (11.18+2*0.1/2 = 11.28) mm
-    static constexpr float dx = 0.01128; //[m]
+    static constexpr Double_t dx = 0.01128; //[m]
     // (10.09+2*0.1/2 = 10.19) mm
-    static constexpr float dy = 0.01019; //[m]
+    static constexpr Double_t dy = 0.01019; //[m]
 
     // Given the space between two ERAM modules is 1 mm and each Module is 34cm*42cm
-    static constexpr float xModuleOffset = 421;
-    static constexpr float yModuleOffset = 341;
+    static constexpr Double_t xModuleOffset = 0.421;
+    static constexpr Double_t yModuleOffset = 0.341;
 
     /// Pedestals values
     static const short pedestal = 250;

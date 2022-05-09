@@ -1,9 +1,7 @@
 #include "DBSCANReconstruction.hxx"
 
-#include "TStyle.h"
 #include "TF1.h"
 #include "TGraph.h"
-#include "TVector3.h"
 
 DBSCANReconstruction::DBSCANReconstruction() : ReconstructionBase() {}
 
@@ -290,8 +288,7 @@ bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &tr
         return false;
 
     // if join fit is good comparing to separate fits
-    // FIXME Why 4???
-    if (QJ < sqrt(Q1 * Q2) * 4. || QJ < std::max(Q1, Q2))
+    if (QJ < sqrt(Q1 * Q2) * 1.2 || QJ < std::max(Q1, Q2))
         return true;
 
     return false;

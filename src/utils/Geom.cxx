@@ -36,11 +36,11 @@ Double_t Geom::GetXposPad(const THitPtr &h, bool invert, Double_t angle) {
     Double_t x_offset{0};
     Double_t y_offset{0};
     if (invert) {
-        x_offset = -1 * num::cast<float>(h->GetCard() / 4 - 1) * yModuleOffset;
-        y_offset = num::cast<float>(h->GetCard() % 4) * xModuleOffset;
+        x_offset = -1 * num::cast<Double_t>(h->GetCard() / 4 - 1) * yModuleOffset;
+        y_offset = num::cast<Double_t>(h->GetCard() % 4) * xModuleOffset;
     } else {
-        x_offset = num::cast<float>(h->GetCard() % 4) * xModuleOffset;
-        y_offset = -1 * num::cast<float>(h->GetCard() / 4 - 1) * yModuleOffset;
+        x_offset = num::cast<Double_t>(h->GetCard() % 4) * xModuleOffset;
+        y_offset = -1 * num::cast<Double_t>(h->GetCard() / 4 - 1) * yModuleOffset;
     }
 
     Double_t x_flat = Geom::GetXpos(h, invert) + x_offset;
@@ -53,11 +53,11 @@ Double_t Geom::GetYposPad(const THitPtr &h, bool invert, Double_t angle) {
     Double_t x_offset{0};
     Double_t y_offset{0};
     if (invert) {
-        x_offset = -1 * num::cast<float>(h->GetCard() / 4 - 1) * yModuleOffset;
-        y_offset = num::cast<float>(h->GetCard() % 4) * xModuleOffset;
+        x_offset = -1 * num::cast<Double_t>(h->GetCard() / 4 - 1) * yModuleOffset;
+        y_offset = num::cast<Double_t>(h->GetCard() % 4) * xModuleOffset;
     } else {
-        x_offset = num::cast<float>(h->GetCard() % 4) * xModuleOffset;
-        y_offset = -1 * num::cast<float>(h->GetCard() / 4 - 1) * yModuleOffset;
+        x_offset = num::cast<Double_t>(h->GetCard() % 4) * xModuleOffset;
+        y_offset = -1 * num::cast<Double_t>(h->GetCard() / 4 - 1) * yModuleOffset;
     }
     Double_t x_flat = Geom::GetXpos(h, invert) + x_offset;
     Double_t y_flat = Geom::GetYpos(h, invert) + y_offset;
