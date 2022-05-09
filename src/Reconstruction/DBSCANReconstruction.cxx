@@ -65,7 +65,7 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> &nodes) {
         }
     }
     if (_verbose > 2)
-        std::cout << "Found " << nodes.size() << " nodes in " << clusterID << " clusters" << std::endl;
+        std::cout << "Found " << nodes.size() << " nodes in " << clusterID + 1 << " clusters" << std::endl;
     return nodes;
 }
 
@@ -73,7 +73,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) {
     std::vector<Node> nodes;
 
     if (_verbose > 2)
-        std::cout << "Found " << module.size() << " hits" << std::endl;
+        std::cout << "Fill " << module.size() << " hits" << std::endl;
 
     // fill the maximum amplitude and time
     for (const auto &hit : module) {
@@ -132,6 +132,9 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
             if (mmSecond < mmStart)
                 continue;
 
+            if (_verbose > 1)
+                std::cout << "Modules " << mmStart << "\t" << mmSecond << std::endl;
+
             // for each pair of trajectories in the adjacent MMs
             auto patternsInFirstModule = event->GetPatternsInModule(mmStart);
             for (auto trajFirstIt  = patternsInFirstModule.begin();
@@ -142,6 +145,8 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
                 for (auto& trajSecond : event->GetPatternsInModule(mmSecond)) {
                     if (fitTogether(trajFirst, trajSecond)) {
                         // match found
+                        if (_verbose > 1)
+                            std::cout << "Merging\n";
                         groveStone.emplace_back(mmStart, std::distance(patternsInFirstModule.begin(), trajFirstIt));
                         // add hits from traj 1 to traj2
                         for (const auto& hit : trajFirst)
@@ -172,6 +177,10 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
             std::unordered_map<short, TPattern> splitToModules;
             for (const auto& hit : *trajFirstIt) {
                 splitToModules[hit->GetCard()].emplace_back(hit);
+            }
+
+            if (_verbose > 1) {
+                std::cout << "Filling track " << (*trajFirstIt).size() << " nodes in " << splitToModules.size() << " modiles\n";
             }
 
             TTrack track;
@@ -220,6 +229,9 @@ bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &tr
     TGraph traj2Graph;
     TGraph joinedGraph;
 
+    if (_verbose > 1)
+        std::cout << "Fitting together\n";
+
     // FIXME consider doing it one time per traj. Right now it's done for every pair of trajs
     for (const auto &hit : traj1) {
         if (!hit)
@@ -248,6 +260,9 @@ bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &tr
                              Geom::GetYposPad(hit));
     } // loop over hits
 
+    if (_verbose > 1)
+        std::cout << "Graphs size: " << traj1Graph.GetN() << "\t" << traj2Graph.GetN() << "\t" << joinedGraph.GetN() << std::endl;
+
     // fit trajs separately and together
     traj1Graph.Fit(trackFitFunction_->GetName(), "Q");
     traj2Graph.Fit(trackFitFunction_->GetName(), "Q");
@@ -267,7 +282,7 @@ bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &tr
     auto Q2 = fit2->GetChisquare() / fit2->GetNDF();
     auto QJ = fitJ->GetChisquare() / fitJ->GetNDF();
 
-    if (_verbose > 0)
+    if (_verbose > 1)
         std::cout << "Fit quality: " << Q1 << "\t" << Q2 << "\t" << QJ << std::endl;
 
     // if any of individual fits is "bad"
@@ -275,7 +290,8 @@ bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &tr
         return false;
 
     // if join fit is good comparing to separate fits
-    if (QJ < sqrt(Q1 * Q2) * 1.2 || QJ < std::max(Q1, Q2))
+    // FIXME Why 4???
+    if (QJ < sqrt(Q1 * Q2) * 4. || QJ < std::max(Q1, Q2))
         return true;
 
     return false;

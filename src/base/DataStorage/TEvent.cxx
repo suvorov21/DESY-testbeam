@@ -1,6 +1,7 @@
 #include "TEvent.hxx"
 
- TEvent::TEvent(const TRawEvent& event) : TRawEvent(){
+ TEvent::TEvent(const TRawEvent& event) : TRawEvent() {
+    ID = event.GetID();
    for (const auto& hit : event.GetHits()) {
        fHitsPtrs[hit->GetCard()].emplace_back(std::make_shared<THit>(hit));
    }
@@ -29,10 +30,11 @@ std::unordered_map<short, TPatternVec> TEvent::GetAllPatterns() {
     return fPatterns;
 }
 
-TPatternVec TEvent::GetPatternsInModule(const short module) {
+TPatternVec& TEvent::GetPatternsInModule(const short module) {
     if (fPatterns.find(module) == fPatterns.end()) {
         // empty vector
-        return {};
+        static TPatternVec empty;
+        return empty;
     }
 
     return fPatterns[module];

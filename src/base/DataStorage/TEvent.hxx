@@ -39,7 +39,7 @@ class TEvent : public TRawEvent {
     std::unordered_map<short, THitPtrVec> GetAllHits();
     THitPtrVec GetHitsInModule(short module);
 
-    TPatternVec GetPatternsInModule(short module);
+    TPatternVec& GetPatternsInModule(short module);
     std::unordered_map<short, TPatternVec> GetAllPatterns();
 
     std::vector<TPatternVec> GetTracks() {return fTracks;}

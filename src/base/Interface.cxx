@@ -33,7 +33,7 @@ TString Interface::getRootFile(const TString& filename) {
 interfaceType Interface::getFileType(const TString & filename) {
     TFile file(filename.Data(), "READ");
 
-    if (file.Get<TTree>("event_tree")) {
+    if (file.Get<TTree>("EventTree")) {
         return interfaceType::kRawEvent;
     }
 
@@ -142,9 +142,9 @@ template class interfaceRoot<510>;
 template class interfaceRoot<511>;
 
 void interfaceRawEvent::Initialize() {
-    Interface::chainInputFiles("event");
+    Interface::chainInputFiles("EventTree");
     _event = new TRawEvent();
-    _chain->SetBranchAddress("Event", &_event);
+    _chain->SetBranchAddress("TRawEvent", &_event);
 }
 
 std::shared_ptr<TEvent> interfaceRawEvent::getEvent(Int_t i) {

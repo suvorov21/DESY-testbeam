@@ -8,7 +8,7 @@
 #include "PadSelection.hxx"
 #include "TrackFitter.hxx"
 
-constexpr int Nclusters = 70;
+constexpr int Nclusters = 200;
 
 /// Spatial resolution analysis
 class SpatialResolAna : public AnalysisBase {
@@ -227,7 +227,7 @@ class SpatialResolAna : public AnalysisBase {
     Double_t _uncertainty{-999};
 
     /// vector of events IDs that passed the Reco and selection
-    std::vector<Int_t> _passed_events{};
+    std::vector<UInt_t> _passed_events{};
 
     // [units are meters]
     static constexpr float prf_min = -0.027;

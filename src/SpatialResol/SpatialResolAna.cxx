@@ -219,7 +219,7 @@ bool SpatialResolAna::Initialize() {
 
         if (!_processAll) {
             // read event list passed through reconstruction+selection at previous iteration
-            Int_t read_var;
+            UInt_t read_var;
             auto event_tree = (TTree *) _prev_iter_file->Get("EventTree");
             event_tree->SetBranchAddress("PassedEvents", &read_var);
             std::vector<Int_t> vec;
@@ -546,8 +546,9 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
 
         _tree->Fill();
     }
-    if (_store_event)
-        _passed_events.push_back((Int_t) event->GetID());
+    if (_store_event) {
+        _passed_events.push_back(num::cast<UInt_t>(event->GetID()));
+    }
 
     return true;
 }
@@ -917,7 +918,7 @@ bool SpatialResolAna::WriteOutput() {
     auto file = new TFile(_file_out_name.Data(), "UPDATE");
     // write
     auto tree = new TTree("EventTree", "");
-    Int_t var = 0;
+    UInt_t var = 0;
     tree->Branch("PassedEvents", &var);
     for (int _passed_event : _passed_events) {
         var = _passed_event;
