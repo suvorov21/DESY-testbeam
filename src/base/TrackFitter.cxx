@@ -2,7 +2,6 @@
 #include "Fit/Fitter.h"
 
 #include "TrackFitter.hxx"
-#include "Geom.hxx"
 
 //******************************************************************************
 TrackFitterBase::TrackFitterBase() {
@@ -25,9 +24,9 @@ std::pair<Double_t, Double_t> TrackFitCern::FitCluster(const THitPtrVec &col,
     // WARNING pads should be already sorted
     auto sum = 0;
     for (auto &pad : col) {
-        sum += pad->GetQ();
-        if (pad->GetQ() > maxQ) {
-            maxQ = pad->GetQ();
+        sum += pad->GetQMax();
+        if (pad->GetQMax() > maxQ) {
+            maxQ = pad->GetQMax();
             t_leading = pad->GetTime();
         }
     }
@@ -38,14 +37,14 @@ std::pair<Double_t, Double_t> TrackFitCern::FitCluster(const THitPtrVec &col,
       double chi2 = 0;
 
       for (auto &pad : col) {
-          auto q = pad->GetQ();
+          auto q = pad->GetQMax();
           auto colId = pad->GetCol(_invert);
           if (!q)
               continue;
 
           double a = 1. * q / sum;
           double center_pad_y;
-          center_pad_y = geom::GetYposPad(pad, _invert, _angle);
+          center_pad_y = Geom::GetYposPad(pad, _invert, _angle);
 
           // avoid using pads which are far away from track
           // limit by PRF fitting range (PRF function robustness)

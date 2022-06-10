@@ -1,7 +1,7 @@
 # Check if cmake has the required version
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
 # Set name of our project
@@ -37,11 +37,25 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 #---Locate the ROOT package and defines a number of variables (e.g. ROOT_INCLUDE_DIRS)
 find_package(ROOT REQUIRED COMPONENTS RIO Net)
 
+if(ROOT_CXX_FLAGS MATCHES "-std=c\\+\\+17")
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
 include_directories(external/cpp-generic-toolbox/include)
 include_directories(external/simple-cpp-cmd-line-parser/include)
 
 #---Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
 include(${ROOT_USE_FILE})
+
+# Add hat_event package
+set(PBUILDER OFF)
+include_directories (
+        ${ROOT_INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR}/external/hat_event
+        ${PROJECT_SOURCE_DIR}/external/hat_event/src/
+)
+
+add_subdirectory (external/hat_event/)
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/base/DataStorage) #---Event format
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/base/)            #---Base processors

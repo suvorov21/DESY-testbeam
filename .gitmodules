@@ -8,3 +8,6 @@
 [submodule "external/simple-cpp-cmd-line-parser"]
 	path = external/simple-cpp-cmd-line-parser
 	url = https://github.com/suvorov21/simple-cpp-cmd-line-parser.git
+[submodule "external/hat_event"]
+	path = external/hat_event
+	url = https://gitlab.com/t2k-beamtest/hat_event.git
