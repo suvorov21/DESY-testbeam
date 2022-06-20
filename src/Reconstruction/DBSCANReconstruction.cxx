@@ -130,9 +130,6 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
             if (mmSecond < mmStart)
                 continue;
 
-            if (_verbose > 1)
-                std::cout << "Modules " << mmStart << "\t" << mmSecond << std::endl;
-
             // for each pair of trajectories in the adjacent MMs
             auto patternsInFirstModule = event->GetPatternsInModule(mmStart);
             for (auto trajFirstIt  = patternsInFirstModule.begin();

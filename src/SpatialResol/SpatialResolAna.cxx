@@ -565,6 +565,8 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr &cluster, uint id) {
     _multiplicity[id] = num::cast<int>(robust_pads.size());
 
     auto pad_id = -1;
+    _clust_pos[id] = 0;
+    _charge[id] = 0;
     for (auto &pad : robust_pads) {
         ++pad_id;
         if (!pad)
@@ -838,10 +840,10 @@ void SpatialResolAna::Reset(int id) {
 
     for (auto colId = 0; colId < Nclusters; ++colId) {
         _multiplicity[colId] = -999;
-        _charge[colId] = 0;
+        _charge[colId] = -999;
         _residual[colId] = -999;
         _residual_corr[colId] = -999;
-        _clust_pos[colId] = 0;
+        _clust_pos[colId] = -999;
         _clust_pos_error[colId] = -999;
         _track_pos[colId] = -999;
         _x[colId] = -999;

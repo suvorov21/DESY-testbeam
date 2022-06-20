@@ -100,7 +100,10 @@ std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
             // performance loss
             std::array<short, timeSize> wf{};
             for (short t = 0; t < timeSize; ++t) {
-                auto q =   num::cast<short>(_padAmpl[x][y][t] - 250);
+                short q;
+                try {
+                    q = num::cast<short>(_padAmpl[x][y][t] - 250);
+                } catch (const std::bad_cast& e) {}
 
                 if (q < -249)
                     continue;
