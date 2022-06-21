@@ -215,6 +215,10 @@ class AnalysisBase {
     /// Whether to store the WFs
     bool _to_store_wf{false};
 
+    /// Wether to store the track length per pad
+    bool _calc_pad_len{false};
+
+
     /// Dump the progress into CL
     ClDump _clDump{};
 

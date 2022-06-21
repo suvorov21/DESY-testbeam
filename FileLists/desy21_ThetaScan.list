@@ -1,0 +1,69 @@
+R2021_07_06-11_59_00-0 theta_m45_0T_z360_ym60 --param ../params/horiz.ini
+R2021_07_06-12_27_50-0 theta_m45_0T_z260_ym60 --param ../params/horiz.ini
+R2021_07_06-12_42_20-0 theta_m45_0T_z160_ym60 --param ../params/horiz.ini
+R2021_07_06-12_57_16-0 theta_m45_0T_z460_ym60 --param ../params/horiz.ini
+R2021_07_06-13_08_09-0 theta_m45_0T_z660_ym60 --param ../params/horiz.ini
+R2021_07_06-13_08_09-0 theta_m45_0T_z760_ym60 --param ../params/horiz.ini
+R2021_07_06-13_23_48-0 theta_m45_0T_z860_ym60 --param ../params/horiz.ini
+
+R2021_07_06-14_11_37-0 theta_m45_02T_z860_ym60 --param ../params/horiz.ini
+R2021_07_06-14_41_10-0 theta_m45_02T_z760_ym60 --param ../params/horiz.ini
+R2021_07_06-15_22_54-0 theta_m45_02T_z660_ym60 --param ../params/horiz.ini
+R2021_07_06-15_32_07-0 theta_m45_02T_z640_ym60 --param ../params/horiz.ini
+R2021_07_06-15_39_58-0 theta_m45_02T_z560_ym60 --param ../params/horiz.ini
+R2021_07_06-15_50_37-0 theta_m45_02T_z460_ym60 --param ../params/horiz.ini
+R2021_07_06-16_16_06-0 theta_m45_02T_z360_ym60 --param ../params/horiz.ini
+R2021_07_06-16_44_40-0 theta_m45_02T_z260_ym60 --param ../params/horiz.ini
+
+R2021_07_06-17_23_40-0 theta_m45_02T_z260_ym160 --param ../params/horiz.ini
+R2021_07_06-17_41_16-0 theta_m45_02T_z460_ym160 --param ../params/horiz.ini
+R2021_07_06-18_02_34-0 theta_m45_02T_z860_ym160 --param ../params/horiz.ini
+
+R2021_07_06-18_19_41-0 theta_m45_02T_z860_y0 --param ../params/horiz.ini
+R2021_07_06-19_14_32-0 theta_m45_02T_z460_y0 --param ../params/horiz.ini
+R2021_07_06-19_31_47-0 theta_m45_02T_z260_y0 --param ../params/horiz.ini
+
+R2021_07_06-14_41_10-0 theta_m45_02T_z260_y80 --param ../params/horiz.ini
+R2021_07_06-18_59_19-0 theta_m45_02T_z460_y80 --param ../params/horiz.ini
+R2021_07_06-18_36_41-0 theta_m45_02T_z860_y80 --param ../params/horiz.ini
+R2021_07_06-19_56_46-0 theta_m45_02T_z800_y80 --param ../params/horiz.ini
+
+
+R2021_07_01-14_32_22-0 theta_m20_02T_z860_ym60 --param ../params/horiz.ini
+R2021_07_07-00_50_52-0 theta_m20_02T_z760_ym60 --param ../params/horiz.ini
+R2021_07_07-01_07_51-0 theta_m20_02T_z660_ym60 --param ../params/horiz.ini
+R2021_07_07-01_26_01-0 theta_m20_02T_z560_ym60 --param ../params/horiz.ini
+R2021_07_07-01_45_06-0 theta_m20_02T_z460_ym60 --param ../params/horiz.ini
+R2021_07_07-02_01_58-0 theta_m20_02T_z360_ym60 --param ../params/horiz.ini
+R2021_07_07-02_17_47-0 theta_m20_02T_z260_ym60 --param ../params/horiz.ini
+R2021_07_07-02_49_17-0 theta_m20_02T_z160_ym60 --param ../params/horiz.ini
+
+R2021_07_07-03_07_48-0 theta_m20_02T_z160_y80 --param ../params/horiz.ini
+R2021_07_07-03_40_32-0 theta_m20_02T_z260_y80 --param ../params/horiz.ini
+R2021_07_07-04_11_17-0 theta_m20_02T_z360_y80 --param ../params/horiz.ini
+R2021_07_07-04_26_47-0 theta_m20_02T_z460_y80 --param ../params/horiz.ini
+R2021_07_07-04_43_06-0 theta_m20_02T_z560_y80 --param ../params/horiz.ini
+R2021_07_07-04_58_32-0 theta_m20_02T_z660_y80 --param ../params/horiz.ini
+R2021_07_07-05_14_41-0 theta_m20_02T_z760_y80 --param ../params/horiz.ini
+R2021_07_07-05_48_41-0 theta_m20_02T_z860_y80 --param ../params/horiz.ini
+
+
+
+R2021_07_07-06_11_04-0 theta_20_02T_z860_y80 --param ../params/horiz.ini
+R2021_07_07-06_28_13-0 theta_20_02T_z760_y80 --param ../params/horiz.ini
+
+R2021_07_07-10_16_17-0 theta_20_02T_z40_ym60 --param ../params/horiz.ini
+R2021_07_07-10_08_04-0 theta_20_02T_z60_ym60 --param ../params/horiz.ini
+R2021_07_07-09_53_42-0 theta_20_02T_z160_ym60 --param ../params/horiz.ini
+R2021_07_07-09_36_50-0 theta_20_02T_z360_ym60 --param ../params/horiz.ini
+R2021_07_07-09_20_31-0 theta_20_02T_z460_ym60 --param ../params/horiz.ini
+R2021_07_07-09_06_23-0 theta_20_02T_z560_ym60 --param ../params/horiz.ini
+R2021_07_07-08_51_35-0 theta_20_02T_z660_ym60 --param ../params/horiz.ini
+R2021_07_07-08_37_19-0 theta_20_02T_z760_ym60 --param ../params/horiz.ini
+R2021_07_07-08_22_10-0 theta_20_02T_z860_ym60 --param ../params/horiz.ini
+R2021_07_07-10_52_31-0 theta_20_02T_z0_ym60 --param ../params/horiz.ini
+
+R2021_07_07-11_00_23-0 theta_20_02T_z60_y80 --param ../params/horiz.ini
+R2021_07_07-11_14_14-0 theta_20_02T_z40_y80 --param ../params/horiz.ini
+R2021_07_07-11_18_25-0 theta_20_02T_z160_y80 --param ../params/horiz.ini
+R2021_07_07-11_28_56-0 theta_20_02T_z360_y80 --param ../params/horiz.ini

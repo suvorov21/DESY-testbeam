@@ -34,6 +34,7 @@ AnalysisBase::AnalysisBase() :
     _do_linear_fit(false),
     _do_para_fit(false),
     _to_store_wf(true),
+    _calc_pad_len(true),
     _app(nullptr) {
 //******************************************************************************
 
@@ -461,6 +462,15 @@ bool AnalysisBase::ReadParamFile() {
                 } else {
                     std::cout << "WFs will be stored. Analysis will be slowed down" << std::endl;
                 }
+
+             } else if (name == "calc_pad_len") {
+                if (value == "0") {
+                    _calc_pad_len = false;
+                    std::cout << "Track length per pad will NOT be calculated and stored" << std::endl;
+                } else {
+                    std::cout << "Track length per pad will be stored. Analysis will be slowed down" << std::endl;
+                }
+
             } else if (name == "cross_talk") {
                 if (value == "suppress") {
                     _cross_talk_treat = suppress;
