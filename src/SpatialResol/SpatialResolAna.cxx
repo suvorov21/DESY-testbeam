@@ -102,7 +102,7 @@ bool SpatialResolAna::Initialize() {
     }
 
     // Initialise selection
-    _reconstruction = std::make_shared<DBSCANReconstruction>();
+    _reconstruction = std::make_unique<DBSCANReconstruction>();
     _reconstruction->Initialize(_verbose);
 
     _selection = std::make_unique<TrackSel>(_max_mult,
