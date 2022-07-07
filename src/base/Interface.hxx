@@ -53,6 +53,8 @@ template<short timeSize = 511>
 class interfaceRoot : public Interface {
     /// array of WFs
     Int_t _padAmpl[Geom::nPadx][Geom::nPady][timeSize]{-260};
+    /// whether to mirror X axis
+    bool _mirrorX{false};
  public:
     explicit interfaceRoot(TString var) : Interface(std::move(var)) {}
     ~interfaceRoot() override = default;

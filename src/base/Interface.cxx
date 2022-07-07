@@ -127,7 +127,8 @@ std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
                 if (wf[t] > 0)
                     width += 1;
             }
-            auto hit = std::make_shared<THit>(x, y,
+            auto xPad = _mirrorX ? Geom::nPadx - 1 - x : x;
+            auto hit = std::make_shared<THit>(xPad, y,
                                               0, elec.first, elec.second);
             hit->SetFWHM(fwhm);
             hit->SetADCvector(std::vector<short>(wf.begin(), wf.end()));

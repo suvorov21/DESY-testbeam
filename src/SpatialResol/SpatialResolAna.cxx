@@ -5,6 +5,7 @@
 
 #include "SpatialResolAna.hxx"
 #include "line.hxx"
+#include "Geom.hxx"
 
 //******************************************************************************
 SpatialResolAna::SpatialResolAna() :
@@ -68,13 +69,11 @@ bool SpatialResolAna::Initialize() {
     std::cout << "Iteration     :   " << _iteration << std::endl;
     std::cout << "Debug         :   " << _test_mode << std::endl;
     std::cout << "Correction    :   " << _correction << std::endl;
+    std::cout << "Previous iter :   " << _prev_iter_name << std::endl;
 
     std::cout << "Initializing spatial resolution ana......";
 
     gErrorIgnoreLevel = kSysError;
-
-    _uncertainty_vs_prf_gr_prev = nullptr;
-    _uncertainty_vs_prf_histo = nullptr;
 
     _prf_function = InitializePRF("PRF_function", _prf_free_centre, _gaus_lorentz_PRF);
 
@@ -84,163 +83,72 @@ bool SpatialResolAna::Initialize() {
 
     // load information from previous iteration
     if (_iteration) {
-        if (_prev_iter_name.Length() == 0) {
-            _prev_iter_name = _file_out_name;
-            _prev_iter_name = _prev_iter_name(0, _prev_iter_name.Index("iter"));
-            _prev_iter_name += "iter";
-            _prev_iter_name += TString::Itoa(_iteration - 1, 10);
-            _prev_iter_name += ".root";
-        }
-
-        _prev_iter_file = new TFile(_prev_iter_name.Data(), "READ");
-        if (!_prev_iter_file->IsOpen()) {
-            std::cerr << "ERROR! " << __func__ << std::endl;
-            std::cerr << "File from previous iteration is not found" << std::endl;
-            std::cerr << "File name: " << _prev_iter_name << std::endl;
-            exit(1);
-        }
-
-        // READ PRF
-        TH2F *histo_prev = (TH2F *) _prev_iter_file->Get("PRF_histo");
-        auto tree = (TTree *) _prev_iter_file->Get("outtree");
-        if (!histo_prev) {
-            histo_prev = new TH2F("PRF_histo_tmp2", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
-            tree->Project("PRF_histo_tmp2", "qfrac:dx");
-        }
-        histo_prev->SetName("prev_hsto");
-        if (!ProfilePRF(histo_prev, _prf_graph)) {
-            std::cerr << "ERROR! " << __func__ << std::endl;
-            std::cerr << "PRF can not be profiled" << std::endl;
-            exit(1);
-        }
-        // kind of magic that works.
-        // More fits better result
-        // seems that the tolerance is wronng somewhere in ROOT
-        for (auto i = 0; i < 3; ++i)
-            _prf_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
-        // TODO think about memory control
-        _prf_function = (TF1 *) _prf_graph->GetFunction("PRF_function")->Clone("PRF_function");
-
-        if (!_prf_function) {
-            std::cerr << "ERROR. " << __func__;
-            std::cerr << "  PRF function is not specified" << std::endl;
-            std::cerr << "Search in " << _prev_iter_name << std::endl;
-            exit(1);
-        }
-
-        if (_clustering->getNpads() > 0 && _individual_column_PRF) {
-            std::cerr << "ERROR. Conflicting options" << std::endl;
-            exit(1);
-        }
-
-        // Read PRF for complicated patterns
-        if (_clustering->getNpads() > 1) {
-            _prf_function_arr = new TF1 *[3];
-            for (auto rest = 0; rest < std::min(_clustering->getNpads(), 3); ++rest) {
-                _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true, _gaus_lorentz_PRF);
-
-                TH2F *tmp = new TH2F("PRF_histo_tmp", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
-                TString s = TString::Itoa(_clustering->getNpads(), 10);
-                TString r = TString::Itoa(rest, 10);
-                tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
-                auto gr_tmp = new TGraphErrors();
-                ProfilePRF(tmp, gr_tmp);
-                for (auto i = 0; i < 3; ++i)
-                    gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
-
-                _prf_function_arr[rest] =
-                    (TF1 *) gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", rest));
-            }
-        }
-
-        if (_individual_column_PRF) {
-
-            _prf_function_arr = new TF1 *[36];
-            for (auto colId = 0; colId < Geom::GetNColumn(_invert); ++colId) {
-                _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre, _gaus_lorentz_PRF);
-
-                TH2F *tmp = new TH2F("PRF_histo_tmp", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
-                TString s = TString::Itoa(_clustering->getNpads(), 10);
-                TString r = TString::Itoa(colId, 10);
-                tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
-                auto gr_tmp = new TGraphErrors();
-                ProfilePRF(tmp, gr_tmp);
-                for (auto i = 0; i < 3; ++i)
-                    gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
-
-                _prf_function_arr[colId] =
-                    (TF1 *) gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", colId));
-            }
-        }
-
-        // Read PRF in time
-        auto histo_prev_t = (TH2F *) _prev_iter_file->Get("PRF_histo_time");
-        histo_prev_t->SetName("prev_hsto_time");
-        auto Nbins = histo_prev_t->GetYaxis()->GetNbins();
-        _prf_time_e = new TH1F("prf_e", "",
-                               Nbins,
-                               histo_prev_t->GetYaxis()->GetBinLowEdge(1),
-                               histo_prev_t->GetYaxis()->GetBinLowEdge(Nbins)
-                                   + histo_prev_t->GetYaxis()->GetBinWidth(Nbins)
-        );
-
-        _prf_time_error = new TGraphErrors();
-        if (!_prf_time_error || !ProfilePRF_X(histo_prev_t, _prf_time_error, _prf_time_e)) {
-            std::cerr << "ERROR. SpatialResolAna::Initialize().";
-            std::cout << "PRF time function is not specified" << std::endl;
-            std::cerr << "Search in " << _prev_iter_name << std::endl;
-            exit(1);
-        }
-        histo_prev_t->Fit("pol2", "Q");
-        _prf_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
-        _prf_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
-        _prf_time_func = _prf_time_error->GetFunction("pol2");
-
-        auto *oldtree = (TTree *) _prev_iter_file->Get("outtree");
-        TH1F h("resol", "", resol_bin, resol_min, resol_max);
-        oldtree->Project("resol", "residual");
-        h.Fit("gaus", "Q", "");
-        _uncertainty = num::cast<Double_t>(h.GetFunction("gaus")->GetParameter(2));
-
-        TGraphErrors *temp = nullptr;
-        if (_do_separate_pad_fit)
-            temp = (TGraphErrors *) _prev_iter_file->Get("uncertainty_vs_prf_gr");
-        // transform graph into histo
-        if (temp && temp->GetN()) {
-            _uncertainty_vs_prf_gr_prev = temp;
-            _uncertainty_vs_prf_histo = new TH1F("uncertainty_histo", "",
-                                                 prf_error_bins - 1, prf_error_bins_arr);
-            for (auto bin_id = 1; bin_id <= _prf_error_axis->GetNbins(); ++bin_id) {
-                _uncertainty_vs_prf_histo->SetBinContent(
-                    bin_id,
-                    _uncertainty_vs_prf_gr_prev->GetY()[bin_id - 1]);
-            }
-        }
-
-        if (!_processAll) {
-            // read event list passed through reconstruction+selection at previous iteration
-            UInt_t read_var;
-            auto event_tree = (TTree *) _prev_iter_file->Get("EventTree");
-            event_tree->SetBranchAddress("PassedEvents", &read_var);
-            std::vector<Int_t> vec;
-            vec.clear();
-            for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-                event_tree->GetEntry(i);
-                vec.push_back(read_var);
-            }
-            this->SetEventList(vec);
-        }
-
+        ReadPrevIter();
     } // if iteration
 
-    // Initialise histoes and graphs
-    _prf_histo = new TH2F("PRF_histo", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
-
-    // PRF in time
-    _prf_time = new TH2F("PRF_histo_time", "", prf_bin, prf_min, prf_max, 100, -20., 80.);
-    _output_vector.push_back(_prf_time);
-
     _file_out->cd();
+    InitializeTree();
+
+    InitializeHisto();
+
+    _passed_events.clear();
+    std::cout << "done" << std::endl;
+    if (_verbose >= static_cast<int>(verbosity_base::v_event_number)) {
+        std::cout << "\t PRF(x) = " << _prf_function->GetFormula()->GetExpFormula();
+        std::cout << "  with ";
+        for (auto i = 0; i < _prf_function->GetNpar(); ++i)
+            std::cout << "  " << _prf_function->GetParameter(i) << ",";
+        std::cout << std::endl;
+    }
+
+    // Initialise selection
+    _reconstruction = std::make_shared<DBSCANReconstruction>();
+    _reconstruction->Initialize(_verbose);
+
+    _selection = std::make_unique<TrackSel>(_max_mult,
+                                            _max_mean_mult,
+                                            _cut_gap,
+                                            _max_phi,
+                                            _max_theta,
+                                            _broken_pads,
+                                            _invert,
+                                            _verbose);
+
+    // Initialise track fitter
+    TrackFitterBase::TrackShape shape = TrackFitterBase::TrackShape::arc;
+    if (_do_linear_fit) {
+        shape = TrackFitterBase::TrackShape::linear;
+    } else if (_do_para_fit) {
+        shape = TrackFitterBase::TrackShape::parabola;
+    }
+
+    _fitter = std::make_unique<TrackFitCern>();
+
+    _fitter->SetTrackShape(shape);
+    _fitter->SetInversion(_invert);
+    _fitter->SetVerbosity(_verbose);
+    _fitter->SetPRF(_prf_function);
+    _fitter->SetPRFErrors(_prf_graph);
+    _fitter->SetPRFtimeFunc(_prf_time_func);
+    _fitter->SetPRFtimeGError(_prf_time_e);
+    _fitter->SetFitBound(fit_bound_right);
+    _fitter->SetAngle(_clustering->getAngle());
+    _fitter->SetChargeUncertainty(_charge_uncertainty);
+
+    if (_clustering->getNpads() > 1 && _iteration) {
+        _fitter->SetPRFarr(_prf_function_arr, _clustering->getNpads());
+        _fitter->SetComplicatedPatternPRF(true);
+    }
+
+    if (_individual_column_PRF && _iteration) {
+        _fitter->SetPRFarr(_prf_function_arr, 36);
+        _fitter->SetIndividualPRF(true);
+    }
+
+    return true;
+}
+
+void SpatialResolAna::InitializeTree() {
     _tree = new TTree("outtree", "");
     _tree->Branch("ev", &_ev);
     _tree->Branch("dEdx", &_dEdx);
@@ -337,77 +245,174 @@ bool SpatialResolAna::Initialize() {
         );
 
     _output_vector.push_back(_tree);
+}
+
+void SpatialResolAna::InitializeHisto() {
+    std::vector<TH1*> result;
+    // Initialise histoes and graphs
+    _prf_histo = new TH2F("PRF_histo", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
+    _output_vector.push_back(_prf_histo);
+
+    // PRF in time
+    _prf_time = new TH2F("PRF_histo_time", "", prf_bin, prf_min, prf_max, 100, -20., 80.);
+    _output_vector.push_back(_prf_time);
 
     // schedule the output for writing
     _output_vector.push_back(_prf_function);
-    _output_vector.push_back(_prf_histo);
     _output_vector.push_back(_prf_graph);
+}
 
+void SpatialResolAna::ReadPrevIter() {
     _uncertainty_vs_prf_gr = new TGraphErrors();
     _uncertainty_vs_prf_gr->SetName("uncertainty_vs_prf_gr");
     _output_vector.push_back(_uncertainty_vs_prf_gr);
 
-    auto dir_resol = _file_out->mkdir("resol_column");
-    _output_vector.push_back(dir_resol);
-
-    auto dir_x_scan = _file_out->mkdir("x_scan");
-    _output_vector.push_back(dir_x_scan);
-
-    _passed_events.clear();
-    std::cout << "done" << std::endl;
-    if (_verbose >= static_cast<int>(verbosity_base::v_event_number)) {
-        std::cout << "\t PRF(x) = " << _prf_function->GetFormula()->GetExpFormula();
-        std::cout << "  with ";
-        for (auto i = 0; i < _prf_function->GetNpar(); ++i)
-            std::cout << "  " << _prf_function->GetParameter(i) << ",";
-        std::cout << std::endl;
+    if (_prev_iter_name.Length() == 0) {
+        _prev_iter_name = _file_out_name;
+        _prev_iter_name = _prev_iter_name(0, _prev_iter_name.Index("iter"));
+        _prev_iter_name += "iter";
+        _prev_iter_name += TString::Itoa(_iteration - 1, 10);
+        _prev_iter_name += ".root";
     }
 
-    // Initilise selection
-    _reconstruction = std::make_unique<DBSCANReconstruction>();
-    _reconstruction->Initialize(_verbose);
-
-    _selection = std::make_unique<TrackSel>(_max_mult,
-                                            _max_mean_mult,
-                                            _cut_gap,
-                                            _max_phi,
-                                            _max_theta,
-                                            _broken_pads,
-                                            _invert,
-                                            _verbose);
-
-    // Initialise track fitter
-    TrackFitterBase::TrackShape shape = TrackFitterBase::TrackShape::arc;
-    if (_do_linear_fit) {
-        shape = TrackFitterBase::TrackShape::linear;
-    } else if (_do_para_fit) {
-        shape = TrackFitterBase::TrackShape::parabola;
+    _prev_iter_file = new TFile(_prev_iter_name.Data(), "READ");
+    if (!_prev_iter_file->IsOpen()) {
+        std::cerr << "ERROR! " << __func__ << std::endl;
+        std::cerr << "File from previous iteration is not found" << std::endl;
+        std::cerr << "File name: " << _prev_iter_name << std::endl;
+        exit(1);
     }
 
-    _fitter = std::make_unique<TrackFitCern>();
+    // READ PRF
+    TH2F *histo_prev = (TH2F *) _prev_iter_file->Get("PRF_histo");
+    auto tree = (TTree *) _prev_iter_file->Get("outtree");
+    if (!histo_prev) {
+        histo_prev = new TH2F("PRF_histo_tmp2", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
+        tree->Project("PRF_histo_tmp2", "qfrac:dx");
+    }
+    histo_prev->SetName("prev_hsto");
+    if (!ProfilePRF(histo_prev, _prf_graph)) {
+        std::cerr << "ERROR! " << __func__ << std::endl;
+        std::cerr << "PRF can not be profiled" << std::endl;
+        exit(1);
+    }
+    // kind of magic that works.
+    // More fits better result
+    // seems that the tolerance is wronng somewhere in ROOT
+    for (auto i = 0; i < 3; ++i)
+        _prf_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
+    // TODO think about memory control
+    _prf_function = (TF1 *) _prf_graph->GetFunction("PRF_function")->Clone("PRF_function");
 
-    _fitter->SetTrackShape(shape);
-    _fitter->SetInversion(_invert);
-    _fitter->SetVerbosity(_verbose);
-    _fitter->SetPRF(_prf_function);
-    _fitter->SetPRFErrors(_prf_graph);
-    _fitter->SetPRFtimeFunc(_prf_time_func);
-    _fitter->SetPRFtimeGError(_prf_time_e);
-    _fitter->SetFitBound(fit_bound_right);
-    _fitter->SetAngle(_clustering->getAngle());
-    _fitter->SetChargeUncertainty(_charge_uncertainty);
-
-    if (_clustering->getNpads() > 1 && _iteration) {
-        _fitter->SetPRFarr(_prf_function_arr, _clustering->getNpads());
-        _fitter->SetComplicatedPatternPRF(true);
+    if (!_prf_function) {
+        std::cerr << "ERROR. " << __func__;
+        std::cerr << "  PRF function is not specified" << std::endl;
+        std::cerr << "Search in " << _prev_iter_name << std::endl;
+        exit(1);
     }
 
-    if (_individual_column_PRF && _iteration) {
-        _fitter->SetPRFarr(_prf_function_arr, 36);
-        _fitter->SetIndividualPRF(true);
+    if (_clustering->getNpads() > 0 && _individual_column_PRF) {
+        std::cerr << "ERROR. Conflicting options" << std::endl;
+        exit(1);
     }
 
-    return true;
+    // Read PRF for complicated patterns
+    if (_clustering->getNpads() > 1) {
+        _prf_function_arr = new TF1 *[3];
+        for (auto rest = 0; rest < std::min(_clustering->getNpads(), 3); ++rest) {
+            _prf_function_arr[rest] = InitializePRF("PRF_function_tmp", true, _gaus_lorentz_PRF);
+
+            TH2F *tmp = new TH2F("PRF_histo_tmp", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
+            TString s = TString::Itoa(_clustering->getNpads(), 10);
+            TString r = TString::Itoa(rest, 10);
+            tree->Project("PRF_histo_tmp", "qfrac:dx", "abs(pad_x%" + s + ") == " + r);
+            auto gr_tmp = new TGraphErrors();
+            ProfilePRF(tmp, gr_tmp);
+            for (auto i = 0; i < 3; ++i)
+                gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
+
+            _prf_function_arr[rest] =
+                (TF1 *) gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", rest));
+        }
+    }
+
+    if (_individual_column_PRF) {
+
+        _prf_function_arr = new TF1 *[36];
+        for (auto colId = 0; colId < Geom::GetNColumn(_invert); ++colId) {
+            _prf_function_arr[colId] = InitializePRF("PRF_function_tmp", _prf_free_centre, _gaus_lorentz_PRF);
+
+            TH2F *tmp = new TH2F("PRF_histo_tmp", "", prf_bin, prf_min, prf_max, 150, 0., 1.5);
+            TString s = TString::Itoa(_clustering->getNpads(), 10);
+            TString r = TString::Itoa(colId, 10);
+            tree->Project("PRF_histo_tmp", "qfrac:dx", "pad_x == " + r);
+            auto gr_tmp = new TGraphErrors();
+            ProfilePRF(tmp, gr_tmp);
+            for (auto i = 0; i < 3; ++i)
+                gr_tmp->Fit("PRF_function_tmp", "Q", "", fit_bound_left, fit_bound_right);
+
+            _prf_function_arr[colId] =
+                (TF1 *) gr_tmp->GetFunction("PRF_function_tmp")->Clone(Form("PRF_function_arr_%i", colId));
+        }
+    }
+
+    // Read PRF in time
+    auto histo_prev_t = (TH2F *) _prev_iter_file->Get("PRF_histo_time");
+    histo_prev_t->SetName("prev_hsto_time");
+    auto Nbins = histo_prev_t->GetYaxis()->GetNbins();
+    _prf_time_e = new TH1F("prf_e", "",
+                           Nbins,
+                           histo_prev_t->GetYaxis()->GetBinLowEdge(1),
+                           histo_prev_t->GetYaxis()->GetBinLowEdge(Nbins)
+                               + histo_prev_t->GetYaxis()->GetBinWidth(Nbins)
+    );
+
+    _prf_time_error = new TGraphErrors();
+    if (!_prf_time_error || !ProfilePRF_X(histo_prev_t, _prf_time_error, _prf_time_e)) {
+        std::cerr << "ERROR. SpatialResolAna::Initialize().";
+        std::cout << "PRF time function is not specified" << std::endl;
+        std::cerr << "Search in " << _prev_iter_name << std::endl;
+        exit(1);
+    }
+    histo_prev_t->Fit("pol2", "Q");
+    _prf_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
+    _prf_time_error->Fit("pol2", "Q", "", -0.015, -0.005);
+    _prf_time_func = _prf_time_error->GetFunction("pol2");
+
+    auto *oldtree = (TTree *) _prev_iter_file->Get("outtree");
+    TH1F h("resol", "", resol_bin, resol_min, resol_max);
+    oldtree->Project("resol", "residual");
+    h.Fit("gaus", "Q", "");
+    _uncertainty = num::cast<Double_t>(h.GetFunction("gaus")->GetParameter(2));
+
+    TGraphErrors *temp = nullptr;
+    if (_do_separate_pad_fit)
+        temp = (TGraphErrors *) _prev_iter_file->Get("uncertainty_vs_prf_gr");
+    // transform graph into histo
+    if (temp && temp->GetN()) {
+        _uncertainty_vs_prf_gr_prev = temp;
+        _uncertainty_vs_prf_histo = new TH1F("uncertainty_histo", "",
+                                             prf_error_bins - 1, prf_error_bins_arr);
+        for (auto bin_id = 1; bin_id <= _prf_error_axis->GetNbins(); ++bin_id) {
+            _uncertainty_vs_prf_histo->SetBinContent(
+                bin_id,
+                _uncertainty_vs_prf_gr_prev->GetY()[bin_id - 1]);
+        }
+    }
+
+    if (!_processAll) {
+        // read event list passed through reconstruction+selection at previous iteration
+        UInt_t read_var;
+        auto event_tree = (TTree *) _prev_iter_file->Get("EventTree");
+        event_tree->SetBranchAddress("PassedEvents", &read_var);
+        std::vector<Int_t> vec;
+        vec.clear();
+        for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+            event_tree->GetEntry(i);
+            vec.push_back(read_var);
+        }
+        this->SetEventList(vec);
+    }
 }
 
 //******************************************************************************
@@ -725,10 +730,8 @@ void SpatialResolAna::FillPadOutput(const THitPtr &pad,
     _wf_fwhm[clusterId][padId] = pad->GetFWHM();
 
     if (_to_store_wf) {
-        if (pad->GetTime() + pad->GetADCvector().size() > Geom::Nsamples) {
-            throw std::logic_error("WF longer than limit.");
-        }
-        for (short tz = pad->GetTime(); tz < pad->GetTime() + pad->GetADCvector().size(); ++tz) {
+        auto upperBorder = std::min(num::cast<short>(511), num::cast<short>(pad->GetTime() + pad->GetADCvector().size()));
+        for (short tz = pad->GetTime(); tz < upperBorder; ++tz) {
             _pad_wf_q[clusterId][padId][tz] = pad->GetADC(tz);
         }
     }
