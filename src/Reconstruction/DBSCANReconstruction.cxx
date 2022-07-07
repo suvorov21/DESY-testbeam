@@ -3,6 +3,8 @@
 #include "TF1.h"
 #include "TGraph.h"
 
+#include <set>
+
 DBSCANReconstruction::DBSCANReconstruction() : ReconstructionBase() {}
 
 bool DBSCANReconstruction::Initialize(int verbose) {
@@ -88,6 +90,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) {
 
 bool DBSCANReconstruction::ReconstructEvent(const std::shared_ptr<TEvent> &event) {
     auto hitsMap = event->GetAllHits();
+    std::set<short> modulesUsed;
     // pattern recognition per modules
     for (auto const& module : hitsMap) {
         auto raw_nodes = FillNodes(module.second);
@@ -102,15 +105,26 @@ bool DBSCANReconstruction::ReconstructEvent(const std::shared_ptr<TEvent> &event
                 patterns[node.c].emplace_back(node.hit);
         }
 
-        for (auto const& pattern : patterns) {
+        for (const auto& pattern : patterns) {
             if (pattern.second.size() > MIN_HITS_PER_PATT) {
                 event->AddPattern(pattern.second);
+                modulesUsed.insert(module.first);
             }
         }
     } // over modules
 
-    MatchModules(event);
+    if (modulesUsed.empty()) {
+        return false;
+    }
 
+    // do the match only in case multiple modules affected
+    if (modulesUsed.size() > 1) {
+        MatchModules(event);
+    } else {
+        for (const auto& pattern : event->GetPatternsInModule(*modulesUsed.begin())) {
+            event->AddTrack({pattern});
+        }
+    }
     return true;
 }
 
@@ -118,7 +132,7 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
 
     std::vector<std::pair<short, std::ptrdiff_t>> groveStone;
 
-    std::vector<TPatternVec> fTracks{};
+    std::vector<TPatternVec> tracks{};
 
     for (short mmStart = 0; mmStart < Geom::nModules; ++mmStart) {
         // for each MM determine the neighbors
@@ -129,9 +143,6 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
             // if not --> the possible merge has been already done
             if (mmSecond < mmStart)
                 continue;
-
-            if (_verbose > 1)
-                std::cout << "Modules " << mmStart << "\t" << mmSecond << std::endl;
 
             // for each pair of trajectories in the adjacent MMs
             auto patternsInFirstModule = event->GetPatternsInModule(mmStart);
@@ -188,15 +199,6 @@ void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
             event->AddTrack(track);
         } // over trajs
     } // over modules
-
-    // dummy algo
-    // works for one module only
-//    for (const auto& pattern : event->GetAllPatterns()) {
-//        for (const auto& patternInMM : pattern.second) {
-//            event->AddTrack({patternInMM});
-//        }
-//    }
-
 }
 
 

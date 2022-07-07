@@ -43,7 +43,7 @@ class DBSCANReconstruction : public ReconstructionBase {
     /// Match patterns in different modules
     void MatchModules(const std::shared_ptr<TEvent> &event);
 
-    /// if trajectories can be fit together
+    /// check if trajectories can be fit together
     bool fitTogether(const TPattern&, const TPattern&);
 
     /// get adjacent modules

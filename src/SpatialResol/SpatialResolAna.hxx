@@ -18,6 +18,15 @@ class SpatialResolAna : public AnalysisBase {
     /// Initialise histoes, input files, selections
     bool Initialize() override;
 
+    /// Define the output tree
+    void InitializeTree();
+
+    /// Define histoes to be filed
+    void InitializeHisto();
+
+    /// Read the file from the previous iteration
+    void ReadPrevIter();
+
     /// Read CLI
     bool ReadCLI(int argc, char **argv) override;
 
