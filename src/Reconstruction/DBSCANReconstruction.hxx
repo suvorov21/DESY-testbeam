@@ -3,6 +3,8 @@
 #define SRC_RECONSTRUCTION_DBSCANRECONSTRUCTION_HXX_
 
 #include "ReconstructionBase.hxx"
+
+#include "TF1.h"
 //! Reconstruction for passing through tracks
 
 //! Explain it
@@ -11,54 +13,46 @@
 //!
 //!
 
-const int MIN_DIST  = 2;
+/// distance between nodes to be associated
+const int MIN_DIST = 2;
 const int MIN_NODES = 1;
-const int MAX_NODES = 300;
-const int MAX_NODES_TOT = 300;
+/// minimum number of hits for a pattern to be saved
+const int MIN_HITS_PER_PATT = 15;
 
-struct Node{
+struct Node {
     THitPtr hit;
-    int  c = -999;  // cluster ID
+    int c = -999;  // cluster ID
     int id = -999;  // node ID
 };
 
-struct DB_Cluster{
-    int size = 0;
-    int id   = -999;      // cluster ID
-    // TODO make it a vector to prevent overflow
-    int nodes[2000] = {-999}; // node ID of nodes belonging to cluster
-};
-
-class DBSCANReconstruction: public ReconstructionBase {
+class DBSCANReconstruction : public ReconstructionBase {
  public:
-  DBSCANReconstruction();
+    DBSCANReconstruction();
 
-  bool Initialize(int verbose) override;
-  /// Main function of the reconstruction
-  bool SelectEvent(const std::shared_ptr<TEvent>& event) override;
-  /// Fill THits with maximum amplitude and time. Create Nodes
-  std::vector<Node> FillNodes(const std::shared_ptr<TEvent>& event);
-  /// Merge nodes Nodes clusters
-  std::vector<Node> FindClusters(std::vector<Node>& raw_nodes);
+    bool Initialize(int verbose) override;
+    /// Main function of the reconstruction
+    bool ReconstructEvent(const std::shared_ptr<TEvent> &event) override;
+    /// Fill THits with maximum amplitude and time. Create Nodes
+    std::vector<Node> FillNodes(const THitPtrVec &module);
+    /// Merge nodes Nodes clusters
+    std::vector<Node> FindClusters(std::vector<Node> &raw_nodes);
 
+    /// Measure distance between two nodes
+    virtual double MeasureDistance(const Node &a, const Node &b);
 
-  // virtual std::vector<int> FillWFs(const TEvent* event, Node n);
-  virtual double MeasureDistance(const Node& a, const Node& b);
+    /// Match patterns in different modules
+    void MatchModules(const std::shared_ptr<TEvent> &event);
 
-  /// Search for large enough clusters
-  virtual std::vector<DB_Cluster> FindClustersLargerThan(const std::vector<Node>& nodes,
-                                                         int minNodes
-                                                         );
-  /// Associate nodes with clusters
-  virtual std::vector <Node> UpdateNodes(const std::vector <DB_Cluster> & clusters,
-                                         std::vector <Node> & nodes);
+    /// check if trajectories can be fit together
+    bool fitTogether(const TPattern&, const TPattern&);
 
-  /// Store the output in TEven format
-  virtual bool FillOutput(const std::shared_ptr<TEvent>& event,
-                          const std::vector<Node>& nodes,
-                          const std::vector<DB_Cluster>& clusters);
+    /// get adjacent modules
+    static std::vector<short> getNeighboursMM(ushort i);
 
  private:
+    short chargeThresholdFit_{400};
+    std::unique_ptr<TF1> trackFitFunction_;
+    int fitQthreshold_{400};
 
 };
 

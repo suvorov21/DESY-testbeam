@@ -33,7 +33,7 @@ TString Interface::getRootFile(const TString& filename) {
 interfaceType Interface::getFileType(const TString & filename) {
     TFile file(filename.Data(), "READ");
 
-    if (file.Get<TTree>("event_tree")) {
+    if (file.Get<TTree>("EventTree")) {
         return interfaceType::kRawEvent;
     }
 
@@ -77,58 +77,66 @@ Long64_t Interface::getEntries() {
     return 0;
 }
 
-template<int timeSize>
+template<short timeSize>
 void interfaceRoot<timeSize>::Initialize() {
     Interface::chainInputFiles("tree");
     _chain->SetBranchAddress("PadAmpl", _padAmpl);
 }
 
-template<int timeSize>
-std::shared_ptr<TRawEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
+template<short timeSize>
+std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
     // create TRawEvent from 3D array
-    std::shared_ptr<TRawEvent> event = std::make_shared<TRawEvent>(i);
+    std::shared_ptr<TEvent> event = std::make_shared<TEvent>(i);
     _chain->GetEntry(i);
     // Subtract the pedestal
-    for (auto x = 0; x < geom::nPadx; ++x) {
-        for (auto y = 0; y < geom::nPady; ++y) {
-            auto hit = std::make_shared<THit>(x, y);
-            auto Qmax = -1;
-            auto Tmax = -1;
-            for (auto t = 0; t < timeSize; ++t) {
-                int q = _padAmpl[x][y][t] - 250;
+    for (short x = 0; x < Geom::nPadx; ++x) {
+        for (short y = 0; y < Geom::nPady; ++y) {
+            auto elec = Geom::get().GetPadToEle(x, y);
+            short Qmax = -1;
+            short Tmax = -1;
+            // array is created (and destructed) per WF
+            // if the pad has a meaningful signal the array will be cast to vector later
+            // creating/destructing a vector at this step leads to significant
+            // performance loss
+            std::array<short, timeSize> wf{};
+            for (short t = 0; t < timeSize; ++t) {
+                short q;
+                try {
+                    q = num::cast<short>(_padAmpl[x][y][t] - 250);
+                } catch (const std::bad_cast& e) {}
 
                 if (q < -249)
                     continue;
 
-                hit->SetADC(t, q);
+                wf[t] = q;
                 if (q > Qmax) {
                     Qmax = q;
                     Tmax = t;
                 }
-                //
-                /** REWEIGHT OF THE PAD*/
-                // if (x == 5 && y == 16)
-                //   _padAmpl[x][y][t] *= 0.95;
-                /** */
-            } // over time
-            if (Qmax > 0) {
-                // compute FWHM
-                int fwhm = 0;
-                int width = 0;
-                for (auto t = 0; t < geom::Nsamples; ++t) {
-                    if (hit->GetADC(t) > Qmax / 2)
-                        fwhm += 1;
-                    if (hit->GetADC(t) > 0)
-                        width += 1;
-                }
-                hit->SetFWHM(fwhm);
-                hit->SetWidth(width);
-                hit->SetQ(Qmax);
-                hit->SetTime(Tmax);
-                event->AddHit(hit);
-            } else {
-                hit.reset();
+            } // time
+
+            if (Qmax < 0)
+                continue;
+
+            // compute FWHM
+            short fwhm = 0;
+            short width = 0;
+            for (auto t = 0; t < timeSize; ++t) {
+                if (wf[t] > Qmax / 2)
+                    fwhm += 1;
+                if (wf[t] > 0)
+                    width += 1;
             }
+            auto xPad = _mirrorX ? Geom::nPadx - 1 - x : x;
+            auto hit = std::make_shared<THit>(xPad, y,
+                                              0, elec.first, elec.second);
+            hit->SetFWHM(fwhm);
+            hit->SetADCvector(std::vector<short>(wf.begin(), wf.end()));
+            hit->SetWidth(width);
+            hit->SetQMax(Qmax);
+            hit->SetTimeMax(Tmax);
+            hit->ShrinkWF();
+            event->AddHitPtr(hit);
         } // over Y
     } // over X
     return event;
@@ -138,13 +146,13 @@ template class interfaceRoot<510>;
 template class interfaceRoot<511>;
 
 void interfaceRawEvent::Initialize() {
-    Interface::chainInputFiles("event");
+    Interface::chainInputFiles("EventTree");
     _event = new TRawEvent();
-    _chain->SetBranchAddress("Event", &_event);
+    _chain->SetBranchAddress("TRawEvent", &_event);
 }
 
-std::shared_ptr<TRawEvent> interfaceRawEvent::getEvent(Int_t i) {
+std::shared_ptr<TEvent> interfaceRawEvent::getEvent(Int_t i) {
     _chain->GetEntry(i);
-    return std::make_shared<TRawEvent>(_event);
+    return std::make_shared<TEvent>(*_event);
 }
 

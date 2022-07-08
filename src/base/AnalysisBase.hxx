@@ -93,8 +93,7 @@ class AnalysisBase {
     [[nodiscard]] std::vector<Int_t> GetEventList() const { return _eventList; }
 
     /// Draw the selected event
-    std::unique_ptr<TCanvas> DrawSelection(
-        const std::shared_ptr<TRawEvent> &raw_event,
+    static std::unique_ptr<TCanvas> DrawSelection(
         const std::shared_ptr<TEvent> &reco_event
     );
 
@@ -117,7 +116,7 @@ class AnalysisBase {
     std::vector<std::unique_ptr<Interface>> _interface;
 
     /// list of raw events to be filled in parallel
-    std::list<std::shared_ptr<TRawEvent>> _rawEventList;
+    std::list<std::shared_ptr<TEvent>> _TEventList;
 
     /// name of the parameter file
     TString _param_file_name{""};
@@ -166,7 +165,7 @@ class AnalysisBase {
     bool _cut_gap{false};
 
     /// Vector of broken pads to be excluded from the analysis
-    std::vector<std::pair<int, int>> _broken_pads{};
+    broken_pads_t _broken_pads{};
 
     /// Minimum number of clusters in the track
     Int_t _min_clusters{0};

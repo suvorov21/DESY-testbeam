@@ -13,6 +13,6 @@
 
 #pragma link C++ class THit+;
 #pragma link C++ class std::vector<THit>+;
-#pragma link C++ class TRawEvent+;
+#pragma link C++ class TEvent+;
 
 #endif

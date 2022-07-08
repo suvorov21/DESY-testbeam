@@ -20,7 +20,7 @@ void ClDump::CL_progress_dump(int eventID,
 
     int m, s;
     if (eventID) {
-        long long EET = num::cast<int>(((N_events - eventID) * _loop_start_ts / eventID));
+        long long EET = num::cast<long long>(((N_events - eventID) * _loop_start_ts / eventID));
         EET /= 1e6;
         m = num::cast<int>(EET / 60);
         s = num::cast<int>(EET % 60);

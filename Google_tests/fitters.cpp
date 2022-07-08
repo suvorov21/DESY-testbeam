@@ -24,24 +24,26 @@ TEST(FitterTest, exepEmptyPRF) {
   auto fitter = std::make_unique<TrackFitCern>();
   std::vector<std::shared_ptr<THit>> col;
   col.emplace_back(std::make_shared<THit>());
-  col[0]->SetQ(10);
+  col[0]->SetQMax(10);
   EXPECT_THROW(fitter->FitCluster(col, 0.), std::logic_error);
 }
 
-TEST_F(Fitter, ClusterFit) {
+TEST_F(Fitter, ClusterFitCenter) {
   auto center = fake::GetCenteredCluster();
-  auto result = fitter->FitCluster(center, geom::GetYposPad(center[0]) + 0.003);
-  EXPECT_NEAR(result.first, geom::GetYposPad(center[0]), 0.001);
+  auto result = fitter->FitCluster(center, Geom::GetYposPad(center[0]) + 0.003);
+  EXPECT_NEAR(result.first, Geom::GetYposPad(center[0]), 0.001);
+}
 
-  center = fake::GetSideCLuster();
-  result = fitter->FitCluster(center, geom::GetYposPad(center[0]));
-  EXPECT_NEAR(result.first, geom::GetYposPad(center[0]) + geom::dy/2, 0.001);
+TEST_F(Fitter, ClusterFitSide) {
+  auto side = fake::GetSideCLuster();
+  auto result = fitter->FitCluster(side, Geom::GetYposPad(side[0]));
+  EXPECT_NEAR(result.first, Geom::GetYposPad(side[0]) + Geom::dy/2, 0.001);
 }
 
 TEST_F(Fitter, TrackFit) {
   auto track = fake::GetClusterdTrack();
   for (auto& cluster : track) {
-    auto result = fitter->FitCluster(cluster->GetHits(), geom::GetYposPad((*cluster)[0]));
+    auto result = fitter->FitCluster(cluster->GetHits(), Geom::GetYposPad((*cluster)[0]));
     cluster->SetY(result.first);
   }
   auto fit = fitter->FitTrack(track, -1);

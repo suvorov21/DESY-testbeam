@@ -5,7 +5,7 @@
 #ifndef DESY_TESTBEAM_SRC_RECONSTRUCTION_PADSELECTION_HXX_
 #define DESY_TESTBEAM_SRC_RECONSTRUCTION_PADSELECTION_HXX_
 
-#include "TRawEvent.hxx"
+#include "TEvent.hxx"
 #include "TCluster.hxx"
 
 namespace PadSelection {
@@ -15,7 +15,7 @@ namespace PadSelection {
  * Any user defined selection may be applied.
  */
 THitPtrVec GetRobustPadsInCluster(THitPtrVec col,
-                                  const std::vector<std::pair<int, int>>& broken_pads = {});
+                                  const broken_pads_t& broken_pads);
 /// Return only robust clusters
 /** E.g. apply a truncation - omit clusters with relatively large charge
  * Or put a strong upper limit on cluster charge.

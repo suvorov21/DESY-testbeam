@@ -6,8 +6,8 @@ TCluster::TCluster() : _x(-999), _y(-999), _y_error(-999), _charge(0) {}
 
 TCluster::TCluster(const std::shared_ptr<THit> &pad) {
     _hits.push_back(pad);
-    _x = (float_t) geom::GetXposPad(pad);
-    _y = (float_t) geom::GetYposPad(pad);
+    _x = (float_t) Geom::GetXposPad(pad);
+    _y = (float_t) Geom::GetYposPad(pad);
     _y_error = 0;
     _charge = 0;
 }
@@ -58,8 +58,8 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
         auto row_id = pad->GetRow(_invert);
 
         // skip first and last row/column
-        if (row_id == 0 || row_id == geom::GetNRow(_invert) - 1 ||
-            col_id == 0 || col_id == geom::GetNColumn(_invert) - 1)
+        if (row_id == 0 || row_id == Geom::GetNRow(_invert) - 1 ||
+            col_id == 0 || col_id == Geom::GetNColumn(_invert) - 1)
             continue;
 
         auto cons = GetConstant(row_id, col_id);
@@ -73,11 +73,13 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
 
             auto cluster_col = (**it)[0]->GetCol(_invert);
             auto cluster_row = (**it)[0]->GetRow(_invert);
-            if (GetConstant(cluster_row, cluster_col) == cons) {
+            auto module = (**it)[0]->GetCard();
+            // clustering is done ONLY within a module
+            if (GetConstant(cluster_row, cluster_col) == cons && pad->GetCard() == module) {
                 (*it)->AddHit(pad);
-                (*it)->AddCharge(pad->GetQ());
+                (*it)->AddCharge(pad->GetQMax());
                 /** update X position */
-                auto x_pad = geom::GetXposPad(pad, _invert, _angle);
+                auto x_pad = Geom::GetXposPad(pad, _invert, _angle);
                 auto mult = (*it)->GetSize();
                 auto x_new = ((*it)->GetX() * ((Float_t) mult - 1) + x_pad) / num::cast<double>(mult);
                 (*it)->SetX((float_t) x_new);
@@ -89,8 +91,8 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
         // add new cluster
         if (it == cluster_v.end()) {
             auto first_cluster = std::make_unique<TCluster>(pad);
-            first_cluster->SetX((float_t) geom::GetXposPad(pad, _invert, _angle));
-            first_cluster->SetCharge(pad->GetQ());
+            first_cluster->SetX((float_t) Geom::GetXposPad(pad, _invert, _angle));
+            first_cluster->SetCharge(pad->GetQMax());
             cluster_v.push_back(std::move(first_cluster));
         }
     } // over pads
