@@ -176,7 +176,7 @@ sonar:
       -Dsonar.host.url=https://sonarcloud.io 
       -Dsonar.cfamily.gcov.reportsPath=build/ 
       -Dsonar.coverage.exclusions=script/*,src/utils/SetT2KStyle.hxx 
-      -Dsonar.exclusions=script/submitter_lyon.py
+      -Dsonar.exclusions=script/submitter_lyon.py,script/script_submitter_lyon.py
 
 # documentation, etc.
 docs:

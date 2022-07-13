@@ -12,29 +12,17 @@
 //******************************************************************************
 AnalysisBase::AnalysisBase() :
     _clustering(std::make_unique<Clustering>(clusterType::kRowColumn, false)),
-    _param_file_name(""),
     _start_ID(-1),
     _end_ID(-1),
     _selected(0),
     _reconstructed{0},
-    _file_out(nullptr),
     _reconstruction(nullptr),
     _max_mult(6),
     _max_mean_mult(5),
     _cut_gap(true),
     _min_clusters(30),
     _verbose(1),
-    _batch(false),
-    _test_mode(false),
-    _overwrite(false),
-    _invert(false),
-    _gaus_lorentz_PRF(false),
-    _individual_column_PRF(false),
-    _prf_free_centre(false),
-    _do_linear_fit(false),
-    _do_para_fit(false),
-    _to_store_wf(true),
-    _app(nullptr) {
+    _to_store_wf(true) {
 //******************************************************************************
 
     // CLI reader
