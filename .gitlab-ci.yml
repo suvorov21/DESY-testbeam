@@ -168,7 +168,15 @@ sonar:
     - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
   script:
     - cd build; find . -name '*.gcda' | xargs gcov; cd ../;
-    - sonar-scanner -Dsonar.organization=suvorov21 -Dsonar.projectKey=suvorov21_DESY-testbeam -Dsonar.sources=. -Dsonar.cfamily.build-wrapper-output=bw-output -Dsonar.host.url=https://sonarcloud.io -Dsonar.cfamily.gcov.reportsPath=build/ -Dsonar.coverage.exclusions=script/*,src/Reconstruction/CrossingReconstruction.cxx,src/utils/SetT2KStyle.hxx
+    - sonar-scanner 
+      -Dsonar.organization=suvorov21 
+      -Dsonar.projectKey=suvorov21_DESY-testbeam 
+      -Dsonar.sources=. 
+      -Dsonar.cfamily.build-wrapper-output=bw-output 
+      -Dsonar.host.url=https://sonarcloud.io 
+      -Dsonar.cfamily.gcov.reportsPath=build/ 
+      -Dsonar.coverage.exclusions=script/*,src/utils/SetT2KStyle.hxx 
+      -Dsonar.exclusions=script/submitter_lyon.py
 
 # documentation, etc.
 docs:

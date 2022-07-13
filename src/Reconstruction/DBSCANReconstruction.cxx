@@ -22,7 +22,7 @@ double DBSCANReconstruction::MeasureDistance(const Node &a, const Node &b) {
     return pow(distance2, 0.5);
 }
 
-std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> &nodes) {
+std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> &nodes) const {
     std::vector<Node> nodesToCheck;
     int clusterID = -1;
     int clustered = 0;
@@ -69,7 +69,7 @@ std::vector<Node> DBSCANReconstruction::FindClusters(std::vector<Node> &nodes) {
     return nodes;
 }
 
-std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) {
+std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) const {
     std::vector<Node> nodes;
 
     if (_verbose > 2)
@@ -128,7 +128,7 @@ bool DBSCANReconstruction::ReconstructEvent(const std::shared_ptr<TEvent> &event
     return true;
 }
 
-void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) {
+void DBSCANReconstruction::MatchModules(const std::shared_ptr<TEvent> &event) const {
 
     std::vector<std::pair<short, std::ptrdiff_t>> groveStone;
 
@@ -224,7 +224,7 @@ std::vector<short> DBSCANReconstruction::getNeighboursMM(const ushort i) {
     return v;
 }
 
-bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &traj2) {
+bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &traj2) const {
     TGraph traj1Graph;
     TGraph traj2Graph;
     TGraph joinedGraph;

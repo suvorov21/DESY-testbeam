@@ -16,8 +16,8 @@ void TrackSel::Reset() {
 //******************************************************************************
 bool TrackSel::CrossingTrackSelection(const TClusterPtrVec &track) {
 //******************************************************************************
-    Float_t m_mean;
-    Int_t m_max;
+    Float_t m_mean{10};
+    Int_t m_max{10};
     GetMultiplicity(track, m_mean, m_max);
     auto no_gap = GetNoGap(track);
 

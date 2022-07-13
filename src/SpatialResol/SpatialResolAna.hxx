@@ -94,7 +94,7 @@ class SpatialResolAna : public AnalysisBase {
         v_prf
     };
 
- protected:
+ private:
     /// Previous iteration output to extract PRF
     TFile *_prev_iter_file{nullptr};
 

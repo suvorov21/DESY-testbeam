@@ -33,18 +33,18 @@ class DBSCANReconstruction : public ReconstructionBase {
     /// Main function of the reconstruction
     bool ReconstructEvent(const std::shared_ptr<TEvent> &event) override;
     /// Fill THits with maximum amplitude and time. Create Nodes
-    std::vector<Node> FillNodes(const THitPtrVec &module);
+    std::vector<Node> FillNodes(const THitPtrVec &module) const;
     /// Merge nodes Nodes clusters
-    std::vector<Node> FindClusters(std::vector<Node> &raw_nodes);
+    std::vector<Node> FindClusters(std::vector<Node> &raw_nodes) const;
 
     /// Measure distance between two nodes
-    virtual double MeasureDistance(const Node &a, const Node &b);
+    static double MeasureDistance(const Node &a, const Node &b);
 
     /// Match patterns in different modules
-    void MatchModules(const std::shared_ptr<TEvent> &event);
+    void MatchModules(const std::shared_ptr<TEvent> &event) const;
 
     /// check if trajectories can be fit together
-    bool fitTogether(const TPattern&, const TPattern&);
+    bool fitTogether(const TPattern&, const TPattern&) const;
 
     /// get adjacent modules
     static std::vector<short> getNeighboursMM(ushort i);
