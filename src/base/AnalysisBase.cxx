@@ -68,7 +68,7 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
     setOverwrite(_clParser.isOptionTriggered("overwrite"));
 
     if (!_batch)
-        _app = new TApplication("app", &argc, argv);
+        _app = std::make_unique<TApplication>("app", &argc, argv);
 
     return true;
 }
@@ -105,7 +105,7 @@ bool AnalysisBase::Initialize() {
     // 1 = presentation large fonts
     // 2 = presentation small fonts
     // 3 = publication/paper
-    _t2kstyle = T2K().SetT2KStyle(T2KstyleIndex, localStyleName);
+    _t2kstyle = std::unique_ptr<TStyle>(T2K().SetT2KStyle(T2KstyleIndex, localStyleName));
 
     gROOT->SetStyle(_t2kstyle->GetName());
     gROOT->ForceStyle();
@@ -117,9 +117,9 @@ bool AnalysisBase::Initialize() {
 
     // Open the output file
     if (_overwrite)
-        _file_out = new TFile(_file_out_name.Data(), "RECREATE");
+        _file_out = std::make_unique<TFile>(_file_out_name.Data(), "RECREATE");
     else
-        _file_out = new TFile(_file_out_name.Data(), "NEW");
+        _file_out = std::make_unique<TFile>(_file_out_name.Data(), "NEW");
 
     if (!_file_out->IsOpen()) {
         std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;

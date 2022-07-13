@@ -133,7 +133,19 @@ SR_inverted:
     paths:
       - build
 
-# coverage & docs
+MultiMM:
+  stage: validation
+  before_script:
+    - . $COMMON_INSTALL_PREFIX/setup.sh
+    - yum -y install wget
+    - wget -q https://cernbox.cern.ch/index.php/s/Fq5ayeFwqmRgPVo/download
+    - mv download input.root
+  script:
+    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
+    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
+    - ./test/SR_test.exe Spatial_test_iter1.root 250;
+
+  # coverage & docs
 coverage:
   stage: coverage
   before_script:
@@ -141,7 +153,7 @@ coverage:
     - git submodule update --init --recursive
     - . $COMMON_INSTALL_PREFIX/setup.sh
   script:
-    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --exclude='src/Reconstruction/CrossingReconstruction.*' --html-details --html=coverage.html > coverage.xml
+    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --html-details --html=coverage.html > coverage.xml
     - wget --no-check-certificate https://coverage.codacy.com/get.sh
     - . get.sh report -r coverage.xml
   artifacts:

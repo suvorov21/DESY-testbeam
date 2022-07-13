@@ -76,7 +76,6 @@ class AnalysisBase {
     void setBatchMode(const bool var) { _batch = var; }
     void setDebugMode(const bool var) { _test_mode = var; }
     void setOverwrite(const bool var) { _overwrite = var; }
-    void setInvert(const bool var) { _invert = var; }
 
     /************************** Utilities functions *****************************/
 
@@ -90,7 +89,6 @@ class AnalysisBase {
         _eventList.clear();
         _eventList = var;
     }
-    [[nodiscard]] std::vector<Int_t> GetEventList() const { return _eventList; }
 
     /// Draw the selected event
     static std::unique_ptr<TCanvas> DrawSelection(
@@ -139,7 +137,7 @@ class AnalysisBase {
     int _reconstructed{-999};
 
     /// output file
-    TFile *_file_out{nullptr};
+    std::unique_ptr<TFile> _file_out{nullptr};
 
     /// output vector to put in the file
     std::vector<TObject *> _output_vector{};
@@ -186,7 +184,7 @@ class AnalysisBase {
     cross_talk _cross_talk_treat{def};
 
     /// T2K plotting style
-    TStyle *_t2kstyle{nullptr};
+    std::unique_ptr<TStyle> _t2kstyle{nullptr};
 
     /// DEBUG vars
     Int_t _verbose{0};
@@ -218,7 +216,7 @@ class AnalysisBase {
     ClDump _clDump{};
 
     /// Time control system
-    TApplication *_app{nullptr};
+    std::unique_ptr<TApplication> _app{nullptr};
     /// time controller
     long long _read_time{0};
     long long _reco_time{0};
