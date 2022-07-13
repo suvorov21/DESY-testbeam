@@ -216,7 +216,7 @@ class AnalysisBase {
     ClDump _clDump{};
 
     /// Time control system
-    std::unique_ptr<TApplication> _app{nullptr};
+    TApplication* _app{nullptr};
     /// time controller
     long long _read_time{0};
     long long _reco_time{0};

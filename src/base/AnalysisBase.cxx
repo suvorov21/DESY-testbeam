@@ -68,7 +68,7 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
     setOverwrite(_clParser.isOptionTriggered("overwrite"));
 
     if (!_batch)
-        _app = std::make_unique<TApplication>("app", &argc, argv);
+        _app = new TApplication("app", &argc, argv);
 
     return true;
 }
