@@ -456,13 +456,13 @@ bool AnalysisBase::ReadParamFile() {
                 }
             } else if (name == "cross_talk") {
                 if (value == "suppress") {
-                    _cross_talk_treat = suppress;
+                    _cross_talk_treat = cross_talk::suppress;
                     std::cout << "Cross-talk will be suppressed" << std::endl;
                 } else if (value == "cherry_pick") {
-                    _cross_talk_treat = cherry_pick;
+                    _cross_talk_treat = cross_talk::cherry_pick;
                     std::cout << "Cross-talk will be cherry-picked" << std::endl;
                 } else {
-                    _cross_talk_treat = def;
+                    _cross_talk_treat = cross_talk::defaultCt;
                     std::cout << "Cross-talk will not be treated" << std::endl;
                 }
             } else if (name == "dead") {
