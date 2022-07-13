@@ -100,41 +100,9 @@ class AnalysisBase {
         v_progress = 1,
         v_event_number
     };
-
  protected:
-    /// input file name
-    TString _file_in_name{""};
     /// output file name
     TString _file_out_name{""};
-
-    /// Number of data readers thread
-    uint _readerThreads{1};
-    mutable std::mutex _mu;
-    /// vector of interfaces for the data reading
-    std::vector<std::unique_ptr<Interface>> _interface;
-
-    /// list of raw events to be filled in parallel
-    std::list<std::shared_ptr<TEvent>> _TEventList;
-
-    /// name of the parameter file
-    TString _param_file_name{""};
-
-    /// CLI parser
-    CmdLineParser _clParser;
-
-    /// vector of event IDs that will be analysed
-    std::vector<Int_t> _eventList{};
-    /// Whether to store particular event
-    bool _store_event{false};
-    /// Event to start the loop
-    int _start_ID{-999};
-    /// Last event to analyse
-    int _end_ID{-999};
-    /// number of selected events
-    int _selected{-999};
-
-    /// number of reconstructed events
-    int _reconstructed{-999};
 
     /// output file
     std::unique_ptr<TFile> _file_out{nullptr};
@@ -146,8 +114,18 @@ class AnalysisBase {
     /**  You can use plenty in the analysis. At least one should be defines */
     std::unique_ptr<ReconstructionBase> _reconstruction{nullptr};
 
-    /// An actual clustering procedure
-    std::unique_ptr<Clustering> _clustering;
+    /// CLI parser
+    CmdLineParser _clParser;
+
+    /// DEBUG vars
+    Int_t _verbose{0};
+    bool _batch{false};
+    bool _test_mode{false};
+
+    /// Whether to make PRF center position a free parameter
+    bool _prf_free_centre{false};
+    /// Whether to use Gaussian lorentzian PRf fit over polynomial
+    bool _gaus_lorentz_PRF{false};
 
     /// Selection parameters
     /// The maximum multiplicity of the track
@@ -174,36 +152,12 @@ class AnalysisBase {
     /// Maximum angle (abs(tan)) w.r.t. MM plane
     Float_t _max_theta{0};
 
-    /// Hot to treat cross-talk
-    enum cross_talk {
-        def = 0,
-        suppress,
-        cherry_pick
-    };
-
-    cross_talk _cross_talk_treat{def};
-
-    /// T2K plotting style
-    std::unique_ptr<TStyle> _t2kstyle{nullptr};
-
-    /// DEBUG vars
-    Int_t _verbose{0};
-    bool _batch{false};
-    bool _test_mode{false};
-    bool _overwrite{false};
-
     /// Whether to invert track analysis logic
     /** E.g. analyse cosmic tracks. Rows and columns will be replaced */
     bool _invert{false};
 
-    /// Whether to use Gaussian lorentzian PRf fit over polynomial
-    bool _gaus_lorentz_PRF{false};
-
     /// Whether to use individual PRF
     bool _individual_column_PRF{false};
-
-    /// Whether to make PRF center position a free parameter
-    bool _prf_free_centre{false};
 
     /// Whether to use arc function for track fitting
     bool _do_linear_fit{false};
@@ -212,11 +166,30 @@ class AnalysisBase {
     /// Whether to store the WFs
     bool _to_store_wf{false};
 
-    /// Dump the progress into CL
-    ClDump _clDump{};
+    /// An actual clustering procedure
+    std::unique_ptr<Clustering> _clustering;
 
-    /// Time control system
-    TApplication* _app{nullptr};
+    /// Whether to store particular event
+    bool _store_event{false};
+
+    /// vector of event IDs that will be analysed
+    std::vector<Int_t> _eventList{};
+
+    /// Hot to treat cross-talk
+    enum class cross_talk {
+        defaultCt = 0,
+        suppress,
+        cherry_pick
+    };
+
+    cross_talk _cross_talk_treat{cross_talk::defaultCt};
+
+    /// number of selected events
+    int _selected{-999};
+
+    /// number of reconstructed events
+    int _reconstructed{-999};
+
     /// time controller
     long long _read_time{0};
     long long _reco_time{0};
@@ -225,6 +198,38 @@ class AnalysisBase {
     long long _fitters_time{0};
     long long _filling_time{0};
     long long _sel_time{0};
+
+ private:
+    /// input file name
+    TString _file_in_name{""};
+
+    /// Number of data readers thread
+    uint _readerThreads{1};
+    mutable std::mutex _mu;
+    /// vector of interfaces for the data reading
+    std::vector<std::unique_ptr<Interface>> _interface;
+
+    /// list of raw events to be filled in parallel
+    std::list<std::shared_ptr<TEvent>> _TEventList;
+
+    /// name of the parameter file
+    TString _param_file_name{""};
+
+    /// Event to start the loop
+    int _start_ID{-999};
+    /// Last event to analyse
+    int _end_ID{-999};
+
+    /// T2K plotting style
+    std::unique_ptr<TStyle> _t2kstyle{nullptr};
+
+    bool _overwrite{false};
+
+    /// Dump the progress into CL
+    ClDump _clDump{};
+
+    /// Time control system
+    TApplication* _app{nullptr};
 };
 
 #endif  // SRC_BASE_ANALYSISBASE_HXX_

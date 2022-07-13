@@ -298,7 +298,7 @@ void SpatialResolAna::ReadPrevIter() {
     }
     // kind of magic that works.
     // More fits better result
-    // seems that the tolerance is wronng somewhere in ROOT
+    // seems that the tolerance is wrong somewhere in ROOT
     for (auto i = 0; i < 3; ++i)
         _prf_graph->Fit("PRF_function", "Q", "", fit_bound_left, fit_bound_right);
     // TODO think about memory control
@@ -409,7 +409,7 @@ void SpatialResolAna::ReadPrevIter() {
         vec.clear();
         for (auto i = 0; i < event_tree->GetEntries(); ++i) {
             event_tree->GetEntry(i);
-            vec.push_back(read_var);
+            vec.emplace_back(read_var);
         }
         this->SetEventList(vec);
     }
@@ -579,7 +579,7 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr &cluster, uint id) {
 
         // treat cross-talk
         // not for the first pad
-        if (pad != robust_pads[0] && _cross_talk_treat != def)
+        if (pad != robust_pads[0] && _cross_talk_treat != cross_talk::defaultCt)
             TreatCrossTalk(pad, robust_pads, pad_id);
 
         FillPadOutput(pad, id, pad_id);
@@ -687,14 +687,14 @@ void SpatialResolAna::TreatCrossTalk(const THitPtr &pad,
     auto dt = abs(pad->GetTimeMax() - robust_pads[0]->GetTimeMax());
     auto qfrac = 1. * pad->GetQMax() / robust_pads[0]->GetQMax();
     // cross talk selection
-    if (_cross_talk_treat == suppress && dt < 4 && qfrac < 0.08) {
+    if (_cross_talk_treat == cross_talk::suppress && dt < 4 && qfrac < 0.08) {
         pad->SetQMax(0);
         pad->FindMaxInTime(pad->GetTimeMax() + 4, 510);
         if (pad->GetQMax() == 0)
             DeletePadFromCluster(robust_pads, pad_id);
     } // cross-talk suppression
 
-    if (_cross_talk_treat == cherry_pick) {
+    if (_cross_talk_treat == cross_talk::cherry_pick) {
         pad->SetQMax(0);
         pad->FindMaxInTime(pad->GetTimeMax() - 4, pad->GetTimeMax() + 4);
         if (pad->GetQMax() == 0)
