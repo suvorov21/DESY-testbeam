@@ -72,5 +72,9 @@ target_link_libraries(TSpatialResol TBase)
 add_executable(SpatialResol.exe ${PROJECT_SOURCE_DIR}/app/SpatialResolutionApp.cxx)
 target_link_libraries(SpatialResol.exe TSpatialResol)
 
+# installation
+install(TARGETS SpatialResol.exe TSpatialResol)
+
+# Tests
 add_subdirectory(Google_tests)
 include_directories(Google_tests/lib/googletest/include)
