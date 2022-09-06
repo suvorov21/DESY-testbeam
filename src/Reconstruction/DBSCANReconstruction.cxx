@@ -273,7 +273,7 @@ bool DBSCANReconstruction::fitTogether(const TPattern &traj1, const TPattern &tr
     auto fitJ = joinedGraph.GetFunction(trackFitFunction_->GetName());
     // fit fails
     if (!fit1 || !fit2 || !fitJ) {
-        if (_verbose > 0)
+        if (_verbose > 2)
             std::cout << "One of fit fails\n";
         return false;
     }
