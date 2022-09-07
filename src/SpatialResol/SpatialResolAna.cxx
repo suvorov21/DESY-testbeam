@@ -450,7 +450,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
             std::cout << "Selection done: " << sel << std::endl;
 
         if (!sel)
-            return false;
+            continue;
 
         _angle_xy = _selection->GetPhi();
         _angle_yz = _selection->GetTheta();
@@ -458,7 +458,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
         // if not a column clustering
         if (_clustering->getNpads() > 0) {
             if (clusters.size() < 5)
-                return false;
+                continue;
             // clean first and last cluster
             sort(clusters.begin(), clusters.end(),
                  [&](const TClusterPtr &cl1, const TClusterPtr &cl2) {
@@ -469,7 +469,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
         }
         // cut on the number of clusters
         if (clusters.size() < uint(_min_clusters))
-            return false;
+            continue;
         // truncation
         auto robust_clusters = PadSelection::GetRobustClusters(clusters);
 
@@ -552,7 +552,7 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
         _tree->Fill();
     }
     if (_store_event) {
-        _passed_events.push_back(num::cast<UInt_t>(event->GetID()));
+        _passed_events.insert(num::cast<UInt_t>(event->GetID()));
     }
 
     return true;
