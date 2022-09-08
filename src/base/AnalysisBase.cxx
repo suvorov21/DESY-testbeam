@@ -117,9 +117,9 @@ bool AnalysisBase::Initialize() {
 
     // Open the output file
     if (_overwrite)
-        _file_out = std::make_unique<TFile>(_file_out_name.Data(), "RECREATE");
+        _file_out = std::unique_ptr<TFile>(TFile::Open(_file_out_name.Data(), "RECREATE"));
     else
-        _file_out = std::make_unique<TFile>(_file_out_name.Data(), "NEW");
+        _file_out = std::unique_ptr<TFile>(TFile::Open(_file_out_name.Data(), "NEW"));
 
     if (!_file_out->IsOpen()) {
         std::cerr << "ERROR. AnalysisBase::Initialize()" << std::endl;
