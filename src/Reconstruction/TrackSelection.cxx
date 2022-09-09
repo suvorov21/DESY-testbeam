@@ -6,7 +6,7 @@
 
 // 25 MHz --> 40 ns/bin   7 cm /us  -->   0.007 cm/ns ---> 0.28 cm / bin
 // 50 Mhz --> ... --> 0.14 cm / bin
-const float TrackSel::v_drift_est = 0.28;
+const float TrackSel::v_drift_est = 0.0028;
 
 void TrackSel::Reset() {
     phi_ = 999;
@@ -153,8 +153,8 @@ void TrackSel::FitXZ(const TClusterPtrVec &track) {
                 x = Geom::GetXposPad(hit, invert_);
                 z = hit->GetTimeMax();
             }
-            gr.SetPoint(gr.GetN(), x, z);
         }
+        gr.SetPoint(gr.GetN(), x, z);
     }
     gr.Fit(fit_->GetName(), "Q");
     auto fitFunc = gr.GetFunction(fit_->GetName());
@@ -163,5 +163,5 @@ void TrackSel::FitXZ(const TClusterPtrVec &track) {
         return;
 
     double xStart = gr.GetX()[0];
-    theta_ = TMath::Sin(TMath::ATan(fitFunc->Derivative(xStart))) * TrackSel::v_drift_est;
+    theta_ = TMath::Sin(TMath::ATan(fitFunc->Derivative(xStart) * TrackSel::v_drift_est));
 }
