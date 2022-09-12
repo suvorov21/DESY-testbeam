@@ -111,6 +111,8 @@ bool SpatialResolAna::Initialize() {
                                             _max_phi,
                                             _max_theta,
                                             _broken_pads,
+                                            _time_min,
+                                            _time_max,
                                             _invert,
                                             _verbose);
 

@@ -97,6 +97,14 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
         }
     } // over pads
 
+    // sort pads in cluster by decreasing charge
+    for (const auto &col : cluster_v) {
+        sort(col->begin(), col->end(), [](const std::shared_ptr<THit> &hit1,
+                                          const std::shared_ptr<THit> &hit2) {
+          return hit1->GetQMax() > hit2->GetQMax();
+        });
+    }
+
     return cluster_v;
 }
 

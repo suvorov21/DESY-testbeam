@@ -24,6 +24,8 @@ bool TrackSel::CrossingTrackSelection(const TClusterPtrVec &track) {
     FitXY(track);
     FitXZ(track);
 
+    auto min_max_time = GetMinMaxTime(track);
+
     if (verbose_ > 1) {
         std::cout << "SELECTION " << std::endl;
         std::cout << "Max mult\t" << m_max << " < " << max_mult_ << std::endl;
@@ -31,10 +33,23 @@ bool TrackSel::CrossingTrackSelection(const TClusterPtrVec &track) {
         std::cout << "No gap\t" << no_gap << std::endl;
         std::cout << "Linear Phi\t" << phi_ << std::endl;
         std::cout << "Linear theta\t" << theta_ << std::endl;
+        std::cout << "Min max time\t" << min_max_time.first << "\t" << min_max_time.second << std::endl;
     }
     if (m_max > max_mult_) return false;
     if (m_mean > max_mean_mult_) return false;
     if (!no_gap && cut_gap_) return false;
+
+    if (time_min_ > 0) {
+        if (time_min_ > min_max_time.first) {
+            return false;
+        }
+    }
+
+    if (time_max_ > 0) {
+        if (time_max_ < min_max_time.second) {
+            return false;
+        }
+    }
 
     if (max_phi_ > 0 && abs(phi_) > max_phi_) return false;
     if (max_theta_ > 0 && abs(theta_) > max_theta_) return false;
@@ -119,16 +134,10 @@ void TrackSel::FitXY(const TClusterPtrVec &track) {
 //******************************************************************************
     TGraph gr;
     for (const auto& cluster : track) {
-        auto qMax = -1;
-        double x{0}, y{0};
-        for (const auto& hit : *cluster) {
-            if (hit->GetQMax() > qMax) {
-                qMax = hit->GetQMax();
-                x = Geom::GetXposPad(hit, invert_);
-                y = Geom::GetYposPad(hit, invert_);
-            }
-            gr.SetPoint(gr.GetN(), x, y);
-        }
+        gr.SetPoint(gr.GetN(),
+                    Geom::GetXposPad((*cluster)[0], invert_),
+                    Geom::GetYposPad((*cluster)[0], invert_)
+                    );
     }
     gr.Fit(fit_->GetName(), "Q");
     auto fitFunc = gr.GetFunction(fit_->GetName());
@@ -145,16 +154,10 @@ void TrackSel::FitXZ(const TClusterPtrVec &track) {
 //******************************************************************************
     TGraph gr;
     for (const auto& cluster : track) {
-        auto qMax = -1;
-        double x{0}, z{0};
-        for (const auto& hit : *cluster) {
-            if (hit->GetQMax() > qMax) {
-                qMax = hit->GetQMax();
-                x = Geom::GetXposPad(hit, invert_);
-                z = hit->GetTimeMax();
-            }
-        }
-        gr.SetPoint(gr.GetN(), x, z);
+        gr.SetPoint(gr.GetN(),
+                    Geom::GetXposPad((*cluster)[0], invert_),
+                    (*cluster)[0]->GetTimeMax()
+        );
     }
     gr.Fit(fit_->GetName(), "Q");
     auto fitFunc = gr.GetFunction(fit_->GetName());
@@ -164,4 +167,22 @@ void TrackSel::FitXZ(const TClusterPtrVec &track) {
 
     double xStart = gr.GetX()[0];
     theta_ = TMath::Sin(TMath::ATan(fitFunc->Derivative(xStart) * TrackSel::v_drift_est));
+}
+
+//******************************************************************************
+std::pair<int, int> TrackSel::GetMinMaxTime(const TClusterPtrVec &track) {
+//******************************************************************************
+    int min_time = 1000;
+    int max_time = -1;
+    for (const auto& cluster : track) {
+        auto time = (*cluster)[0]->GetTimeMax();
+        if (time > max_time) {
+            max_time = time;
+        }
+
+        if (time < min_time) {
+            min_time = time;
+        }
+    }
+    return {min_time, max_time};
 }

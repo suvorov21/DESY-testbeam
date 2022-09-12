@@ -152,6 +152,10 @@ class AnalysisBase {
     /// Maximum angle (abs(tan)) w.r.t. MM plane
     Float_t _max_theta{0};
 
+    /// Time boundaries of the selection
+    Int_t _time_min{-1};
+    Int_t _time_max{-1};
+
     /// Whether to invert track analysis logic
     /** E.g. analyse cosmic tracks. Rows and columns will be replaced */
     bool _invert{false};

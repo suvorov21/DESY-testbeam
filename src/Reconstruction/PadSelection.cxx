@@ -10,11 +10,6 @@ THitPtrVec PadSelection::GetRobustPadsInCluster(THitPtrVec col,
                                                 const broken_pads_t &broken_pads) {
 //******************************************************************************
     std::vector<std::shared_ptr<THit>> result;
-    // sort in charge decreasing order
-    sort(col.begin(), col.end(), [](const std::shared_ptr<THit> &hit1,
-                                    const std::shared_ptr<THit> &hit2) {
-      return hit1->GetQMax() > hit2->GetQMax();
-    });
 
     // leading pad
     auto moduleMM = col[0]->GetCard();
