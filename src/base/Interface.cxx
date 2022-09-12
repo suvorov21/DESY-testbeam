@@ -135,7 +135,7 @@ std::shared_ptr<TEvent> interfaceRoot<timeSize>::getEvent(Int_t i) {
             hit->SetWidth(width);
             hit->SetQMax(Qmax);
             hit->SetTimeMax(Tmax);
-            hit->ShrinkWF();
+            //hit->ShrinkWF();
             event->AddHitPtr(hit);
         } // over Y
     } // over X

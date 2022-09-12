@@ -1,0 +1,19 @@
+R2021_07_03-13_30_22-0  ExB_360_412ns_B02_ym140_z860 	--param ../params/horiz.ini
+R2021_07_03-13_49_50-0  ExB_360_412ns_B02_ym80_z860  	--param ../params/horiz.ini
+R2021_07_03-14_09_50-0  ExB_360_412ns_B02_ym10_z860  	--param ../params/horiz.ini
+R2021_07_03-14_35_04-0  ExB_360_412ns_B02_y60_z860  	--param ../params/horiz.ini
+
+R2021_07_03-14_57_58-0  ExB_360_412ns_B02_ym140_z560  	--param ../params/horiz.ini
+R2021_07_03-15_18_25-0  ExB_360_412ns_B02_ym80_z560  	--param ../params/horiz.ini
+R2021_07_03-15_37_05-0  ExB_360_412ns_B02_ym10_z560  	--param ../params/horiz.ini
+R2021_07_03-15_55_20-0  ExB_360_412ns_B02_y60_z560  	--param ../params/horiz.ini
+
+R2021_07_03-16_20_03-0  ExB_360_412ns_B02_ym140_z260  	--param ../params/horiz.ini
+R2021_07_03-16_43_59-0  ExB_360_412ns_B02_ym80_z260  	--param ../params/horiz.ini
+R2021_07_03-17_06_00-0  ExB_360_412ns_B02_ym10_z260  	--param ../params/horiz.ini
+R2021_07_03-17_25_35-0  ExB_360_412ns_B02_y60_z260  	--param ../params/horiz.ini
+
+R2021_07_03-17_49_25-0  ExB_360_412ns_B02_ym140_zm40  	--param ../params/horiz.ini
+R2021_07_03-18_08_42-0  ExB_360_412ns_B02_ym80_zm40  	--param ../params/horiz.ini
+R2021_07_03-18_27_43-0  ExB_360_412ns_B02_ym10_zm40  	--param ../params/horiz.ini
+R2021_07_03-18_48_28-0  ExB_360_412ns_B02_y60_zm40  	--param ../params/horiz.ini

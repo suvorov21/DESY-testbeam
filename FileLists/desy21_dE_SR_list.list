@@ -1,0 +1,256 @@
+R2021_07_01-16_46_07-0 Y0_Z0   --param ../params/horiz.ini
+R2021_07_01-16_59_25-0 Y40_Z0   --param ../params/horiz.ini
+R2021_07_01-17_13_53-0 Y20_Z0   --param ../params/horiz.ini
+R2021_07_01-17_29_42-0 Y60_Z0   --param ../params/horiz.ini
+R2021_07_01-17_45_58-0 Y80_Z0   --param ../params/horiz.ini
+R2021_07_01-18_00_39-0 Y100_Z0   --param ../params/horiz.ini
+R2021_07_01-18_25_30-0 Ym20_Z0   --param ../params/horiz.ini
+R2021_07_01-18_40_12-0 Ym40_Z0   --param ../params/horiz.ini
+R2021_07_01-18_56_14-0 Ym60_Z0   --param ../params/horiz.ini
+R2021_07_01-19_09_09-0 Ym80_Z0   --param ../params/horiz.ini
+R2021_07_01-19_23_58-0 Ym100_Z0   --param ../params/horiz.ini
+R2021_07_01-19_37_00-0 Ym120_Z0   --param ../params/horiz.ini
+R2021_07_01-22_33_25-0 Ym140_Z0   --param ../params/horiz.ini
+R2021_07_01-22_49_55-0 Ym150_Z0   --param ../params/horiz.ini
+R2021_07_01-23_05_41-0 Ym170_Z0   --param ../params/horiz.ini
+
+R2021_07_07-15_23_07-0 phi_200_0_z460_ym60 --param ../params/horiz.ini
+R2021_07_07-15_51_25-0 phi_200_0_z860_ym60 --param ../params/horiz.ini
+R2021_07_07-16_29_39-0 phi_200_0_zm40_ym60 --param ../params/horiz.ini
+R2021_07_07-16_46_07-0 phi_200_0_zm40_y80 --param ../params/horiz.ini
+R2021_07_07-17_08_59-0 phi_200_0_z460_y80 --param ../params/horiz.ini
+R2021_07_07-17_30_43-0 phi_200_0_z860_y80 --param ../params/horiz.ini
+
+R2021_07_09-15_57_39-0 phi_200_90_zm40_ym205  --param ../params/vert.ini
+R2021_07_09-16_12_28-0 phi_200_90_zm40_ym155  --param ../params/vert.ini
+R2021_07_09-16_27_36-0 phi_200_90_zm40_ym100  --param ../params/vert.ini
+R2021_07_09-16_41_48-0 phi_200_90_zm40_ym50  --param ../params/vert.ini
+R2021_07_09-16_55_50-0 phi_200_90_zm40_y0  --param ../params/vert.ini
+R2021_07_09-17_39_20-0 phi_200_90_zm40_y50  --param ../params/vert.ini
+R2021_07_09-17_55_15-0 phi_200_90_zm40_y100  --param ../params/vert.ini
+R2021_07_09-18_13_25-0 phi_200_90_zm40_y155  --param ../params/vert.ini
+R2021_07_09-18_39_55-0 phi_200_90_zm40_y195  --param ../params/vert.ini
+
+R2021_07_09-19_03_56-0 phi_412_90_zm40_y190_360V  --param ../params/vert.ini
+R2021_07_09-19_22_10-0 phi_412_90_zm40_y155_360V  --param ../params/vert.ini
+R2021_07_09-19_46_56-0 phi_412_90_zm40_y100_360V  --param ../params/vert.ini
+R2021_07_09-20_07_05-0 phi_412_90_zm40_y0_360V  --param ../params/vert.ini
+R2021_07_09-21_07_19-0 phi_412_90_zm40_y50_360V  --param ../params/vert.ini
+R2021_07_09-21_20_37-0 phi_412_90_zm40_ym50_360V  --param ../params/vert.ini
+R2021_07_09-21_40_39-0 phi_412_90_zm40_ym100_360V  --param ../params/vert.ini
+R2021_07_09-21_55_25-0 phi_412_90_zm40_ym155_360V  --param ../params/vert.ini
+R2021_07_09-22_09_29-0 phi_412_90_zm40_ym190_360V  --param ../params/vert.ini
+R2021_07_09-22_31_59-0 phi_412_90_z260_y0_360V  --param ../params/vert.ini
+R2021_07_09-22_49_13-0 phi_412_90_z460_y0_360V  --param ../params/vert.ini
+R2021_07_09-23_07_14-0 phi_412_90_z660_y0_360V  --param ../params/vert.ini
+R2021_07_09-23_24_25-0 phi_412_90_z860_y0_360V  --param ../params/vert.ini
+
+R2021_07_02-19_36_39-0  z_360_275_200_02T_26_860       --param ../params/horiz.ini
+R2021_07_02-22_44_37-0  z_360_275_200_02T_26_760       --param ../params/horiz.ini
+R2021_07_02-23_01_53-0  z_360_275_200_02T_26_660       --param ../params/horiz.ini
+R2021_07_02-23_21_11-0  z_360_275_200_02T_26_560       --param ../params/horiz.ini
+R2021_07_02-23_43_33-0  z_360_275_200_02T_26_460       --param ../params/horiz.ini
+R2021_07_03-00_03_51-0  z_360_275_200_02T_26_360       --param ../params/horiz.ini
+R2021_07_03-00_21_49-0  z_360_275_200_02T_26_260       --param ../params/horiz.ini
+R2021_07_03-00_39_58-0  z_360_275_200_02T_26_160       --param ../params/horiz.ini
+R2021_07_03-00_58_15-0  z_360_275_200_02T_26_60       --param ../params/horiz.ini
+R2021_07_03-01_18_59-0  z_360_275_200_02T_26_m40       --param ../params/horiz.ini
+
+R2021_07_02-16_14_56-0  z_360_139_200_02T_26_m40       --param ../params/horiz.ini
+R2021_07_02-16_32_13-0  z_360_139_200_02T_26_60       --param ../params/horiz.ini
+R2021_07_02-16_50_23-0 z_360_139_200_02T_26_160       --param ../params/horiz.ini
+R2021_07_02-17_13_15-0 z_360_139_200_02T_26_260       --param ../params/horiz.ini
+R2021_07_02-17_32_22-0 z_360_139_200_02T_26_360       --param ../params/horiz.ini
+R2021_07_02-17_53_48-0 z_360_139_200_02T_26_460       --param ../params/horiz.ini
+R2021_07_02-18_14_27-0 z_360_139_200_02T_26_560       --param ../params/horiz.ini
+R2021_07_02-18_34_34-0 z_360_139_200_02T_26_660       --param ../params/horiz.ini
+R2021_07_02-18_54_33-0 z_360_139_200_02T_26_760       --param ../params/horiz.ini
+R2021_07_02-19_13_20-0 z_360_139_200_02T_26_860       --param ../params/horiz.ini
+
+R2021_07_02-09_45_48-0  z_360_275_412_02T_26_m40       --param ../params/horiz.ini
+R2021_07_02-10_09_21-0  z_360_275_412_02T_26_60       --param ../params/horiz.ini
+R2021_07_02-10_26_46-0  z_360_275_412_02T_26_160       --param ../params/horiz.ini
+R2021_07_02-10_43_57-0  z_360_275_412_02T_26_260       --param ../params/horiz.ini
+R2021_07_02-11_06_24-0  z_360_275_412_02T_26_360       --param ../params/horiz.ini
+R2021_07_02-11_26_27-0  z_360_275_412_02T_26_460       --param ../params/horiz.ini
+R2021_07_02-11_46_45-0  z_360_275_412_02T_26_560       --param ../params/horiz.ini
+R2021_07_02-12_06_40-0  z_360_275_412_02T_26_660       --param ../params/horiz.ini
+R2021_07_02-12_23_58-0  z_360_275_412_02T_26_760       --param ../params/horiz.ini
+R2021_07_02-12_40_41-0  z_360_275_412_02T_26_860       --param ../params/horiz.ini
+
+R2021_07_02-12_58_20-0  z_360_139_412_02T_26_860       --param ../params/horiz.ini
+R2021_07_02-13_16_18-0  z_360_139_412_02T_26_760       --param ../params/horiz.ini
+R2021_07_02-13_35_25-0  z_360_139_412_02T_26_660       --param ../params/horiz.ini
+R2021_07_02-13_51_47-0  z_360_139_412_02T_26_560       --param ../params/horiz.ini
+R2021_07_02-14_09_43-0  z_360_139_412_02T_26_460       --param ../params/horiz.ini
+R2021_07_02-14_42_26-0  z_360_139_412_02T_26_360       --param ../params/horiz.ini
+R2021_07_02-14_42_26-0  z_360_139_412_02T_26_260       --param ../params/horiz.ini
+R2021_07_02-14_59_03-0  z_360_139_412_02T_26_160       --param ../params/horiz.ini
+R2021_07_02-15_15_46-0  z_360_139_412_02T_26_60       --param ../params/horiz.ini
+R2021_07_02-15_34_22-0  z_360_139_412_02T_26_m40       --param ../params/horiz.ini
+
+
+R2021_07_08-05_05_41-0 phi_200_5_zm40_ym60    	  --param ../params/horiz.ini
+R2021_07_08-05_57_56-0 phi_200_5_z460_ym60		  --param ../params/horiz.ini
+R2021_07_08-07_25_47-0 phi_200_5_z860_ym60 		  --param ../params/horiz.ini
+
+R2021_07_08-09_17_59-0 phi_200_10_zm40_ym60 	  --param ../params/horiz.ini
+R2021_07_08-08_54_54-0 phi_200_10_z460_ym60 	  --param ../params/horiz.ini
+R2021_07_08-08_00_20-0 phi_200_10_z860_ym60 	  --param ../params/horiz.ini
+
+R2021_07_08-12_39_27-0 phi_200_20_zm40_ym60		  --param ../params/horiz.ini
+R2021_07_08-13_02_09-0 phi_200_20_z460_ym60		  --param ../params/horiz.ini
+R2021_07_08-13_41_03-0 phi_200_20_z860_ym60		  --param ../params/horiz.ini
+
+R2021_07_08-12_23_48-0 phi_200_20_zm40_y20		  --param ../params/horiz.ini
+R2021_07_08-13_17_45-0 phi_200_20_z460_y20		  --param ../params/horiz.ini
+R2021_07_08-14_01_56-0 phi_200_20_z860_y20		  --param ../params/horiz.ini
+
+R2021_07_08-16_11_55-0  phi_200_30_zm40_y20_diag  --param ../params/diag.ini
+R2021_07_08-14_53_32-0  phi_200_30_z860_y20_diag  --param ../params/diag.ini
+R2021_07_08-15_15_33-0  phi_200_30_z460_y20_diag  --param ../params/diag.ini
+
+R2021_07_08-14_37_51-0 phi_200_30_z860_ym60_diag  --param ../params/diag.ini
+R2021_07_08-15_31_43-0 phi_200_30_z460_ym60_diag  --param ../params/diag.ini
+R2021_07_08-15_56_13-0 phi_200_30_zm40_ym60_diag  --param ../params/diag.ini
+
+R2021_07_08-16_35_16-0  phi_200_40_zm40_ym60_diag  --param ../params/diag.ini
+R2021_07_08-18_51_59-0  phi_200_40_z460_ym60_diag  --param ../params/diag.ini
+R2021_07_08-19_17_39-0  phi_200_40_z860_ym60_diag  --param ../params/diag.ini
+
+R2021_07_08-23_38_16-0  phi_200_45_zm40_ym60_diag  --param ../params/diag.ini
+R2021_07_08-21_58_55-0  phi_200_45_z460_ym60_diag  --param ../params/diag.ini
+R2021_07_08-21_23_53-0  phi_200_45_z860_ym60_diag  --param ../params/diag.ini
+
+R2021_07_09-07_05_40-0 phi_200_50_zm40_y60_diag   --param ../params/diag.ini
+R2021_07_09-06_43_35-0 phi_200_50_z460_y60_diag   --param ../params/diag.ini
+R2021_07_09-08_07_02-0 phi_200_50_z860_y60_diag   --param ../params/diag.ini
+
+R2021_07_09-11_13_30-0 phi_200_60_zm40_y0_diag  --param ../params/diag.ini
+R2021_07_09-09_59_42-0 phi_200_60_z460_y0_diag  --param ../params/diag.ini
+R2021_07_09-08_58_44-0 phi_200_60_z860_y0_diag  --param ../params/diag.ini
+
+R2021_07_09-11_55_06-0 phi_200_70_zm40_y100       --param ../params/vert.ini 
+R2021_07_09-12_17_29-0 phi_200_70_z460_y100       --param ../params/vert.ini
+R2021_07_09-13_14_00-0 phi_200_70_z860_y100       --param ../params/vert.ini
+                                                                            
+R2021_07_09-15_34_51-0 phi_200_80_zm40_ym40       --param ../params/vert.ini
+R2021_07_09-14_11_47-0 phi_200_80_z860_ym40       --param ../params/vert.ini
+R2021_07_09-14_32_28-0 phi_200_80_z460_ym40       --param ../params/vert.ini
+
+
+
+
+R2021_07_08-12_23_48-0 phi_200_20_zm40_y20_2by1		  --param ../params/2by1.ini
+R2021_07_08-13_17_45-0 phi_200_20_z460_y20_2by1		  --param ../params/2by1.ini
+R2021_07_08-14_01_56-0 phi_200_20_z860_y20_2by1		  --param ../params/2by1.ini
+
+R2021_07_08-16_11_55-0  phi_200_30_zm40_y20_2by1  --param ../params/2by1.ini
+R2021_07_08-14_53_32-0  phi_200_30_z860_y20_2by1  --param ../params/2by1.ini
+R2021_07_08-15_15_33-0  phi_200_30_z460_y20_2by1  --param ../params/2by1.ini
+
+R2021_07_08-14_37_51-0 phi_200_30_z860_ym60_2by1  --param ../params/2by1.ini
+R2021_07_08-15_31_43-0 phi_200_30_z460_ym60_2by1  --param ../params/2by1.ini
+R2021_07_08-15_56_13-0 phi_200_30_zm40_ym60_2by1  --param ../params/2by1.ini
+
+R2021_07_08-16_35_16-0  phi_200_40_zm40_ym60_2by1  --param ../params/2by1.ini
+R2021_07_08-18_51_59-0  phi_200_40_z460_ym60_2by1  --param ../params/2by1.ini
+R2021_07_08-19_17_39-0  phi_200_40_z860_ym60_2by1  --param ../params/2by1.ini
+
+R2021_07_08-23_38_16-0  phi_200_45_zm40_ym60_2by1  --param ../params/2by1.ini
+R2021_07_08-21_58_55-0  phi_200_45_z460_ym60_2by1  --param ../params/2by1.ini
+R2021_07_08-21_23_53-0  phi_200_45_z860_ym60_2by1  --param ../params/2by1.ini
+
+R2021_07_09-07_05_40-0 phi_200_50_zm40_y60_2by1   --param ../params/2by1_inv.ini
+R2021_07_09-06_43_35-0 phi_200_50_z460_y60_2by1   --param ../params/2by1_inv.ini
+R2021_07_09-08_07_02-0 phi_200_50_z860_y60_2by1   --param ../params/2by1_inv.ini
+
+R2021_07_09-11_13_30-0 phi_200_60_zm40_y0_2by1  --param ../params/2by1_inv.ini
+R2021_07_09-09_59_42-0 phi_200_60_z460_y0_2by1  --param ../params/2by1_inv.ini
+R2021_07_09-08_58_44-0 phi_200_60_z860_y0_2by1  --param ../params/2by1_inv.ini
+
+R2021_07_09-11_55_06-0 phi_200_70_zm40_y100_2by1       --param ../params/2by1_inv.ini 
+R2021_07_09-12_17_29-0 phi_200_70_z460_y100_2by1       --param ../params/2by1_inv.ini
+R2021_07_09-13_14_00-0 phi_200_70_z860_y100_2by1       --param ../params/2by1_inv.ini
+
+
+R2021_07_08-12_23_48-0 phi_200_20_zm40_y20_3by1		  --param ../params/3by1.ini
+R2021_07_08-13_17_45-0 phi_200_20_z460_y20_3by1		  --param ../params/3by1.ini
+R2021_07_08-14_01_56-0 phi_200_20_z860_y20_3by1		  --param ../params/3by1.ini
+
+R2021_07_08-16_11_55-0  phi_200_30_zm40_y20_3by1  --param ../params/3by1.ini
+R2021_07_08-14_53_32-0  phi_200_30_z860_y20_3by1  --param ../params/3by1.ini
+R2021_07_08-15_15_33-0  phi_200_30_z460_y20_3by1  --param ../params/3by1.ini
+
+R2021_07_08-14_37_51-0 phi_200_30_z860_ym60_3by1  --param ../params/3by1.ini
+R2021_07_08-15_31_43-0 phi_200_30_z460_ym60_3by1  --param ../params/3by1.ini
+R2021_07_08-15_56_13-0 phi_200_30_zm40_ym60_3by1  --param ../params/3by1.ini
+
+R2021_07_08-16_35_16-0  phi_200_40_zm40_ym60_3by1  --param ../params/3by1.ini
+R2021_07_08-18_51_59-0  phi_200_40_z460_ym60_3by1  --param ../params/3by1.ini
+R2021_07_08-19_17_39-0  phi_200_40_z860_ym60_3by1  --param ../params/3by1.ini
+
+R2021_07_08-23_38_16-0  phi_200_45_zm40_ym60_3by1  --param ../params/3by1.ini
+R2021_07_08-21_58_55-0  phi_200_45_z460_ym60_3by1  --param ../params/3by1.ini
+R2021_07_08-21_23_53-0  phi_200_45_z860_ym60_3by1  --param ../params/3by1.ini
+
+R2021_07_09-07_05_40-0 phi_200_50_zm40_y60_3by1   --param ../params/3by1_inv.ini
+R2021_07_09-06_43_35-0 phi_200_50_z460_y60_3by1   --param ../params/3by1_inv.ini
+R2021_07_09-08_07_02-0 phi_200_50_z860_y60_3by1   --param ../params/3by1_inv.ini
+
+R2021_07_09-11_13_30-0 phi_200_60_zm40_y0_3by1  --param ../params/3by1_inv.ini
+R2021_07_09-09_59_42-0 phi_200_60_z460_y0_3by1  --param ../params/3by1_inv.ini
+R2021_07_09-08_58_44-0 phi_200_60_z860_y0_3by1  --param ../params/3by1_inv.ini
+
+R2021_07_09-11_55_06-0 phi_200_70_zm40_y100_3by1  --param ../params/3by1_inv.ini 
+R2021_07_09-12_17_29-0 phi_200_70_z460_y100_3by1  --param ../params/3by1_inv.ini
+R2021_07_09-13_14_00-0 phi_200_70_z860_y100_3by1  --param ../params/3by1_inv.ini
+
+
+R2021_07_08-19_58_32-0 phi_200_45_z860_y60_diag  --param ../params/diag.ini
+R2021_07_08-21_41_18-0 phi_200_45_z660_ym60_diag  --param ../params/diag.ini
+R2021_07_08-22_44_08-0 phi_200_45_z460_y60_diag  --param ../params/diag.ini
+R2021_07_08-23_04_12-0 phi_200_45_z260_ym60_diag  --param ../params/diag.ini
+R2021_07_08-23_22_09-0 phi_200_45_z60_ym60_diag  --param ../params/diag.ini
+R2021_07_09-00_24_13-0 phi_200_45_zm40_y60_diag  --param ../params/diag.ini
+
+
+R2021_07_08-16_11_55-0  phi_200_30_zm40_y20  --param ../params/horiz.ini
+R2021_07_08-14_53_32-0  phi_200_30_z860_y20  --param ../params/horiz.ini
+R2021_07_08-15_15_33-0  phi_200_30_z460_y20  --param ../params/horiz.ini
+
+R2021_07_08-14_37_51-0 phi_200_30_z860_ym60  --param ../params/horiz.ini
+R2021_07_08-15_31_43-0 phi_200_30_z460_ym60  --param ../params/horiz.ini
+R2021_07_08-15_56_13-0 phi_200_30_zm40_ym60  --param ../params/horiz.ini
+
+R2021_07_08-16_35_16-0  phi_200_40_zm40_ym60  --param ../params/horiz.ini
+R2021_07_08-18_51_59-0  phi_200_40_z460_ym60  --param ../params/horiz.ini
+R2021_07_08-19_17_39-0  phi_200_40_z860_ym60  --param ../params/horiz.ini
+
+R2021_07_08-23_38_16-0  phi_200_45_zm40_ym60  --param ../params/horiz.ini
+R2021_07_08-21_58_55-0  phi_200_45_z460_ym60  --param ../params/horiz.ini
+R2021_07_08-21_23_53-0  phi_200_45_z860_ym60  --param ../params/horiz.ini
+
+R2021_07_09-07_05_40-0 phi_200_50_zm40_y60  --param ../params/horiz.ini
+R2021_07_09-06_43_35-0 phi_200_50_z460_y60  --param ../params/horiz.ini
+R2021_07_09-08_07_02-0 phi_200_50_z860_y60  --param ../params/horiz.ini
+
+R2021_07_09-11_13_30-0 phi_200_60_zm40_y0  --param ../params/horiz.ini
+R2021_07_09-09_59_42-0 phi_200_60_z460_y0  --param ../params/horiz.ini
+R2021_07_09-08_58_44-0 phi_200_60_z860_y0  --param ../params/horiz.ini
+
+R2021_07_09-10_57_55-0 phi_200_60_zm40_y80_diag   --param ../params/diag_d.ini
+R2021_07_09-08_43_17-0 phi_200_60_z860_y80_diag   --param ../params/diag_d.ini
+R2021_07_09-10_33_28-0 phi_200_60_z460_y80_diag   --param ../params/diag_d.ini
+
+R2021_07_09-10_57_55-0 phi_200_60_zm40_y80_3by1   --param ../params/3by1_d.ini
+R2021_07_09-08_43_17-0 phi_200_60_z860_y80_3by1   --param ../params/3by1_d.ini
+R2021_07_09-10_33_28-0 phi_200_60_z460_y80_3by1   --param ../params/3by1_d.ini
+
+R2021_07_09-10_57_55-0 phi_200_60_zm40_y80_2by1   --param ../params/2by1_d.ini
+R2021_07_09-08_43_17-0 phi_200_60_z860_y80_2by1   --param ../params/2by1_d.ini
+R2021_07_09-10_33_28-0 phi_200_60_z460_y80_2by1   --param ../params/2by1_d.ini
+
+R2021_07_09-10_57_55-0 phi_200_60_zm40_y80   --param ../params/vert.ini
+R2021_07_09-08_43_17-0 phi_200_60_z860_y80   --param ../params/vert.ini
+R2021_07_09-10_33_28-0 phi_200_60_z460_y80   --param ../params/vert.ini

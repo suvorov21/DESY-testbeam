@@ -1,0 +1,26 @@
+R2021_07_08-14_37_51-0 phi_200_30_z860_ym60_diag  --param ../params/diag.ini
+R2021_07_08-15_31_43-0 phi_200_30_z460_ym60_diag  --param ../params/diag.ini
+R2021_07_08-15_56_13-0 phi_200_30_zm40_ym60_diag  --param ../params/diag.ini
+
+R2021_07_08-16_35_16-0  phi_200_40_zm40_ym60_diag  --param ../params/diag.ini
+R2021_07_08-18_51_59-0  phi_200_40_z460_ym60_diag  --param ../params/diag.ini
+R2021_07_08-19_17_39-0  phi_200_40_z860_ym60_diag  --param ../params/diag.ini
+
+R2021_07_08-23_38_16-0  phi_200_45_zm40_ym60_diag  --param ../params/diag.ini
+R2021_07_08-21_58_55-0  phi_200_45_z460_ym60_diag  --param ../params/diag.ini
+R2021_07_08-21_23_53-0  phi_200_45_z860_ym60_diag  --param ../params/diag.ini
+
+R2021_07_08-19_58_32-0 phi_200_45_z860_y60_diag  --param ../params/diag.ini
+R2021_07_08-21_41_18-0 phi_200_45_z660_ym60_diag  --param ../params/diag.ini
+R2021_07_08-22_44_08-0 phi_200_45_z460_y60_diag  --param ../params/diag.ini
+R2021_07_08-23_04_12-0 phi_200_45_z260_ym60_diag  --param ../params/diag.ini
+R2021_07_08-23_22_09-0 phi_200_45_z60_ym60_diag  --param ../params/diag.ini
+R2021_07_09-00_24_13-0 phi_200_45_zm40_y60_diag  --param ../params/diag.ini
+
+R2021_07_09-07_05_40-0 phi_200_50_zm40_y60_diag   --param ../params/diag.ini
+R2021_07_09-06_43_35-0 phi_200_50_z460_y60_diag   --param ../params/diag.ini
+R2021_07_09-08_07_02-0 phi_200_50_z860_y60_diag   --param ../params/diag.ini
+
+R2021_07_09-11_13_30-0 phi_200_60_zm40_y0_diag  --param ../params/diag.ini
+R2021_07_09-09_59_42-0 phi_200_60_z460_y0_diag  --param ../params/diag.ini
+R2021_07_09-08_58_44-0 phi_200_60_z860_y0_diag  --param ../params/diag.ini

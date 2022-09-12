@@ -1,0 +1,8 @@
+executable              = $(filename)
+arguments               = $(ClusterId)$(ProcId)
+requirements            = (OpSysAndVer =?= "CentOS7")
++JobFlavour             = "tomorrow"
+output                  = /afs/cern.ch/work/u/uyevarou/public/Desy21/log/output/$(ClusterId).$(ProcId).out
+error                   = /afs/cern.ch/work/u/uyevarou/public/Desy21/log/error/$(ClusterId).$(ProcId).err
+log                     = /afs/cern.ch/work/u/uyevarou/public/Desy21/log/log/$(ClusterId).log
+queue filename matching files *.sh

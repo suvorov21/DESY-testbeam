@@ -22,6 +22,7 @@ AnalysisBase::AnalysisBase() :
     _cut_gap(true),
     _min_clusters(30),
     _verbose(1),
+    _calc_pad_len(true),
     _to_store_wf(true) {
 //******************************************************************************
 
@@ -453,6 +454,13 @@ bool AnalysisBase::ReadParamFile() {
                     std::cout << "WFs will NOT be stored" << std::endl;
                 } else {
                     std::cout << "WFs will be stored. Analysis will be slowed down" << std::endl;
+                }
+            } else if (name == "calc_pad_len") {
+                if (value == "0") {
+                    _calc_pad_len = false;
+                    std::cout << "Track length per pad will NOT be calculated and stored" << std::endl;
+                } else {
+                    std::cout << "Track length per pad will be stored. Analysis will be slowed down" << std::endl;
                 }
             } else if (name == "cross_talk") {
                 if (value == "suppress") {

@@ -166,6 +166,9 @@ class AnalysisBase {
     /// Whether to store the WFs
     bool _to_store_wf{false};
 
+    /// Wether to store the track length per pad
+    bool _calc_pad_len{false};
+    
     /// An actual clustering procedure
     std::unique_ptr<Clustering> _clustering;
 

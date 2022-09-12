@@ -1,0 +1,9 @@
+R2021_07_07-13_59_48-0 phi_200_0_z460_ym60_0T --param ../params/horiz.ini
+
+R2021_07_06-11_59_00-0 theta_m45_0T_z360_ym60 --param ../params/horiz.ini
+R2021_07_06-12_27_50-0 theta_m45_0T_z260_ym60 --param ../params/horiz.ini
+R2021_07_06-12_42_20-0 theta_m45_0T_z160_ym60 --param ../params/horiz.ini
+R2021_07_06-12_57_16-0 theta_m45_0T_z460_ym60 --param ../params/horiz.ini
+R2021_07_06-13_08_09-0 theta_m45_0T_z660_ym60 --param ../params/horiz.ini
+R2021_07_06-13_08_09-0 theta_m45_0T_z760_ym60 --param ../params/horiz.ini
+R2021_07_06-13_23_48-0 theta_m45_0T_z860_ym60 --param ../params/horiz.ini
