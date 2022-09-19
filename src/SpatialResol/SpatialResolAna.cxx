@@ -69,6 +69,11 @@ bool SpatialResolAna::Initialize() {
     std::cout << "Iteration     :   " << _iteration << std::endl;
     std::cout << "Debug         :   " << _test_mode << std::endl;
     std::cout << "Correction    :   " << _correction << std::endl;
+    // load information from previous iteration
+    if (_iteration) {
+        ReadPrevIter();
+    } // if iteration
+    
     std::cout << "Previous iter :   " << _prev_iter_name << std::endl;
 
     std::cout << "Initializing spatial resolution ana......";
@@ -80,11 +85,6 @@ bool SpatialResolAna::Initialize() {
     // Initialize graph for PRF profiling
     _prf_graph = new TGraphErrors();
     _prf_graph->SetName("PRF_graph");
-
-    // load information from previous iteration
-    if (_iteration) {
-        ReadPrevIter();
-    } // if iteration
 
     _file_out->cd();
     InitializeTree();
