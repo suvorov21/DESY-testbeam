@@ -12,6 +12,7 @@ void ClDump::CL_progress_dump(int eventID,
                               int N_events,
                               int selected) {
 //******************************************************************************
+    std::cout << "\r[" << std::flush;
     auto mem = GenericToolbox::getProcessMemoryUsage();
     if (eventID)
         _loop_start_ts += GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("loop");
@@ -40,5 +41,5 @@ void ClDump::CL_progress_dump(int eventID,
         std::cout << s;
         std::cout << std::setfill(' ');
     }
-    std::cout << "      \r[" << std::flush;
+
 }
