@@ -113,10 +113,12 @@ class SpatialResolAna : public AnalysisBase {
 
     /// output tree
     TTree *_tree{nullptr};
-    /// Oputput tree vars
+    /// Output tree vars
     // Event vars
     /// event number
     Int_t _ev{-999};
+    /// track number in the event
+    Int_t _track;
     /// angle in MM plane
     Double_t _angle_xy{-999};
     /// angle w.r.t. MM

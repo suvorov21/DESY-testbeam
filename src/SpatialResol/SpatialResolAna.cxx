@@ -153,6 +153,7 @@ bool SpatialResolAna::Initialize() {
 void SpatialResolAna::InitializeTree() {
     _tree = new TTree("outtree", "");
     _tree->Branch("ev", &_ev);
+    _tree->Branch("track", &_track);
     _tree->Branch("dEdx", &_dEdx);
 
     _tree->Branch("angle_yz", &_angle_yz);
@@ -426,7 +427,9 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
 // ************** See steps documentation in the README.md file ****************
 // *******************  STEP 1 *************************************************
 
+    _track = -1;
     for (const auto& track :  event->GetTracks()) {
+        ++_track;
         // reset tree values
         Reset(num::cast<int>(event->GetID()));
         if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
