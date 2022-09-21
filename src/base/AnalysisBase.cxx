@@ -483,6 +483,12 @@ bool AnalysisBase::ReadParamFile() {
                               << "column " << _broken_pads.back()[2] << "; ";
                 }
                 std::cout << std::endl;
+            } else if (name == "time_min") {
+                _time_min = (Int_t) TString(value).Atoi();
+                std::cout << "Minimum time " << _time_min << std::endl;
+            } else if (name == "time_max") {
+                _time_max = (Int_t) TString(value).Atoi();
+                std::cout << "Maximum time " << _time_max << std::endl;
             }
         }
     } else {

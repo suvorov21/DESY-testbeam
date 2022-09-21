@@ -152,6 +152,10 @@ class AnalysisBase {
     /// Maximum angle (abs(tan)) w.r.t. MM plane
     Float_t _max_theta{0};
 
+    /// Time boundaries of the selection
+    Int_t _time_min{-1};
+    Int_t _time_max{-1};
+
     /// Whether to invert track analysis logic
     /** E.g. analyse cosmic tracks. Rows and columns will be replaced */
     bool _invert{false};
@@ -199,6 +203,14 @@ class AnalysisBase {
     long long _filling_time{0};
     long long _sel_time{0};
 
+    /// Dump the progress into CL
+    ClDump _clDump{};
+
+    /// Event to start the loop
+    int _start_ID{-999};
+    /// Last event to analyse
+    int _end_ID{-999};
+
  private:
     /// input file name
     TString _file_in_name{""};
@@ -215,18 +227,10 @@ class AnalysisBase {
     /// name of the parameter file
     TString _param_file_name{""};
 
-    /// Event to start the loop
-    int _start_ID{-999};
-    /// Last event to analyse
-    int _end_ID{-999};
-
     /// T2K plotting style
     std::unique_ptr<TStyle> _t2kstyle{nullptr};
 
     bool _overwrite{false};
-
-    /// Dump the progress into CL
-    ClDump _clDump{};
 
     /// Time control system
     TApplication* _app{nullptr};

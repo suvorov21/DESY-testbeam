@@ -58,9 +58,9 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
         auto row_id = pad->GetRow(_invert);
 
         // skip first and last row/column
-        if (row_id == 0 || row_id == Geom::GetNRow(_invert) - 1 ||
-            col_id == 0 || col_id == Geom::GetNColumn(_invert) - 1)
-            continue;
+//        if (row_id == 0 || row_id == Geom::GetNRow(_invert) - 1 ||
+//            col_id == 0 || col_id == Geom::GetNColumn(_invert) - 1)
+//            continue;
 
         auto cons = GetConstant(row_id, col_id);
 
@@ -96,6 +96,14 @@ TClusterPtrVec Clustering::ClusterTrack(const THitPtrVec &tr) const {
             cluster_v.push_back(std::move(first_cluster));
         }
     } // over pads
+
+    // sort pads in cluster by decreasing charge
+    for (const auto &col : cluster_v) {
+        sort(col->begin(), col->end(), [](const std::shared_ptr<THit> &hit1,
+                                          const std::shared_ptr<THit> &hit2) {
+          return hit1->GetQMax() > hit2->GetQMax();
+        });
+    }
 
     return cluster_v;
 }

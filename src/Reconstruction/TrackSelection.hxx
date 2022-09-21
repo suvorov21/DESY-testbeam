@@ -29,6 +29,10 @@ class TrackSel {
     Double_t max_theta_{0};
     /// Array of broken pads
     broken_pads_t broken_pads_;
+
+    /// Time boundaries
+    Int_t time_min_;
+    Int_t time_max_;
     /// whether the track is inverted
     bool invert_{false};
     /// Verbosity level
@@ -40,7 +44,9 @@ class TrackSel {
              const bool cut_gap,
              const Double_t max_phi,
              const Double_t max_theta,
-             broken_pads_t &_broken_pads,
+             broken_pads_t &broken_pads,
+             const int time_min,
+             const int time_max,
              const bool invert,
              const int verbose) : invert_(invert),
                                   max_mult_(max_mult),
@@ -48,7 +54,9 @@ class TrackSel {
                                   cut_gap_(cut_gap),
                                   max_phi_(max_phi),
                                   max_theta_(max_theta),
-                                  broken_pads_(_broken_pads),
+                                  broken_pads_(broken_pads),
+                                  time_min_(time_min),
+                                  time_max_(time_max),
                                   verbose_(verbose) {
         fit_ = std::make_unique<TF1>("preFit", "pol2", -1., 1.);
     }
@@ -73,8 +81,10 @@ class TrackSel {
                                 Float_t &m_mean,
                                 Int_t &m_max
     );
+    /// return min and max time for leading pad
+    std::pair<int, int> GetMinMaxTime(const TClusterPtrVec &track);
     /// Look if there a gap in the clusters (missed row/column)
-     bool GetNoGap(const TClusterPtrVec &track);
+    bool GetNoGap(const TClusterPtrVec &track);
 
     static bool GetNoGapVector(const std::vector<int> &v);
 

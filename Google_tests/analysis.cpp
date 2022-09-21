@@ -63,7 +63,7 @@ TEST(AnalysisTest, Clusterisation) {
     Clustering cluster;
     auto track = fake::GetTrack();
     auto clusters = cluster.ClusterTrack(track);
-    EXPECT_EQ(clusters.size(), 34);
+    EXPECT_EQ(clusters.size(), 36);
     cluster = Clustering(clusterType::kRowColumn, true);
     clusters = cluster.ClusterTrack(track);
     EXPECT_EQ(clusters.size(), 3);

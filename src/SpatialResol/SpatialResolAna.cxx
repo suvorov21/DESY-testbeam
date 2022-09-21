@@ -69,9 +69,6 @@ bool SpatialResolAna::Initialize() {
     std::cout << "Iteration     :   " << _iteration << std::endl;
     std::cout << "Debug         :   " << _test_mode << std::endl;
     std::cout << "Correction    :   " << _correction << std::endl;
-    std::cout << "Previous iter :   " << _prev_iter_name << std::endl;
-
-    std::cout << "Initializing spatial resolution ana......";
 
     gErrorIgnoreLevel = kSysError;
 
@@ -80,12 +77,15 @@ bool SpatialResolAna::Initialize() {
     // Initialize graph for PRF profiling
     _prf_graph = new TGraphErrors();
     _prf_graph->SetName("PRF_graph");
-
     // load information from previous iteration
     if (_iteration) {
         ReadPrevIter();
     } // if iteration
 
+    std::cout << "Previous iter :   " << _prev_iter_name << std::endl;
+
+    std::cout << "Initializing spatial resolution ana......";
+    
     _file_out->cd();
     InitializeTree();
 
@@ -111,6 +111,8 @@ bool SpatialResolAna::Initialize() {
                                             _max_phi,
                                             _max_theta,
                                             _broken_pads,
+                                            _time_min,
+                                            _time_max,
                                             _invert,
                                             _verbose);
 
@@ -151,6 +153,7 @@ bool SpatialResolAna::Initialize() {
 void SpatialResolAna::InitializeTree() {
     _tree = new TTree("outtree", "");
     _tree->Branch("ev", &_ev);
+    _tree->Branch("track", &_track);
     _tree->Branch("dEdx", &_dEdx);
 
     _tree->Branch("angle_yz", &_angle_yz);
@@ -424,7 +427,9 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
 // ************** See steps documentation in the README.md file ****************
 // *******************  STEP 1 *************************************************
 
+    _track = -1;
     for (const auto& track :  event->GetTracks()) {
+        ++_track;
         // reset tree values
         Reset(num::cast<int>(event->GetID()));
         if (_verbose >= static_cast<int>(verbosity_SR::v_analysis_steps))
@@ -477,6 +482,10 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
             std::cout << "clearing done, columns\t" << robust_clusters.size() << std::endl;
 
         _rob_clusters = num::cast<int>(robust_clusters.size());
+
+        // empty event
+        if (!_rob_clusters)
+            continue;
 
         /// decide that track is accepted by selection
         _store_event = true;
@@ -879,6 +888,13 @@ bool SpatialResolAna::WriteOutput() {
 //******************************************************************************
     if (!_file_out)
         return true;
+
+    std::cout << "Final summary\n";
+    _clDump.CL_progress_dump(_end_ID - _start_ID,
+                             _end_ID - _start_ID,
+                             _selected);
+
+    std::cout << "\n";
 
     std::cout << "PRF profiling............................";
 
