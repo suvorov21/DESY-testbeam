@@ -483,6 +483,10 @@ bool SpatialResolAna::ProcessEvent(const std::shared_ptr<TEvent> &event) {
 
         _rob_clusters = num::cast<int>(robust_clusters.size());
 
+        // empty event
+        if (!_rob_clusters)
+            continue;
+
         /// decide that track is accepted by selection
         _store_event = true;
         GenericToolbox::getElapsedTimeSinceLastCallInMicroSeconds("column");
