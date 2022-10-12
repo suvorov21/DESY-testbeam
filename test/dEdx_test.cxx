@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "dEdx_test. Open file " << argv[1] << std::endl;
-  auto f = new TFile(argv[1], "READ");
+  auto f = TFile::Open(argv[1], "READ");
   auto t = (TTree*)f->Get("outtree");
   auto h = new TH1F("h", "", 200, 0., 4000.);
   t->Project("h", "dEdx", "dEdx > 0");
