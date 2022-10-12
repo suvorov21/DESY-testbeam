@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   int limit = atoi(argv[2]);
 
   std::cout << "SR_test. Open file " << argv[1] << std::endl;
-  auto f = new TFile(argv[1], "READ");
+  auto f = TFile::Open(argv[1], "READ");
   auto t = (TTree*)f->Get("outtree");
   auto resol_total = new TH1F("resol_total", "", 200, -0.004, 0.004);
   t->Project("resol_total", "residual");

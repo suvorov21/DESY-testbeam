@@ -51,11 +51,11 @@ include(${ROOT_USE_FILE})
 set(PBUILDER OFF)
 include_directories (
         ${ROOT_INCLUDE_DIR}
-        ${PROJECT_SOURCE_DIR}/external/hat_event
-        ${PROJECT_SOURCE_DIR}/external/hat_event/src/
+        # ${PROJECT_SOURCE_DIR}/external/hat_event
+        ${PROJECT_SOURCE_DIR}/external/hat_event/src
 )
 
-add_subdirectory (external/hat_event/)
+add_subdirectory (external/hat_event)
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/base/DataStorage) #---Event format
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/base/)            #---Base processors

@@ -40,7 +40,7 @@ def main():
     if multithread:
         import ROOT
         input_file = input_path+input_name
-        f = ROOT.TFile(input_file, 'READ')
+        f = ROOT.TFile.Open(input_file, 'READ')
         try:
             Nentries = f.tree.GetEntries()
         except AttributeError:

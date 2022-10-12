@@ -10,6 +10,8 @@
 
 #include "Interface.hxx"
 
+#include <memory>
+
 TString Interface::getRootFile(const TString& filename) {
     if (filename == "") {
         std::cerr << "ERROR. " << __func__ << "() No input file specified" << std::endl;
@@ -31,7 +33,7 @@ TString Interface::getRootFile(const TString& filename) {
 }
 
 interfaceType Interface::getFileType(const TString & filename) {
-    TFile file(filename.Data(), "READ");
+    std::unique_ptr<TFile> p_file(TFile::Open(filename.Data(), "READ")); TFile &file = *p_file;
 
     if (file.Get<TTree>("EventTree")) {
         return interfaceType::kRawEvent;

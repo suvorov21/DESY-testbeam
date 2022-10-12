@@ -278,7 +278,7 @@ void SpatialResolAna::ReadPrevIter() {
         _prev_iter_name += ".root";
     }
 
-    _prev_iter_file = new TFile(_prev_iter_name.Data(), "READ");
+    _prev_iter_file = TFile::Open(_prev_iter_name.Data(), "READ");
     if (!_prev_iter_file->IsOpen()) {
         std::cerr << "ERROR! " << __func__ << std::endl;
         std::cerr << "File from previous iteration is not found" << std::endl;
@@ -936,7 +936,7 @@ bool SpatialResolAna::WriteOutput() {
 
     std::cout << "Writing spatial analisis output..........";
 
-    auto file = new TFile(_file_out_name.Data(), "UPDATE");
+    auto file = TFile::Open(_file_out_name.Data(), "UPDATE");
     // write
     auto tree = new TTree("EventTree", "");
     UInt_t var = 0;
