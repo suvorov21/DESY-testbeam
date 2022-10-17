@@ -152,7 +152,7 @@ MultiMM:
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
-    - ./test/SR_test.exe Spatial_test_iter1.root 250;
+    - ./test/SR_test.exe Spatial_test_iter1.root 400;
 
 #   # coverage & docs
 # coverage:
