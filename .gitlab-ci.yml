@@ -137,7 +137,7 @@ SR_inverted:
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/invert.ini
-    - ./test/SR_test.exe Spatial_test_iter1.root 300;
+    - ./test/SR_test.exe Spatial_test_iter1.root 400;
   artifacts:
     paths:
       - build
@@ -152,7 +152,7 @@ MultiMM:
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
-    - ./test/SR_test.exe Spatial_test_iter1.root 400;
+    - ./test/SR_test.exe Spatial_test_iter1.root 250;
 
 #   # coverage & docs
 # coverage:
