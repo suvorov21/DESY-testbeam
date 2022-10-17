@@ -7,11 +7,11 @@ stages:
   - test
   # test run with expected output from basic analysis
   - validation
-  # analyze test + validation coverage
-  - coverage
-  # doxygen
-  - docs
-  - deploy
+  # # analyze test + validation coverage
+  # - coverage
+  # # doxygen
+  # - docs
+  # - deploy
 
 # build stage
 compile_gcc:
@@ -61,12 +61,14 @@ SR_horizon:
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/bntCYWHcPuAZ73K/download
+    # DESY-2021
+    # R2021_07_02-15_34_22-000.root
+    - wget -q https://cernbox.cern.ch/index.php/s/gbpJR0fi3kGHYoF/download
     - mv download input.root
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
-    - ./test/SR_test.exe Spatial_test_iter0.root 400;
+    - ./test/SR_test.exe Spatial_test_iter0.root 500;
     - ./test/SR_test.exe Spatial_test_iter1.root 300;
     - ./test/dEdx_test.exe Spatial_test_iter1.root
   artifacts:
@@ -78,12 +80,14 @@ SR_diagonal:
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/ONB1tf842ZEpmGR/download
+    # DESY-2021
+    # R2021_07_09-00_46_07-000.root
+    - wget -q https://cernbox.cern.ch/index.php/s/pZ9iQtPnHEPwrIL/download
     - mv download input.root
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/diag.ini
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/diag.ini
-    - ./test/SR_test.exe Spatial_test_iter1.root 600;
+    - ./test/SR_test.exe Spatial_test_iter1.root 800;
   artifacts:
     paths:
       - build
@@ -93,7 +97,9 @@ SR_slope_column:
   before_script:
     - . $COMMON_INSTALL_PREFIX/setup.sh
     - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/rDHRtB56bFqv95x/download
+    # DESY-2021
+    # R2021_07_09-15_34_51-000.root
+    - wget -q https://cernbox.cern.ch/index.php/s/nF4CkgVzbKuHtNz/download
     - mv download input.root
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
@@ -103,27 +109,30 @@ SR_slope_column:
     paths:
       - build
 
-SR_3by1:
-  stage: validation
-  before_script:
-    - . $COMMON_INSTALL_PREFIX/setup.sh
-    - yum -y install wget
-    - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
-    - mv download input.root
-  script:
-    - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/3by1.ini
-    - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/3by1.ini
-    - ./test/SR_test.exe Spatial_test_iter1.root 650;
-  artifacts:
-    paths:
-      - build
+# SR_3by1:
+#   stage: validation
+#   before_script:
+#     - . $COMMON_INSTALL_PREFIX/setup.sh
+#     - yum -y install wget
+  
+#     - wget -q https://cernbox.cern.ch/index.php/s/gbGTuiTLHavF1MG/download
+#     - mv download input.root
+#   script:
+#     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/3by1.ini
+#     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000 --param params/3by1.ini
+#     - ./test/SR_test.exe Spatial_test_iter1.root 650;
+#   artifacts:
+#     paths:
+#       - build
 
 SR_inverted:
   stage: validation
   before_script:
     - yum -y install wget
     - . $COMMON_INSTALL_PREFIX/setup.sh
-    - wget https://cernbox.cern.ch/index.php/s/rxxEWpwno4TkiPh/download
+    # DESY-2021
+    # R2021_07_09-19_46_56-000.root
+    - wget https://cernbox.cern.ch/index.php/s/BFSTFFn8zSYWvgJ/download
     - mv download input.root
   script:
     - ./build/SpatialResol.exe -b -t 0 -i input.root -o Spatial_test_iter0.root -v 1 --end 5000 --param params/invert.ini
@@ -145,74 +154,74 @@ MultiMM:
     - ./build/SpatialResol.exe -b -t 1 -i input.root -o Spatial_test_iter1.root -v 1 --end 5000
     - ./test/SR_test.exe Spatial_test_iter1.root 250;
 
-  # coverage & docs
-coverage:
-  stage: coverage
-  before_script:
-    - python3 -m pip install gcovr
-    - git submodule update --init --recursive
-    - . $COMMON_INSTALL_PREFIX/setup.sh
-  script:
-    - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --html-details --html=coverage.html > coverage.xml
-    - wget --no-check-certificate https://coverage.codacy.com/get.sh
-    - . get.sh report -r coverage.xml
-  artifacts:
-    paths:
-      - coverage*
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
+#   # coverage & docs
+# coverage:
+#   stage: coverage
+#   before_script:
+#     - python3 -m pip install gcovr
+#     - git submodule update --init --recursive
+#     - . $COMMON_INSTALL_PREFIX/setup.sh
+#   script:
+#     - gcovr -r . -b --xml-pretty  --exclude='Google_tests/*' --exclude='external/*' --gcov-exclude='EventDict.cxx' --exclude='build/*' --html-details --html=coverage.html > coverage.xml
+#     - wget --no-check-certificate https://coverage.codacy.com/get.sh
+#     - . get.sh report -r coverage.xml
+#   artifacts:
+#     paths:
+#       - coverage*
+#     reports:
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: coverage.xml
 
-sonar:
-  stage: coverage
-  before_script:
-    - . $COMMON_INSTALL_PREFIX/setup.sh
-    - export SONAR_SCANNER_VERSION=4.6.2.2472
-    - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
-    - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
-    - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-    - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
-    - export SONAR_SCANNER_OPTS="-server"
+# sonar:
+#   stage: coverage
+#   before_script:
+#     - . $COMMON_INSTALL_PREFIX/setup.sh
+#     - export SONAR_SCANNER_VERSION=4.6.2.2472
+#     - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
+#     - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+#     - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+#     - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+#     - export SONAR_SCANNER_OPTS="-server"
 
-    - curl --create-dirs -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
-    - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
-    - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
-  script:
-    - cd build; find . -name '*.gcda' | xargs gcov; cd ../;
-    - sonar-scanner 
-      -Dsonar.organization=suvorov21 
-      -Dsonar.projectKey=suvorov21_DESY-testbeam 
-      -Dsonar.sources=. 
-      -Dsonar.cfamily.build-wrapper-output=bw-output 
-      -Dsonar.host.url=https://sonarcloud.io 
-      -Dsonar.cfamily.gcov.reportsPath=build/ 
-      -Dsonar.coverage.exclusions=script/*,src/utils/SetT2KStyle.hxx 
-      -Dsonar.exclusions=script/submitter_lyon.py,script/script_submitter_lyon.py
+#     - curl --create-dirs -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+#     - unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
+#     - export PATH=$HOME/.sonar/build-wrapper-linux-x86:$PATH
+#   script:
+#     - cd build; find . -name '*.gcda' | xargs gcov; cd ../;
+#     - sonar-scanner 
+#       -Dsonar.organization=suvorov21 
+#       -Dsonar.projectKey=suvorov21_DESY-testbeam 
+#       -Dsonar.sources=. 
+#       -Dsonar.cfamily.build-wrapper-output=bw-output 
+#       -Dsonar.host.url=https://sonarcloud.io 
+#       -Dsonar.cfamily.gcov.reportsPath=build/ 
+#       -Dsonar.coverage.exclusions=script/*,src/utils/SetT2KStyle.hxx 
+#       -Dsonar.exclusions=script/submitter_lyon.py,script/script_submitter_lyon.py
 
-# documentation, etc.
-docs:
-  image: rightmesh/ubuntu-doxygen:5.0
-  stage: docs
-  # when: manual
-  script:
-    - doxygen Doxyfile
-  artifacts:
-    paths:
-      - doc/html
-  only:
-  - develop
+# # documentation, etc.
+# docs:
+#   image: rightmesh/ubuntu-doxygen:5.0
+#   stage: docs
+#   # when: manual
+#   script:
+#     - doxygen Doxyfile
+#   artifacts:
+#     paths:
+#       - doc/html
+#   only:
+#   - develop
 
-pages:
-  stage: deploy
-  script:
-    - mkdir .public
-    - cp -r doc/html/* .public/
-    - mkdir .public/doc; cp doc/*.png .public/doc/
-    - mv .public public
-  artifacts:
-    paths:
-      - public
-  only:
-    - develop
+# pages:
+#   stage: deploy
+#   script:
+#     - mkdir .public
+#     - cp -r doc/html/* .public/
+#     - mkdir .public/doc; cp doc/*.png .public/doc/
+#     - mv .public public
+#   artifacts:
+#     paths:
+#       - public
+#   only:
+#     - develop
 
