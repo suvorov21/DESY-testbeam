@@ -49,7 +49,7 @@ bool AnalysisBase::ReadCLI(int argc, char **argv) {
     _clParser.parseCmdLine(argc, argv);
 
     if (_clParser.isOptionTriggered("help")) {
-        _clParser.getConfigSummary();
+        std::cout << _clParser.getConfigSummary();
         exit(1);
     }
 
