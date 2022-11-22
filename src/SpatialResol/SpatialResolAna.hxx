@@ -63,6 +63,10 @@ class SpatialResolAna : public AnalysisBase {
 
     /// Compute dE/dx
     Double_t ComputedEdx();
+    Double_t ComputedEdx_sumWF();
+    //for length per pad calculations
+    std::pair<double, double> XYintersect(double x1,double y1,double x2,double y2,double intr,double slp);
+    bool Select_Length(double x1,double y1,double x2,double y2,double intr,double slp);
 
     static void DeletePadFromCluster(THitPtrVec &robust_pads, int &pad_id);
 
@@ -178,6 +182,7 @@ class SpatialResolAna : public AnalysisBase {
     /** variables for the dEdx analysis */
     /// dE/dx
     Double_t _dEdx{0};
+    Double_t _dEdx_sumWF{0};
     Int_t _pad_charge[Nclusters][10]{0};
     Int_t _pad_time[Nclusters][10]{0};
 
@@ -192,6 +197,16 @@ class SpatialResolAna : public AnalysisBase {
     Int_t _wf_fwhm[Nclusters][10]{0};
 
     Int_t _pad_wf_q[Nclusters][10][520]{0};
+
+
+    //Track length per pad
+    Float_t _pad_lenTr[Nclusters][10];
+    //Track length per cluster
+    Float_t _cluster_lenTr[Nclusters];
+    // To store WFs max of the sum per cluster
+    Int_t _cluster_WF_q[Nclusters];
+    // To store time variable of WFs max of the sum per cluster
+    Int_t _cluster_WF_t[Nclusters];
 
     /** Histograms **/
     /** Pad response function block **/

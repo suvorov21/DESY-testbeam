@@ -1,0 +1,15 @@
+R2022_09_07-07_40_27-005 	All_ERAMS_350V_412ns_pi+_0p75GeV_25V_z415	  	--param ../params/horiz_CERN22.ini
+R2022_09_07-16_46_49-0	 	All_ERAMS_350V_412ns_e+_0p75GeV_25V_z415	  	--param ../params/horiz_CERN22.ini
+R2022_09_07-21_38_55-0	 	All_ERAMS_350V_412ns_mu+_0p75GeV_25V_z415	  	--param ../params/horiz_CERN22.ini
+R2022_09_07-22_46_05-0	 	All_ERAMS_350V_412ns_e+_1GeV_25V_z415p1	  		--param ../params/horiz_CERN22.ini
+R2022_09_08-02_43_27-0	 	All_ERAMS_350V_412ns_pi+_1GeV_25V_z415p1_1	  	--param ../params/horiz_CERN22.ini
+R2022_09_08-04_07_43-0	 	All_ERAMS_350V_412ns_pi+_1GeV_25V_z415p1_2	  	--param ../params/horiz_CERN22.ini
+R2022_09_08-07_03_30-0		All_ERAMS_350V_412ns_p_1GeV_25V_z415p1	  		--param ../params/horiz_CERN22.ini
+R2022_09_08-10_05_20-0		All_ERAMS_350V_412ns_mu+_1GeV_25V_z415p1	  	--param ../params/horiz_CERN22.ini
+
+R2022_09_08-15_54_55-0		All_ERAMS_350V_412ns_p_1p5GeV_25V_z415p1_1	  	--param ../params/horiz_CERN22.ini 
+R2022_09_08-16_42_10-0		All_ERAMS_350V_412ns_p_1p5GeV_25V_z415_2	  	--param ../params/horiz_CERN22.ini
+R2022_09_08-21_05_31-0		All_ERAMS_350V_412ns_p_1p5GeV_25V_z415p1_3	  	--param ../params/horiz_CERN22.ini
+R2022_09_08-21_09_47-0		All_ERAMS_350V_412ns_p_1p5GeV_25V_z415p1_4	  	--param ../params/horiz_CERN22.ini
+R2022_09_08-21_28_19-0		All_ERAMS_350V_412ns_e+_1p5GeV_25V_z415p1	  	--param ../params/horiz_CERN22.ini
+R2022_09_09-00_16_32-0		All_ERAMS_350V_412ns_pi+_1p5GeV_25V_z415p1	  	--param ../params/horiz_CERN22.ini
