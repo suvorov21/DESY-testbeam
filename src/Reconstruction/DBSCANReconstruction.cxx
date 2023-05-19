@@ -78,6 +78,7 @@ std::vector<Node> DBSCANReconstruction::FillNodes(const THitPtrVec &module) cons
     // fill the maximum amplitude and time
     for (const auto &hit : module) {
         if (hit->GetQMax() > 0) {
+        //if (hit->GetQMax() > 40) {
             Node node;
             node.hit = hit;
             node.id = num::cast<int>(nodes.size());

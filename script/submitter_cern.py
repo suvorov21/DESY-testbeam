@@ -44,7 +44,7 @@ def main():
     #outpt_version = "z_phiFull_dEdx_fin"
     #outpt_version = "z_phi_SR_fin_parabola_Lenth"
     #outpt_version = "dev_v16"
-    outpt_version = "CERN22_output_v15"
+    outpt_version = "CERN22_output_fin"
     #outpt_version = "DESY_2019"
     #outpt_version = "z_phi_Theta_add"
     #outpt_version = "z_phi_new_dEdx_add" 

@@ -7,7 +7,7 @@ THit::THit(const TRawHit* rhs) : TRawHit(rhs) {
     for (short t = 0; t < num::cast<short>(wf.size()); ++t) {
         // subtract pedestals
         short Q = wf[t] - Geom::pedestal;
-        SetADCunit(GetTime() + t,Q);
+        //SetADCunit(GetTime() + t,Q);
         if (Q > fQMax) {
             fQMax = Q;
             fTimeMax = GetTime() + t;

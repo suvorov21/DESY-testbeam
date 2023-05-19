@@ -431,19 +431,19 @@ void SpatialResolAna::ReadPrevIter() {
         }
     }
 
-    if (!_processAll) {
+    //if (!_processAll) {
         // read event list passed through reconstruction+selection at previous iteration
-        UInt_t read_var;
-        auto event_tree = (TTree *) _prev_iter_file->Get("EventTree");
-        event_tree->SetBranchAddress("PassedEvents", &read_var);
-        std::vector<Int_t> vec;
-        vec.clear();
-        for (auto i = 0; i < event_tree->GetEntries(); ++i) {
-            event_tree->GetEntry(i);
-            vec.emplace_back(read_var);
-        }
-        this->SetEventList(vec);
-    }
+        //UInt_t read_var;
+        //auto event_tree = (TTree *) _prev_iter_file->Get("EventTree");
+        //event_tree->SetBranchAddress("PassedEvents", &read_var);
+        //std::vector<Int_t> vec;
+        //vec.clear();
+        //for (auto i = 0; i < event_tree->GetEntries(); ++i) {
+        //    event_tree->GetEntry(i);
+        //    vec.emplace_back(read_var);
+        //}
+        //this->SetEventList(vec);
+    //}
 }
 
 //******************************************************************************
