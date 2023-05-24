@@ -875,7 +875,8 @@ void SpatialResolAna::ProcessCluster(const TClusterPtr &cluster, uint id) {
 
             const auto& wf = pad->GetADCvector();
             for (short t = 0; t < num::cast<short>(wf.size()); ++t) {
-                short Q = wf[t];//- Geom::pedestal;
+                //short Q = wf[t];//- Geom::pedestal;
+                short Q = wf[t]- Geom::pedestal;
                 _pad_wf_q[id][pad_id][t + pad->GetTime()] = Q;
                 if (Q > -250) all_wf[t + pad->GetTime()] += _pad_wf_q[id][pad_id][t + pad->GetTime()];
                 //if (t + pad->GetTime() > 513 && _pad_wf_q[id][pad_id][t + pad->GetTime()] > -999) std::cout<<"Geom::Nsamples = "<< Geom::Nsamples << "pad->GetTime() = "<< pad->GetTime() << "t + pad->GetTime()" << t + pad->GetTime() <<std::endl;
